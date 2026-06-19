@@ -1,0 +1,98 @@
+.board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  aspect-ratio: 1;
+  position: relative;
+  transition: box-shadow 0.2s;
+}
+
+.active {
+  box-shadow: 0 0 0 3px var(--accent);
+  z-index: 1;
+}
+
+.inactive {
+  opacity: 0.55;
+}
+
+.won {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface2);
+  border-radius: var(--radius-sm);
+}
+
+.won.X {
+  background: rgba(255, 101, 132, 0.12);
+  box-shadow: 0 0 0 2px var(--x-color);
+}
+
+.won.O {
+  background: rgba(99, 212, 255, 0.12);
+  box-shadow: 0 0 0 2px var(--o-color);
+}
+
+.won.draw {
+  background: var(--surface2);
+  box-shadow: 0 0 0 2px var(--border);
+}
+
+.winBoard {
+  transform: scale(1.04);
+  z-index: 2;
+}
+
+.winBoard.X {
+  box-shadow: 0 0 0 3px var(--x-color), 0 0 24px rgba(255, 101, 132, 0.4);
+}
+
+.winBoard.O {
+  box-shadow: 0 0 0 3px var(--o-color), 0 0 24px rgba(99, 212, 255, 0.4);
+}
+
+.winSymbol {
+  font-size: clamp(1.8rem, 6vw, 3rem);
+  font-weight: 900;
+  line-height: 1;
+}
+
+.won.X .winSymbol { color: var(--x-color); }
+.won.O .winSymbol { color: var(--o-color); }
+.won.draw .winSymbol { color: var(--text-muted); }
+
+.cell {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: default;
+  padding: 0;
+  transition: background 0.1s;
+  aspect-ratio: 1;
+}
+
+.cell.playable {
+  cursor: pointer;
+}
+
+.cell.playable:hover {
+  background: var(--surface2);
+}
+
+.cell.playable:hover::after {
+  content: attr(data-player);
+}
+
+.mark {
+  font-size: clamp(0.9rem, 3.5vw, 1.6rem);
+  font-weight: 800;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.cell.X .mark { color: var(--x-color); }
+.cell.O .mark { color: var(--o-color); }

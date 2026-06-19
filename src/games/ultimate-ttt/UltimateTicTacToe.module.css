@@ -1,0 +1,194 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 1rem 3rem;
+}
+
+/* ── Mode selection screen ── */
+.backLink {
+  align-self: flex-start;
+  padding: 1rem 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  transition: color 0.15s;
+}
+.backLink:hover { color: var(--text); }
+
+.modeScreen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1.5rem;
+  max-width: 400px;
+  padding-top: 2rem;
+}
+
+.title {
+  font-size: clamp(2.2rem, 9vw, 3.5rem);
+  font-weight: 900;
+  line-height: 1.1;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.modeHint {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.modeButtons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.modeBtn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  padding: 0.85rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+}
+
+.modeBtn:hover {
+  border-color: var(--accent);
+  background: var(--surface2);
+  transform: translateY(-1px);
+}
+
+.rulesBox {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.5rem;
+  text-align: left;
+  width: 100%;
+}
+
+.rulesBox h3 {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+}
+
+.rulesBox ul {
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.rulesBox li {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* ── In-game layout ── */
+.topBar {
+  width: 100%;
+  max-width: 600px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 0 0.5rem;
+  gap: 0.5rem;
+}
+
+.backBtn, .resetBtn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  padding: 0.4rem 0.85rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.backBtn:hover, .resetBtn:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.titleSmall {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.status {
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+  font-size: clamp(0.95rem, 3vw, 1.15rem);
+  font-weight: 700;
+}
+
+.turnText, .winText, .drawText {
+  padding: 0.3rem 1rem;
+  border-radius: 999px;
+}
+
+.turnText.X { color: var(--x-color); background: rgba(255,101,132,0.1); }
+.turnText.O { color: var(--o-color); background: rgba(99,212,255,0.1); }
+.winText.X  { color: var(--x-color); background: rgba(255,101,132,0.15); }
+.winText.O  { color: var(--o-color); background: rgba(99,212,255,0.15); }
+.drawText   { color: var(--text-muted); background: var(--surface); }
+
+/* ── Macro board ── */
+.macroBoard {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(6px, 2vw, 12px);
+  width: 100%;
+  max-width: min(90vw, 90vh - 160px, 580px);
+  padding: clamp(8px, 2.5vw, 16px);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.playAgainBtn {
+  margin-top: 1.25rem;
+  background: var(--accent);
+  border: none;
+  border-radius: var(--radius);
+  color: #fff;
+  padding: 0.75rem 2rem;
+  font-size: 1rem;
+  font-weight: 700;
+  transition: opacity 0.15s, transform 0.1s;
+}
+
+.playAgainBtn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+  .macroBoard {
+    gap: 4px;
+    padding: 8px;
+  }
+}
+
+@media (min-height: 700px) and (min-width: 600px) {
+  .macroBoard {
+    max-width: min(75vw, calc(100vh - 220px));
+  }
+}
