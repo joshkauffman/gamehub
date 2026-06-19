@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Dog Man Dash</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -13,7 +13,7 @@
       height: 100vh; font-family: 'Courier New', monospace; overflow: hidden;
     }
     #gameWrap { position: relative; display: inline-block; }
-    canvas { border: 4px solid #e94560; image-rendering: pixelated; display: block; }
+    canvas { border: 4px solid #e94560; image-rendering: pixelated; display: block; touch-action: none; }
     #ui { color: #fff; margin-top: 8px; font-size: 13px; letter-spacing: 1px; opacity: 0.7; }
     #nameScreen {
       position: absolute; top: 4px; left: 4px;
@@ -41,8 +41,103 @@
       cursor: pointer; letter-spacing: 2px;
     }
     #nameBtn:hover { background: #FF5252; }
+    #manuelBtn {
+      margin-top: 10px; padding: 8px 24px;
+      background: #1565C0; border: none; color: #fff;
+      font-family: 'Courier New', monospace; font-size: 14px; font-weight: bold;
+      cursor: pointer; letter-spacing: 2px;
+    }
+    #manuelBtn:hover { background: #1976D2; }
+    #manuelOverlay {
+      display: none; position: absolute; top: 4px; left: 4px;
+      width: 800px; height: 450px;
+      background: rgba(4,10,24,0.98);
+      z-index: 30; overflow-y: auto;
+      font-family: 'Courier New', monospace;
+    }
+    #manuelContent { padding: 18px 28px; color: #fff; }
+    .man-title { font-size: 26px; font-weight: bold; color: #FFD700; text-align: center; margin-bottom: 2px; }
+    .man-sub { color: #aaddff; font-size: 11px; text-align: center; margin-bottom: 14px; }
+    .man-section { margin-bottom: 12px; }
+    .man-h2 { font-size: 13px; font-weight: bold; color: #E53935; border-bottom: 1px solid #E53935; padding-bottom: 2px; margin-bottom: 6px; letter-spacing: 1px; }
+    .man-item { font-size: 11px; color: #ccc; margin-bottom: 3px; padding-left: 10px; line-height: 1.5; }
+    .man-item b { color: #FFD700; }
+    #manuelClose {
+      display: block; margin: 14px auto 4px; padding: 10px 30px;
+      background: #E53935; border: none; color: #fff;
+      font-family: 'Courier New', monospace; font-size: 15px; font-weight: bold;
+      cursor: pointer; letter-spacing: 2px;
+    }
+    #manuelClose:hover { background: #FF5252; }
     .ns-error { color: #FF5252; font-size: 12px; height: 16px; margin: 6px 0 0; }
     #nameLeaders { margin-top: 18px; font-size: 12px; text-align: center; }
+
+    /* ── Mobile controls ─────────────────────────────────────────── */
+    #mobileControls {
+      display: none; width: 100%; box-sizing: border-box;
+      padding: 10px 14px 14px; background: rgba(0,0,0,0.88);
+      justify-content: space-between; align-items: center;
+      flex-shrink: 0; gap: 10px;
+      border-top: 2px solid #e94560;
+    }
+    #mc-dpad {
+      display: grid;
+      grid-template-columns: repeat(3, 52px);
+      grid-template-rows: repeat(3, 52px);
+      gap: 5px;
+    }
+    .mc-pad { width: 52px; height: 52px; }
+    .mc-btn {
+      width: 52px; height: 52px;
+      background: rgba(255,255,255,0.1);
+      border: 2px solid rgba(255,255,255,0.28);
+      border-radius: 10px; color: #fff;
+      font-family: 'Courier New', monospace;
+      font-size: 20px; font-weight: bold;
+      cursor: pointer; user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-user-select: none;
+      display: flex; align-items: center; justify-content: center;
+      touch-action: none;
+    }
+    .mc-btn:active, .mc-pressed { background: rgba(255,255,255,0.32) !important; border-color: #FFD700 !important; }
+    #mc-actions { display: flex; flex-direction: column; gap: 7px; align-items: flex-end; }
+    .mc-row { display: flex; gap: 7px; align-items: center; }
+    #mc-jump {
+      width: 76px; height: 52px; font-size: 12px; letter-spacing: 1px;
+      background: rgba(21,101,192,0.8) !important;
+      border-color: #90CAF9 !important;
+    }
+    #mc-atk {
+      width: 76px; height: 52px; font-size: 12px; letter-spacing: 1px;
+      background: rgba(229,57,53,0.8) !important;
+      border-color: #EF9A9A !important;
+    }
+    #mc-f {
+      width: 64px; height: 42px; font-size: 10px; letter-spacing: 1px;
+      background: rgba(76,175,80,0.8);
+      border: 2px solid #A5D6A7; border-radius: 8px;
+      color: #fff; cursor: pointer; display: flex;
+      align-items: center; justify-content: center;
+      font-family: 'Courier New', monospace; font-weight: bold;
+      touch-action: none; user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #mc-b {
+      width: 64px; height: 42px; font-size: 10px; letter-spacing: 1px;
+      background: rgba(121,85,72,0.8);
+      border: 2px solid #BCAAA4; border-radius: 8px;
+      color: #fff; cursor: pointer; display: flex;
+      align-items: center; justify-content: center;
+      font-family: 'Courier New', monospace; font-weight: bold;
+      touch-action: none; user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #mc-f:active, #mc-b:active { opacity: 0.65; }
+    @media (max-width: 820px) {
+      body { justify-content: flex-start !important; overflow: hidden; }
+      #ui { display: none; }
+    }
     .nl-title { color: #FFD700; font-weight: bold; margin-bottom: 5px; letter-spacing: 2px; }
     .nl-row   { color: #aaddff; line-height: 2; }
     .nl-row b { color: #fff; }
@@ -58,10 +153,81 @@
       <input id="nameInput" maxlength="8" autocomplete="off" spellcheck="false" autofocus>
       <div class="ns-error" id="nameError"></div>
       <button id="nameBtn">ENTER THE CITY!</button>
+      <button id="manuelBtn">The Manuel</button>
       <div id="nameLeaders"></div>
+    </div>
+    <div id="manuelOverlay">
+      <div id="manuelContent">
+        <div class="man-title">📖 THE MANUEL</div>
+        <div class="man-sub">Everything you need to know about Dog Man Dash!</div>
+        <div class="man-section">
+          <div class="man-h2">🎮 GAME MODES</div>
+          <div class="man-item"><b>Classic:</b> Run through 3 city levels and reach the goal flag! Defeat enemies and collect coins. Unlock new characters!</div>
+          <div class="man-item"><b>Survivor Island:</b> Survive endless waves of enemies on a tropical island! The longer you last, the more points you earn.</div>
+          <div class="man-item"><b>Tower Defense:</b> Top-down view! Defend Dog Man H.Q. from waves of incoming villains. Defeat enemies to earn coins — spend coins to deploy fighter allies (F key) or place barrier walls (B key)!</div>
+        </div>
+        <div class="man-section">
+          <div class="man-h2">🦸 CHARACTERS</div>
+          <div class="man-item"><b>Dog Man</b> — Loyal &amp; Brave. Throws BONES and uses Star Power!</div>
+          <div class="man-item"><b>Lil' Petey</b> — Smart &amp; Sneaky. Throws YARN BALLS at enemies!</div>
+          <div class="man-item"><b>80-HD</b> 🔒 — Robot Warrior. Shoots a LASER that auto-targets enemies! Unlock: Complete Level 1.</div>
+          <div class="man-item"><b>Molly</b> 🔒 — Super Sleuth. Uses a SPEECH bubble to put all enemies to sleep! Unlock: Complete Level 2.</div>
+          <div class="man-item"><b>Petey</b> 🔒 — The Super Villain! Uses LASER power. Unlock: Earn 8,000 points total.</div>
+        </div>
+        <div class="man-section">
+          <div class="man-h2">⌨️ CONTROLS</div>
+          <div class="man-item"><b>Arrow Keys</b> or <b>WASD</b> — Move (all directions in Tower Defense!)</div>
+          <div class="man-item"><b>SPACE or UP Arrow</b> — Jump (Classic and Survivor modes)</div>
+          <div class="man-item"><b>DOWN Arrow or S</b> — Duck! Move faster and avoid tall enemies. (Also moves DOWN in Tower Defense)</div>
+          <div class="man-item"><b>SHIFT</b> — Attack! Punch nearby enemies, or throw your power-up item.</div>
+          <div class="man-item"><b>F key</b> — Deploy a Fighter ally (Tower Defense only — costs 10 coins)</div>
+          <div class="man-item"><b>B key</b> — Place a Barrier wall (Tower Defense only — costs 5 coins)</div>
+        </div>
+        <div class="man-section">
+          <div class="man-h2">⭐ POWER-UPS</div>
+          <div class="man-item"><b>★ STAR POWER</b> — Golden invincibility! Run into enemies to defeat them instantly!</div>
+          <div class="man-item"><b>🦴 BONE</b> — Press SHIFT to throw a bone and knock out an enemy! (Dog Man)</div>
+          <div class="man-item"><b>🧶 YARN BALL</b> — Press SHIFT to throw yarn and knock out an enemy! (Lil' Petey)</div>
+          <div class="man-item"><b>⚡ LASER</b> — Auto-aims at the nearest enemy and zaps them every few seconds! (80-HD, Petey)</div>
+          <div class="man-item"><b>💬 SPEECH</b> — Sends all enemies to sleep — they can't attack for 5 seconds! (Molly)</div>
+        </div>
+        <div class="man-section">
+          <div class="man-h2">💡 TIPS</div>
+          <div class="man-item">Defeat 5 enemies in a row to earn a power-up drop!</div>
+          <div class="man-item">In Tower Defense, place barriers to slow enemies down while fighters attack them!</div>
+          <div class="man-item">Ducking in Classic mode lets you slide under some enemies!</div>
+          <div class="man-item">In Tower Defense, move around the map to intercept enemies before they reach H.Q.!</div>
+        </div>
+        <button id="manuelClose">GOT IT! CLOSE</button>
+      </div>
     </div>
   </div>
   <div id="ui">SPACE/UP=Jump | DOWN=Duck | SHIFT=Attack/Throw | Pick up the Invincibility Star!</div>
+  <div id="mobileControls">
+    <!-- D-Pad (3×3 grid: top-pad, up, top-pad, left, center-pad, right, bot-pad, down, bot-pad) -->
+    <div id="mc-dpad">
+      <div class="mc-pad"></div>
+      <button class="mc-btn" id="mc-up">▲</button>
+      <div class="mc-pad"></div>
+      <button class="mc-btn" id="mc-left">◄</button>
+      <div class="mc-pad"></div>
+      <button class="mc-btn" id="mc-right">►</button>
+      <div class="mc-pad"></div>
+      <button class="mc-btn" id="mc-down">▼</button>
+      <div class="mc-pad"></div>
+    </div>
+    <!-- Action buttons -->
+    <div id="mc-actions">
+      <div class="mc-row">
+        <button id="mc-f">F<br>FIGHT</button>
+        <button id="mc-b">B<br>WALL</button>
+      </div>
+      <div class="mc-row">
+        <button class="mc-btn" id="mc-jump">JUMP</button>
+        <button class="mc-btn" id="mc-atk">ATK</button>
+      </div>
+    </div>
+  </div>
 
 <script>
 // ─── Canvas ───────────────────────────────────────────────────────────
@@ -151,6 +317,16 @@ let currentLevel=0;
 const M={CLASSIC:0,SURVIVOR:1,TOWER:2};
 const S={MODE_SELECT:-1,SELECT:0,PLAYING:1,DEAD:2,WIN:3,DYING:4,LEVEL_COMPLETE:5};
 let gameMode=M.CLASSIC,state=S.SELECT,hoverMode=0;
+
+// ─── Tower Defense path (waypoints, x always decreasing) ──────────────
+const TD_PATH=[
+  {x:820, y:225},  // [0] spawn off-screen
+  {x:660, y:82},   // [1] upper-right bend
+  {x:490, y:352},  // [2] lower-center bend
+  {x:325, y:78},   // [3] upper-center bend
+  {x:160, y:358},  // [4] lower-left bend
+  {x:85,  y:225},  // [5] tower entrance
+];
 
 // ─── State variables ──────────────────────────────────────────────────
 let selectedChar=0,hoverChar=0;
@@ -288,8 +464,9 @@ const CHIEF_QUOTES=[
 let player={};
 function initPlayer(){
   const startX=gameMode===M.TOWER?350:80;
+  const startY=gameMode===M.TOWER?H/2-PLAYER_H/2:GROUND_Y-PLAYER_H;
   player={
-    x:startX,y:GROUND_Y-PLAYER_H,vx:0,vy:0,onGround:false,
+    x:startX,y:startY,vx:0,vy:0,onGround:gameMode===M.TOWER,
     ducking:false,attacking:false,attackTimer:0,walkCycle:0,
     powerUp:null,powerUpActive:false,powerUpTimer:0,dyingTimer:0,laserCooldown:0,
   };
@@ -383,7 +560,8 @@ function continueToNextLevel(){
 function spawnKillPowerUp(worldX,worldY){
   const proj=CHARS[selectedChar].proj;
   const type=Math.random()<0.5?'star':proj;
-  powerUpItems.push({type,x:Math.max(150,worldX),y:GROUND_Y-55,collected:false});
+  const puY=gameMode===M.TOWER?Math.min(H-30,Math.max(30,worldY)):GROUND_Y-55;
+  powerUpItems.push({type,x:Math.max(150,worldX),y:puY,collected:false});
   floatingTexts.push({text:'★ POWER UP!',wx:worldX,wy:worldY-28,timer:75,vy:-0.45});
 }
 
@@ -402,8 +580,10 @@ function killEnemy(e){
 function spawnTDEnemy(){
   const speed=0.8+tdWave*0.12+Math.random()*0.3;
   const TYPES=['crunky','bub','piggy'];
-  enemies.push({type:TYPES[Math.floor(Math.random()*3)],x:W+40,y:GROUND_Y-ENEMY_H,
-    alive:true,dying:false,dyingTimer:0,walkDir:-1,walkSpeed:speed});
+  const entry=TD_PATH[0];
+  enemies.push({type:TYPES[Math.floor(Math.random()*3)],
+    x:entry.x-ENEMY_W/2, y:entry.y-ENEMY_H/2,
+    alive:true,dying:false,dyingTimer:0,walkDir:-1,walkSpeed:speed,pathIdx:1});
 }
 
 function updateEnemies(){
@@ -455,13 +635,26 @@ function updateEnemies(){
       if(e.x>player.x+W+100){e.alive=false;} // gone off-screen
       return; // no collision while bored
     }
-    // Normal TD movement
+    // TD: follow the winding path
     if(gameMode===M.TOWER&&e.walkDir){
-      e.x+=e.walkDir*(e.walkSpeed||1);
-      if(e.x+ENEMY_W<85){
+      if(e.pathIdx===undefined)e.pathIdx=1;
+      const target=TD_PATH[e.pathIdx];
+      if(!target){
+        // Reached end of path — hit HQ
         e.alive=false;towerHP--;towerFlash=30;
+        floatingTexts.push({text:'HQ HIT!',wx:100,wy:H/2-20,timer:70,vy:-0.5});
         if(towerHP<=0){saveScore(currentUser,score);state=S.DEAD;}
         return;
+      }
+      const tdx=target.x-(e.x+ENEMY_W/2);
+      const tdy=target.y-(e.y+ENEMY_H/2);
+      const tdist=Math.sqrt(tdx*tdx+tdy*tdy);
+      const spd=e.walkSpeed||1;
+      if(tdist<spd+2){
+        e.pathIdx++;  // reached this waypoint, advance
+      } else {
+        e.x+=tdx/tdist*spd;
+        e.y+=tdy/tdist*spd;
       }
     }
     const eHInset=gameMode===M.TOWER?14:5;
@@ -486,9 +679,18 @@ function drawEnemies(sx){
       const t=e.dyingTimer/28;
       ctx.translate(ex+ENEMY_W/2,e.y+ENEMY_H/2);
       ctx.rotate((1-t)*Math.PI*3);ctx.scale(t,t);
-      drawEnemySprite(e,0-ENEMY_W/2,0-ENEMY_H/2);
+      if(gameMode===M.TOWER){drawEnemyTopDown(e,-ENEMY_W/2,-ENEMY_H/2);}
+      else{drawEnemySprite(e,0-ENEMY_W/2,0-ENEMY_H/2);}
+    } else if(gameMode===M.TOWER){
+      if(speechOn){ctx.globalAlpha=0.65;}
+      drawEnemyTopDown(e,ex,e.y);
+      ctx.globalAlpha=1;
+      if(speechOn){
+        const zz=['z','zz','zzz'][Math.floor(tick/15)%3];
+        ctx.fillStyle='#AACCFF';ctx.font='bold 14px Courier New';ctx.textAlign='center';
+        ctx.fillText(zz,ex+ENEMY_W/2,e.y-8+Math.sin(tick*0.06)*3);
+      }
     } else {
-      // Tint blue/grey when bored
       if(speechOn){ctx.globalAlpha=0.65;}
       drawEnemySprite(e,ex,e.y);
       ctx.globalAlpha=1;
@@ -872,11 +1074,107 @@ function drawIslandGround(sx){
   ctx.fillStyle='#D4B483';ctx.fillRect(0,GROUND_Y,W,3);
 }
 
+function drawTDTopDownBackground(){
+  // Grass base
+  ctx.fillStyle='#2d5a1b';ctx.fillRect(0,0,W,H);
+  // Grass texture patches
+  for(let i=0;i<60;i++){
+    const gx=rng(i*31.7)*W,gy=rng(i*19.3)*H;
+    ctx.fillStyle=i%3===0?'#1e4012':'#345e20';
+    ctx.fillRect(gx,gy,8+rng(i*7.1)*16,3+rng(i*11.3)*5);
+  }
+
+  // Winding road — drawn along TD_PATH (skip spawn point [0])
+  const pts=TD_PATH.slice(1);
+  ctx.save();
+  ctx.lineCap='round';ctx.lineJoin='round';
+
+  // Road shadow
+  ctx.strokeStyle='rgba(0,0,0,0.28)';ctx.lineWidth=76;
+  ctx.beginPath();ctx.moveTo(pts[0].x+4,pts[0].y+5);
+  for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i].x+4,pts[i].y+5);
+  ctx.stroke();
+
+  // Road bed (darker dirt edges)
+  ctx.strokeStyle='#6B4F0E';ctx.lineWidth=72;
+  ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);
+  for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i].x,pts[i].y);
+  ctx.stroke();
+
+  // Road surface (lighter centre)
+  ctx.strokeStyle='#9B7820';ctx.lineWidth=62;
+  ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);
+  for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i].x,pts[i].y);
+  ctx.stroke();
+
+  // Faint tyre-track grooves
+  ctx.strokeStyle='#876A18';ctx.lineWidth=2;
+  [-14,14].forEach(off=>{
+    ctx.beginPath();
+    pts.forEach((p,i)=>{
+      // Offset perpendicular to segment direction
+      const prev=pts[Math.max(0,i-1)],next=pts[Math.min(pts.length-1,i+1)];
+      const dx=next.x-prev.x,dy=next.y-prev.y,len=Math.sqrt(dx*dx+dy*dy)||1;
+      const nx=-dy/len,ny=dx/len;
+      i===0?ctx.moveTo(p.x+nx*off,p.y+ny*off):ctx.lineTo(p.x+nx*off,p.y+ny*off);
+    });
+    ctx.stroke();
+  });
+
+  // Dashed centre line
+  ctx.strokeStyle='#A08828';ctx.lineWidth=3;ctx.setLineDash([18,14]);
+  ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);
+  for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i].x,pts[i].y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+
+  // Bend arrow indicators so players know which way enemies come
+  for(let i=1;i<pts.length-1;i++){
+    const p=pts[i];
+    const dx=pts[i+1].x-pts[i-1].x, dy=pts[i+1].y-pts[i-1].y;
+    const len=Math.sqrt(dx*dx+dy*dy)||1;
+    ctx.save();ctx.translate(p.x,p.y);ctx.rotate(Math.atan2(dy,dx));
+    ctx.fillStyle='rgba(255,255,255,0.18)';
+    ctx.beginPath();ctx.moveTo(-8,0);ctx.lineTo(8,-7);ctx.lineTo(8,7);ctx.closePath();ctx.fill();
+    ctx.restore();
+  }
+
+  // Trees flanking the road path
+  for(let i=0;i<pts.length-1;i++){
+    const p0=pts[i],p1=pts[i+1];
+    const steps=4;
+    for(let s=0;s<=steps;s++){
+      const t=s/steps;
+      const mx=p0.x+(p1.x-p0.x)*t, my=p0.y+(p1.y-p0.y)*t;
+      const dx=p1.x-p0.x, dy=p1.y-p0.y, len=Math.sqrt(dx*dx+dy*dy)||1;
+      const nx=-dy/len, ny=dx/len;
+      [-55,55].forEach(side=>{
+        const tx=mx+nx*side, ty=my+ny*side;
+        if(tx<88||tx>W-6||ty<6||ty>H-6)return;
+        const seed=i*100+s*10+(side>0?1:0);
+        const r=11+rng(seed*3.7)*7;
+        ctx.fillStyle=rng(seed*1.3)<0.5?'#1B5E20':'#2E7D32';
+        ctx.beginPath();ctx.arc(tx,ty,r,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle=rng(seed*2.1)<0.5?'#256029':'#388E3C';
+        ctx.beginPath();ctx.arc(tx-2,ty-2,r*0.65,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#3E2005';ctx.fillRect(tx-2,ty+r-2,4,8);
+      });
+    }
+  }
+
+  // HQ zone shadow on left
+  const hqGrad=ctx.createLinearGradient(0,0,100,0);
+  hqGrad.addColorStop(0,'rgba(0,0,0,0.5)');hqGrad.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=hqGrad;ctx.fillRect(0,0,100,H);
+}
 function drawBackground(sx){
   if(gameMode===M.SURVIVOR)drawIslandBackground(sx);
+  else if(gameMode===M.TOWER)drawTDTopDownBackground();
   else drawCityBackground(sx);
 }
 function drawGround(sx){
+  if(gameMode===M.TOWER)return;
   if(gameMode===M.SURVIVOR){drawIslandGround(sx);return;}
   ctx.fillStyle='#181818';ctx.fillRect(0,GROUND_Y,W,H-GROUND_Y);
   ctx.fillStyle='#303030';ctx.fillRect(0,GROUND_Y,W,14);
@@ -907,33 +1205,42 @@ function drawGoalFlag(sx){
   ctx.fillStyle='#555';ctx.fillRect(fx-10,GROUND_Y-3,20,6);
 }
 
-// ─── Tower (TD mode) ─────────────────────────────────────────────────
+// ─── Tower (TD mode, top-down view) ──────────────────────────────────
 function drawTower(){
   if(gameMode!==M.TOWER)return;
-  const tx=10,tw=80,th=160,ty=GROUND_Y-th;
-  // Flash red when hit
+  const tw=82,th=160,tx=0,ty=H/2-th/2;
   const flash=towerFlash>0;
-  if(flash){towerFlash--;ctx.fillStyle=`rgba(255,0,0,${towerFlash/30*0.4})`;ctx.fillRect(0,0,W,H);}
-  // Tower body
-  ctx.fillStyle=flash&&towerFlash%6<3?'#8B1A1A':'#1a2340';
+  if(flash){towerFlash--;ctx.fillStyle=`rgba(255,0,0,${towerFlash/30*0.35})`;ctx.fillRect(0,0,W,H);}
+  // Outer wall (viewed from above)
+  ctx.fillStyle=flash&&towerFlash%6<3?'#5a1a1a':'#1a2340';
   ctx.fillRect(tx,ty,tw,th);
-  ctx.fillStyle='#2a3555';ctx.fillRect(tx,ty,tw,8);
-  // Battlements
-  for(let i=0;i<4;i++){ctx.fillStyle='#1a2340';ctx.fillRect(tx+i*20,ty-18,14,18);}
-  // Window
-  ctx.fillStyle='#FFD700';ctx.beginPath();ctx.arc(tx+tw/2,ty+50,14,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle='#FFF9C4';ctx.beginPath();ctx.arc(tx+tw/2,ty+50,10,0,Math.PI*2);ctx.fill();
-  // Dog Man HQ label
+  // Inner courtyard
+  ctx.fillStyle=flash?'#3a1010':'#253050';
+  ctx.fillRect(tx+10,ty+10,tw-10,th-20);
+  // Corner towers (4 small squares at corners)
+  const corners=[[tx,ty],[tx+tw-16,ty],[tx,ty+th-16],[tx+tw-16,ty+th-16]];
+  corners.forEach(([cx,cy])=>{
+    ctx.fillStyle=flash?'#6a1a1a':'#0f1830';
+    ctx.fillRect(cx,cy,16,16);
+    ctx.fillStyle='#2a3860';ctx.fillRect(cx+3,cy+3,10,10);
+  });
+  // Road entrance opening on right side of tower
+  ctx.fillStyle='#8B6914';ctx.fillRect(tx+tw-2,H/2-24,8,48);
+  // Star symbol
+  ctx.fillStyle='#FFD700';ctx.font='bold 18px sans-serif';ctx.textAlign='center';
+  ctx.fillText('★',tx+tw/2-5,ty+th/2-6);
+  // HQ label
   ctx.fillStyle='#fff';ctx.font='bold 9px Courier New';ctx.textAlign='center';
-  ctx.fillText('DOG MAN',tx+tw/2,ty+80);ctx.fillText('H.Q.',tx+tw/2,ty+92);
-  // HP bar
-  const barW=76,barH=12,bx=tx+2,by=ty-36;
+  ctx.fillText('DOG MAN',tx+tw/2-5,ty+th/2+8);
+  ctx.fillText('H.Q.',tx+tw/2-5,ty+th/2+20);
+  // HP bar above tower
+  const barW=74,barH=11,bx=tx+4,by=ty-20;
   ctx.fillStyle='#300';ctx.fillRect(bx,by,barW,barH);
   ctx.fillStyle=towerHP>2?'#4CAF50':towerHP>1?'#FF9800':'#F44336';
   ctx.fillRect(bx,by,barW*(towerHP/5),barH);
   ctx.strokeStyle='#FFD700';ctx.lineWidth=1;ctx.strokeRect(bx,by,barW,barH);
-  ctx.fillStyle='#fff';ctx.font='9px Courier New';ctx.textAlign='center';
-  ctx.fillText(`HQ: ${towerHP}/5 HP`,tx+tw/2,by+9);
+  ctx.fillStyle='#fff';ctx.font='bold 8px Courier New';ctx.textAlign='center';
+  ctx.fillText(`HQ: ${towerHP}/5`,tx+tw/2-5,by+8);
   ctx.textAlign='left';
 }
 
@@ -944,8 +1251,8 @@ function deployTDFighter(){
     return;
   }
   coinsCollected-=10;score-=100;
-  const fx0=player.x+PLAYER_W+8;
-  tdFighters.push({x:fx0,homeX:fx0,y:GROUND_Y-PLAYER_H,hp:3,maxHp:3,alive:true,dying:false,dyingTimer:0,walkDir:1,attackTimer:0,hurtTimer:0,walkCycle:0});
+  const fx0=player.x+PLAYER_W+8, fy0=player.y;
+  tdFighters.push({x:fx0,homeX:fx0,y:fy0,homeY:fy0,hp:3,maxHp:3,alive:true,dying:false,dyingTimer:0,walkDir:1,attackTimer:0,hurtTimer:0,walkCycle:0});
   floatingTexts.push({text:'-10 FIGHTER DEPLOYED!',wx:player.x+PLAYER_W/2,wy:player.y-30,timer:70,vy:-0.5});
 }
 
@@ -955,14 +1262,14 @@ function placeTDDefense(){
     return;
   }
   coinsCollected-=5;score-=50;
-  tdDefenses.push({x:player.x,y:GROUND_Y-PLAYER_H,hp:3,maxHp:3,hurtTimer:0});
+  tdDefenses.push({x:player.x,y:player.y,hp:3,maxHp:3,hurtTimer:0});
   floatingTexts.push({text:'-5 BARRIER PLACED!',wx:player.x+PLAYER_W/2,wy:player.y-30,timer:70,vy:-0.5});
 }
 
 function updateTDFighters(){
-  const AGGRO=150; // only chase enemies within this many pixels
-  const ATTACK_RANGE=PLAYER_W+8;       // 52px — must be close to strike
-  const HURT_RANGE=PLAYER_W+ENEMY_W*0.6; // 74px — enemy damages fighter while approaching
+  const AGGRO=200;
+  const ATTACK_RANGE=PLAYER_W+ENEMY_W*0.5;
+  const HURT_RANGE=PLAYER_W+ENEMY_W*0.8;
 
   tdFighters.forEach(f=>{
     if(f.dying){f.dyingTimer--;if(f.dyingTimer<=0)f.dying=false;return;}
@@ -971,28 +1278,28 @@ function updateTDFighters(){
     if(f.hurtTimer>0)f.hurtTimer--;
     if(f.attackTimer>0)f.attackTimer--;
 
-    // Find nearest enemy within aggro range
+    // Find nearest enemy within aggro range (2D distance)
     let nearest=null,minDist=Infinity;
     enemies.forEach(e=>{
       if(!e.alive||e.dying)return;
-      const d=Math.abs(e.x+ENEMY_W/2-(f.x+PLAYER_W/2));
+      const ddx=e.x+ENEMY_W/2-(f.x+PLAYER_W/2);
+      const ddy=e.y+ENEMY_H/2-(f.y+PLAYER_H/2);
+      const d=Math.sqrt(ddx*ddx+ddy*ddy);
       if(d<minDist&&d<AGGRO){minDist=d;nearest=e;}
     });
 
     if(nearest){
-      // Step toward enemy only if not already in attack range
       if(minDist>ATTACK_RANGE){
-        const dir=nearest.x>f.x?1:-1;
-        f.x+=dir*1.5;f.walkDir=dir;
+        const ddx=nearest.x+ENEMY_W/2-(f.x+PLAYER_W/2);
+        const ddy=nearest.y+ENEMY_H/2-(f.y+PLAYER_H/2);
+        const len=Math.sqrt(ddx*ddx+ddy*ddy)||1;
+        f.x+=ddx/len*1.5;f.y+=ddy/len*1.5;
+        f.walkDir=ddx>0?1:-1;
       }
-      // Kill when close enough (after damage window)
-      if(minDist<=ATTACK_RANGE&&f.attackTimer<=0){
-        killEnemy(nearest);f.attackTimer=55;
-      }
-      // Take damage from ANY enemy inside hurt range (not just target)
+      if(minDist<=ATTACK_RANGE&&f.attackTimer<=0){killEnemy(nearest);f.attackTimer=55;}
       if(f.hurtTimer<=0){
         const threatened=enemies.some(e=>e.alive&&!e.dying&&
-          Math.abs(e.x+ENEMY_W/2-(f.x+PLAYER_W/2))<HURT_RANGE);
+          Math.sqrt((e.x+ENEMY_W/2-(f.x+PLAYER_W/2))**2+(e.y+ENEMY_H/2-(f.y+PLAYER_H/2))**2)<HURT_RANGE);
         if(threatened){
           f.hp--;f.hurtTimer=28;
           if(f.hp<=0){
@@ -1002,14 +1309,14 @@ function updateTDFighters(){
         }
       }
     } else {
-      // No enemy in range — drift back to home position
-      const dx=f.homeX-f.x;
-      if(Math.abs(dx)>4){f.x+=dx>0?1.2:-1.2;f.walkDir=dx>0?1:-1;}
+      // Drift back to home position in 2D
+      const hdx=f.homeX-f.x, hdy=(f.homeY||f.y)-f.y;
+      const hd=Math.sqrt(hdx*hdx+hdy*hdy);
+      if(hd>4){f.x+=hdx/hd*1.2;f.y+=hdy/hd*1.2;f.walkDir=hdx>0?1:-1;}
     }
 
-    if(f.x<95)f.x=95;
-    if(f.x>W-PLAYER_W-10)f.x=W-PLAYER_W-10;
-    f.y=GROUND_Y-PLAYER_H;
+    f.x=Math.max(95,Math.min(W-PLAYER_W-10,f.x));
+    f.y=Math.max(5,Math.min(H-PLAYER_H-5,f.y));
   });
 }
 
@@ -1017,13 +1324,19 @@ function updateTDDefenses(){
   tdDefenses.forEach(d=>{
     if(d.hp<=0)return;
     if(d.hurtTimer>0)d.hurtTimer--;
+    const bcx=d.x+11, bcy=d.y+PLAYER_H/2;
     enemies.forEach(e=>{
       if(!e.alive||e.dying)return;
-      if(e.x<d.x+22&&e.x+ENEMY_W>d.x){
-        e.x=d.x+22;
+      const bdx=e.x+ENEMY_W/2-bcx, bdy=e.y+ENEMY_H/2-bcy;
+      const bdist=Math.sqrt(bdx*bdx+bdy*bdy);
+      if(bdist<34){
+        // Hard-clamp enemy to 34px away from barrier center
+        const nx=bdx/Math.max(bdist,0.1), ny=bdy/Math.max(bdist,0.1);
+        e.x=bcx+nx*34-ENEMY_W/2;
+        e.y=bcy+ny*34-ENEMY_H/2;
         if(d.hurtTimer<=0){
           d.hp--;d.hurtTimer=90;
-          if(d.hp<=0)floatingTexts.push({text:'BARRIER DESTROYED!',wx:d.x+10,wy:d.y-10,timer:70,vy:-0.4});
+          if(d.hp<=0)floatingTexts.push({text:'BARRIER DESTROYED!',wx:bcx,wy:d.y-10,timer:70,vy:-0.4});
         }
       }
     });
@@ -1043,6 +1356,24 @@ function drawTDFighters(){
       ctx.translate(fx+PLAYER_W/2,f.y+PLAYER_H/2);
       ctx.rotate((1-t)*Math.PI*2);ctx.scale(t,t);
       drawCharacter(selectedChar,-PLAYER_W/2,-PLAYER_H/2,false,false,0,0,false);
+    } else if(gameMode===M.TOWER){
+      if(f.hurtTimer>0&&Math.floor(f.hurtTimer/5)%2===1)ctx.globalAlpha=0.4;
+      // Top-down: green-tinted circle token
+      const r=PLAYER_W/2,fcx=fx+r,fcy=f.y+r;
+      ctx.save();ctx.beginPath();ctx.arc(fcx,fcy,r,0,Math.PI*2);ctx.clip();
+      const key=['dogman','lilpetey','80hd','molly','petey'][selectedChar]||'dogman';
+      if(IMGS_LOADED[key])ctx.drawImage(IMGS[key],fx,f.y,PLAYER_W,PLAYER_H);
+      else{ctx.fillStyle='#4CAF50';ctx.fill();}
+      ctx.restore();
+      ctx.strokeStyle='#4CAF50';ctx.lineWidth=2.5;
+      ctx.beginPath();ctx.arc(fcx,fcy,r,0,Math.PI*2);ctx.stroke();
+      ctx.globalAlpha=1;
+      const bw=30,bx2=fx+r-bw/2,by2=f.y-12;
+      ctx.fillStyle='#300';ctx.fillRect(bx2,by2,bw,5);
+      ctx.fillStyle=f.hp>1?'#4CAF50':'#F44336';ctx.fillRect(bx2,by2,bw*(f.hp/f.maxHp),5);
+      ctx.strokeStyle='#fff';ctx.lineWidth=0.5;ctx.strokeRect(bx2,by2,bw,5);
+      ctx.fillStyle='#4CAF50';ctx.font='bold 7px Courier New';ctx.textAlign='center';
+      ctx.fillText('AUTO',fcx,f.y-15);
     } else {
       if(f.hurtTimer>0&&Math.floor(f.hurtTimer/5)%2===1)ctx.globalAlpha=0.4;
       drawCharacter(selectedChar,fx,f.y,false,f.attackTimer>20,f.walkCycle,f.attackTimer>0?ATTACK_DUR:0,false);
@@ -1160,6 +1491,49 @@ function drawCharacter(charIdx,x,y,ducking,attacking,walkCycle,attackTimer,forSe
     else drawLilPeteyPixel(0,0,ducking,attacking,walkCycle);
     ctx.restore();
   }
+}
+
+// ─── Top-down TD sprites ──────────────────────────────────────────────
+function drawPlayerTopDown(charIdx,x,y){
+  const key=['dogman','lilpetey','80hd','molly','petey'][charIdx]||'dogman';
+  const r=PLAYER_W/2,cx2=x+r,cy2=y+r;
+  // Shadow
+  ctx.fillStyle='rgba(0,0,0,0.3)';
+  ctx.beginPath();ctx.ellipse(cx2+3,cy2+6,r,r*0.35,0,0,Math.PI*2);ctx.fill();
+  // Circle clipped sprite
+  ctx.save();
+  ctx.beginPath();ctx.arc(cx2,cy2,r,0,Math.PI*2);ctx.clip();
+  if(IMGS_LOADED[key])ctx.drawImage(IMGS[key],x,y,PLAYER_W,PLAYER_H);
+  else{ctx.fillStyle=CHARS[charIdx].color||'#1565C0';ctx.fill();}
+  ctx.restore();
+  // Gold border
+  const anim=player.attacking&&player.attackTimer>0;
+  ctx.strokeStyle=anim?'#FF5252':'#FFD700';ctx.lineWidth=anim?3:2;
+  ctx.beginPath();ctx.arc(cx2,cy2,r,0,Math.PI*2);ctx.stroke();
+  if(anim){
+    const t=player.attackTimer/ATTACK_DUR;
+    ctx.strokeStyle=`rgba(255,215,0,${t*0.8})`;ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(cx2,cy2,r+8+t*8,0,Math.PI*2);ctx.stroke();
+  }
+}
+function drawEnemyTopDown(e,ex,ey){
+  const cols={crunky:'#8B0000',bub:'#1a237e',piggy:'#880e4f'};
+  const r=ENEMY_W/2,cx2=ex+r,cy2=ey+r;
+  // Shadow
+  ctx.fillStyle='rgba(0,0,0,0.25)';
+  ctx.beginPath();ctx.ellipse(cx2+3,cy2+6,r,r*0.3,0,0,Math.PI*2);ctx.fill();
+  // Clipped sprite
+  ctx.save();
+  ctx.beginPath();ctx.arc(cx2,cy2,r,0,Math.PI*2);ctx.clip();
+  if(IMGS_LOADED[e.type])ctx.drawImage(IMGS[e.type],ex,ey,ENEMY_W,ENEMY_H);
+  else{ctx.fillStyle=cols[e.type]||'#333';ctx.fillRect(ex,ey,ENEMY_W,ENEMY_H);}
+  ctx.restore();
+  // Red border
+  ctx.strokeStyle=cols[e.type]||'#c00';ctx.lineWidth=2;
+  ctx.beginPath();ctx.arc(cx2,cy2,r,0,Math.PI*2);ctx.stroke();
+  // Arrow pointing left (toward tower)
+  ctx.fillStyle='rgba(255,60,60,0.75)';
+  ctx.beginPath();ctx.moveTo(ex+4,cy2);ctx.lineTo(ex+11,cy2-5);ctx.lineTo(ex+11,cy2+5);ctx.closePath();ctx.fill();
 }
 
 // ─── HUD ──────────────────────────────────────────────────────────────
@@ -1518,7 +1892,7 @@ function onKeyPress(k){
       }
     }
   } else if(state===S.PLAYING){
-    if(JUMP_KEYS.includes(k)&&player.onGround){player.vy=JUMP_VEL;player.onGround=false;}
+    if(JUMP_KEYS.includes(k)&&player.onGround&&gameMode!==M.TOWER){player.vy=JUMP_VEL;player.onGround=false;}
     if(ATTACK_KEYS.includes(k)){
       if(player.powerUp==='yarn'||player.powerUp==='bone'){fireProjectile();}
       else if(!player.attacking){player.attacking=true;player.attackTimer=ATTACK_DUR;score+=5;}
@@ -1547,9 +1921,11 @@ function updateUIHint(){
   const hints={
     [M.CLASSIC]:'SPACE/UP=Jump | DOWN=Duck | SHIFT=Attack/Throw | Pick up the Invincibility Star!',
     [M.SURVIVOR]:'Survive as long as you can! SPACE/UP=Jump | DOWN=Duck | SHIFT=Attack | Grab Stars!',
-    [M.TOWER]:'← →=Move | SPACE/UP=Jump | SHIFT=Attack | F=Fighter(10 coins) | B=Barrier(5 coins)',
+    [M.TOWER]:'TOP-DOWN: Arrow Keys/WASD=Move | SHIFT=Attack | F=Fighter(10 coins) | B=Barrier(5 coins)',
   };
   document.getElementById('ui').textContent=hints[gameMode]||hints[M.CLASSIC];
+  const jb=document.getElementById('mc-jump');
+  if(jb)jb.textContent=gameMode===M.TOWER?'UP':'JUMP';
 }
 
 // ─── Physics ──────────────────────────────────────────────────────────
@@ -1582,40 +1958,36 @@ function updatePlayer(){
   } else {laserTarget=null;}
   if(gameMode===M.SURVIVOR){survivorTimer++;}
 
-  player.ducking=isDown(DUCK_KEYS);
+  player.ducking=gameMode===M.TOWER?false:isDown(DUCK_KEYS);
   const ph=player.ducking?PLAYER_H*0.65:PLAYER_H;
 
-  player.vy+=GRAVITY; if(player.vy>18)player.vy=18;
-
   if(gameMode===M.TOWER){
-    let vx=0;
-    if(isDown(LEFT_KEYS)&&player.x>95)vx=-getLevelSpeed();
-    if(isDown(RIGHT_KEYS)&&player.x<W-PLAYER_W-10)vx=getLevelSpeed();
-    player.vx=vx;
-    player.x+=player.vx;
+    // Top-down: no gravity, free 4-directional movement
+    const spd=getLevelSpeed()*1.5;
+    let vx=0,vy=0;
+    if(isDown(LEFT_KEYS)&&player.x>95)vx=-spd;
+    if(isDown(RIGHT_KEYS)&&player.x<W-PLAYER_W-10)vx=spd;
+    if(isDown(JUMP_KEYS)&&player.y>5)vy=-spd;
+    if(isDown(DUCK_KEYS)&&player.y<H-PLAYER_H-5)vy=spd;
+    player.x+=vx;player.y+=vy;
+    player.onGround=true;
   } else {
+    player.vy+=GRAVITY; if(player.vy>18)player.vy=18;
     player.vx=player.ducking?getLevelSpeed()*0.7:getLevelSpeed();
     player.x+=player.vx;
     if(player.x<0)player.x=0;
-  }
-
-  const prevY=player.y;
-  player.y+=player.vy;
-  player.onGround=false;
-
-  if(player.y+ph>=GROUND_Y){player.y=GROUND_Y-ph;player.vy=0;player.onGround=true;}
-  if(gameMode===M.TOWER&&player.y<0){player.y=0;player.vy=0;}
-
-  if(gameMode!==M.TOWER){
+    const prevY=player.y;
+    player.y+=player.vy;
+    player.onGround=false;
+    if(player.y+ph>=GROUND_Y){player.y=GROUND_Y-ph;player.vy=0;player.onGround=true;}
     platforms.forEach(p=>{
       if(player.x+PLAYER_W<=p.x||player.x>=p.x+p.w)return;
       const prevBot=prevY+ph,curBot=player.y+ph;
       if(player.vy>=0&&prevBot<=p.y&&curBot>p.y){player.y=p.y-ph;player.vy=0;player.onGround=true;}
       if(player.vy<0&&prevY>=p.y+p.h&&player.y<p.y+p.h){player.y=p.y+p.h;player.vy=0;}
     });
+    if(player.y>H+60){saveScore(currentUser,score);state=S.DEAD;return;}
   }
-
-  if(player.y>H+60){saveScore(currentUser,score);state=S.DEAD;return;}
 
   if(gameMode===M.CLASSIC&&player.x+PLAYER_W/2>=getLevelGoalX()&&state===S.PLAYING){
     player.x=getLevelGoalX()-PLAYER_W/2;
@@ -1672,7 +2044,8 @@ function loop(){
     if(state===S.DYING){
       drawDyingPlayer(dx);
     } else {
-      drawCharacter(selectedChar,dx,player.y,player.ducking,player.attacking,player.walkCycle,player.attackTimer,false);
+      if(gameMode===M.TOWER){drawPlayerTopDown(selectedChar,dx,player.y);}
+      else{drawCharacter(selectedChar,dx,player.y,player.ducking,player.attacking,player.walkCycle,player.attackTimer,false);}
       if(player.powerUp==='star'  &&player.powerUpActive) drawStarEffect(dx,player.y);
       if(player.powerUp==='laser' &&player.powerUpActive) drawLaserBeam(dx,player.y);
       if(player.powerUp==='speech'&&player.powerUpActive) drawSpeechEffect(dx,player.y);
@@ -1693,9 +2066,123 @@ function loop(){
   requestAnimationFrame(loop);
 }
 
+document.getElementById('manuelBtn').addEventListener('click',()=>{
+  document.getElementById('manuelOverlay').style.display='block';
+});
+document.getElementById('manuelClose').addEventListener('click',()=>{
+  document.getElementById('manuelOverlay').style.display='none';
+});
+
+// ─── Mobile controls ──────────────────────────────────────────────────
+const gameWrap=document.getElementById('gameWrap');
+const mobileControls=document.getElementById('mobileControls');
+
+function bindMobileBtn(id,key){
+  const el=document.getElementById(id);
+  if(!el)return;
+  function dn(e){
+    e.preventDefault();e.stopPropagation();
+    if(!keys[key]){keys[key]=true;onKeyPress(key);}
+    el.classList.add('mc-pressed');
+  }
+  function up(e){
+    e.preventDefault();
+    keys[key]=false;
+    el.classList.remove('mc-pressed');
+  }
+  el.addEventListener('touchstart',dn,{passive:false});
+  el.addEventListener('touchend',up,{passive:false});
+  el.addEventListener('touchcancel',up,{passive:false});
+  // also support mouse so desktop can test
+  el.addEventListener('mousedown',dn);
+  el.addEventListener('mouseup',up);
+  el.addEventListener('mouseleave',up);
+}
+bindMobileBtn('mc-up','arrowup');
+bindMobileBtn('mc-down','arrowdown');
+bindMobileBtn('mc-left','arrowleft');
+bindMobileBtn('mc-right','arrowright');
+bindMobileBtn('mc-jump',' ');
+bindMobileBtn('mc-atk','shift');
+bindMobileBtn('mc-f','f');
+bindMobileBtn('mc-b','b');
+
+function rescale(){
+  const hasTouch='ontouchstart' in window||navigator.maxTouchPoints>0;
+  const isSmall=window.innerWidth<=820;
+  if(!hasTouch&&!isSmall){
+    gameWrap.style.transform='';gameWrap.style.marginBottom='';
+    mobileControls.style.display='none';
+    document.body.style.justifyContent='center';
+    return;
+  }
+  mobileControls.style.display='flex';
+  document.body.style.justifyContent='flex-start';
+  // Calc available height above controls
+  const ctrlH=mobileControls.offsetHeight||136;
+  const availW=window.innerWidth;
+  const availH=window.innerHeight-ctrlH-2;
+  const scale=Math.min(availW/808, availH/458);
+  gameWrap.style.transform=`scale(${scale})`;
+  gameWrap.style.transformOrigin='top center';
+  // Close the layout gap that transform leaves behind
+  gameWrap.style.marginBottom=`-${Math.round(458*(1-scale)+8*(1-scale))}px`;
+  // Update JUMP button label based on mode
+  const jb=document.getElementById('mc-jump');
+  if(jb)jb.textContent=gameMode===M.TOWER?'UP':'JUMP';
+}
+window.addEventListener('resize',rescale);
+window.addEventListener('orientationchange',()=>setTimeout(rescale,250));
+
+// Canvas taps for select/dead/win screens
+canvas.addEventListener('touchend',(e)=>{
+  e.preventDefault();
+  const t=e.changedTouches[0];
+  const rect=canvas.getBoundingClientRect();
+  const sx=800/rect.width, sy=450/rect.height;
+  handleCanvasTap((t.clientX-rect.left)*sx,(t.clientY-rect.top)*sy);
+},{passive:false});
+canvas.addEventListener('click',(e)=>{
+  const rect=canvas.getBoundingClientRect();
+  const sx=800/rect.width, sy=450/rect.height;
+  handleCanvasTap((e.clientX-rect.left)*sx,(e.clientY-rect.top)*sy);
+});
+
+function handleCanvasTap(cx,cy){
+  if(state===S.SELECT){
+    // Mode tabs (same layout as drawSelectScreen)
+    const tw=224,tgap=14,ty=62,th=76;
+    const tStart=(W-(3*tw+2*tgap))/2;
+    for(let i=0;i<3;i++){
+      const tx2=tStart+i*(tw+tgap);
+      if(cx>=tx2&&cx<=tx2+tw&&cy>=ty&&cy<=ty+th){
+        gameMode=i;
+        // Update JUMP button label
+        const jb=document.getElementById('mc-jump');
+        if(jb)jb.textContent=gameMode===M.TOWER?'UP':'JUMP';
+        return;
+      }
+    }
+    // Character cards (same layout as drawSelectScreen)
+    const cw=138,ch=178,cgap=10,ccy=146;
+    const cStart=(W-(CHARS.length*cw+(CHARS.length-1)*cgap))/2;
+    for(let i=0;i<CHARS.length;i++){
+      const cx2=cStart+i*(cw+cgap);
+      if(cx>=cx2&&cx<=cx2+cw&&cy>=ccy&&cy<=ccy+ch){
+        hoverChar=i;onKeyPress(' ');return;
+      }
+    }
+  } else if(state===S.DEAD||state===S.WIN){
+    onKeyPress(' ');
+  } else if(state===S.LEVEL_COMPLETE){
+    onKeyPress(' ');
+  }
+}
+
 fetchLeaderboard();
 fetchModePlays();
 loop();
+rescale();
 </script>
 </body>
 </html>
