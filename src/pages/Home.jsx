@@ -9,6 +9,13 @@ const GAMES = [
     emoji: '⚔️',
     path: '/ultimate-ttt',
   },
+  {
+    id: 'dog-man-dash',
+    title: 'Dog Man Dash',
+    description: 'Side-scrolling chaos with Dog Man and the gang.',
+    emoji: '🐾',
+    path: '/dog-man-dash',
+  },
 ]
 
 export default function Home() {
