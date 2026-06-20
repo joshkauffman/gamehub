@@ -1895,7 +1895,7 @@ function onKeyPress(k){
     if(JUMP_KEYS.includes(k)&&player.onGround&&gameMode!==M.TOWER){player.vy=JUMP_VEL;player.onGround=false;}
     if(ATTACK_KEYS.includes(k)){
       if(player.powerUp==='yarn'||player.powerUp==='bone'){fireProjectile();}
-      else if(!player.attacking){player.attacking=true;player.attackTimer=ATTACK_DUR;score+=5;}
+      else if(!player.attacking){player.attacking=true;player.attackTimer=ATTACK_DUR;}
     }
     if(gameMode===M.TOWER){
       if(k==='f')deployTDFighter();
@@ -1966,14 +1966,15 @@ function updatePlayer(){
     const spd=getLevelSpeed()*1.5;
     let vx=0,vy=0;
     if(isDown(LEFT_KEYS)&&player.x>95)vx=-spd;
-    if(isDown(RIGHT_KEYS)&&player.x<W-PLAYER_W-10)vx=spd;
+    if(isDown(RIGHT_KEYS)&&player.x<W-PLAYER_W-10)vx=spd*1.2;
     if(isDown(JUMP_KEYS)&&player.y>5)vy=-spd;
     if(isDown(DUCK_KEYS)&&player.y<H-PLAYER_H-5)vy=spd;
     player.x+=vx;player.y+=vy;
     player.onGround=true;
   } else {
     player.vy+=GRAVITY; if(player.vy>18)player.vy=18;
-    player.vx=player.ducking?getLevelSpeed()*0.7:getLevelSpeed();
+    const sprint=isDown(RIGHT_KEYS)?1.2:1.0;
+    player.vx=player.ducking?getLevelSpeed()*0.7*sprint:getLevelSpeed()*sprint;
     player.x+=player.vx;
     if(player.x<0)player.x=0;
     const prevY=player.y;
