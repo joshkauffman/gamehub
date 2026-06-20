@@ -30,6 +30,13 @@ const GAMES = [
     emoji: '🎲',
     path: '/dice-roller',
   },
+  {
+    id: 'hangman',
+    title: 'Hangman',
+    description: 'One player sets the word, the other guesses. Classic.',
+    emoji: '🪢',
+    path: '/hangman',
+  },
 ]
 
 export default function Home() {
