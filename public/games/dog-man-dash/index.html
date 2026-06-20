@@ -331,6 +331,7 @@ const TD_PATH=[
 // ─── State variables ──────────────────────────────────────────────────
 let selectedChar=0,hoverChar=0;
 let score=0,coinsCollected=0,levelScrollX=0;
+let devSpeedMult=1.0;
 let currentUser='',currentQuote='';
 let tick=0,hitPos={x:0,y:0};
 let selectError='',selectErrorTimer=0;
@@ -477,9 +478,9 @@ let platforms=[],coins=[],powerUpItems=[],enemies=[],floatingTexts=[],projectile
 let laserTarget=null;
 
 function getLevelSpeed(){
-  if(gameMode===M.CLASSIC) return LEVELS[currentLevel].speed;
-  if(gameMode===M.SURVIVOR) return AUTO_SPEED+Math.min(1.05,survivorTimer/3600)*0.42;
-  return AUTO_SPEED;
+  if(gameMode===M.CLASSIC) return LEVELS[currentLevel].speed*devSpeedMult;
+  if(gameMode===M.SURVIVOR) return (AUTO_SPEED+Math.min(1.05,survivorTimer/3600)*0.42)*devSpeedMult;
+  return AUTO_SPEED*devSpeedMult;
 }
 function getLevelGoalX(){return gameMode===M.CLASSIC?LEVELS[currentLevel].goalX:999999;}
 
@@ -1601,6 +1602,17 @@ function drawHUD(){
       ctx.fillText(`${labels[pu]} ready — press SHIFT to throw!`,10,H-8);
     }
   }
+  // DEV: speed display
+  const currentSpd=getLevelSpeed().toFixed(3);
+  const sprintSpd=(getLevelSpeed()*1.2).toFixed(3);
+  ctx.fillStyle='rgba(0,0,0,0.55)';ctx.fillRect(W-160,H-46,158,44);
+  ctx.strokeStyle='#FF5722';ctx.lineWidth=1;ctx.strokeRect(W-160,H-46,158,44);
+  ctx.fillStyle='#FF5722';ctx.font='bold 9px Courier New';ctx.textAlign='right';
+  ctx.fillText('DEV · SPEED',W-6,H-33);
+  ctx.fillStyle='#fff';ctx.font='bold 12px Courier New';
+  ctx.fillText(`base ${currentSpd}  sprint ${sprintSpd}`,W-6,H-18);
+  ctx.fillStyle='#FF5722';ctx.font='9px Courier New';
+  ctx.fillText(`mult ×${devSpeedMult.toFixed(3)}  [C] +5%`,W-6,H-6);
   ctx.textAlign='left';
 }
 
@@ -1901,6 +1913,7 @@ function onKeyPress(k){
       if(k==='f')deployTDFighter();
       if(k==='b')placeTDDefense();
     }
+    if(k==='c'){devSpeedMult=Math.round(devSpeedMult*1.05*1000)/1000;}
   } else if(state===S.LEVEL_COMPLETE){
     if(k===' '||k==='enter'){
       currentLevel++;
