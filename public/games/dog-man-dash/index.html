@@ -307,9 +307,9 @@ function isUnlocked(unlockKey){if(!unlockKey)return true;return!!getSaves()[unlo
 
 // ─── Classic level configs ────────────────────────────────────────────
 const LEVELS=[
-  {w:3800,speed:2.4,enemyChance:0.75,name:'THE CITY',    goalX:3620,unlocks:'char_80hd',unlocksName:'80-HD'},
-  {w:4600,speed:2.8,enemyChance:0.85,name:'THE DOCKS',   goalX:4430,unlocks:'char_molly',unlocksName:'MOLLY'},
-  {w:5400,speed:3.2,enemyChance:0.92,name:'THE HIDEOUT', goalX:5220},
+  {w:3800,speed:1.68,enemyChance:0.75,name:'THE CITY',    goalX:3620,unlocks:'char_80hd',unlocksName:'80-HD'},
+  {w:4600,speed:1.96,enemyChance:0.85,name:'THE DOCKS',   goalX:4430,unlocks:'char_molly',unlocksName:'MOLLY'},
+  {w:5400,speed:2.24,enemyChance:0.92,name:'THE HIDEOUT', goalX:5220},
 ];
 let currentLevel=0;
 
@@ -438,7 +438,7 @@ const PLAYER_W  =44,PLAYER_H=60;
 const ENEMY_W   =50,ENEMY_H=60;
 const GRAVITY   =0.55;
 const JUMP_VEL  =-13.5;
-const AUTO_SPEED=2.4;
+const AUTO_SPEED=1.68;
 const ATTACK_DUR=18;
 const SCREEN_X  =190;
 const PROJ_SPEED=10;
@@ -478,7 +478,7 @@ let laserTarget=null;
 
 function getLevelSpeed(){
   if(gameMode===M.CLASSIC) return LEVELS[currentLevel].speed;
-  if(gameMode===M.SURVIVOR) return AUTO_SPEED+Math.min(1.5,survivorTimer/3600)*0.6;
+  if(gameMode===M.SURVIVOR) return AUTO_SPEED+Math.min(1.05,survivorTimer/3600)*0.42;
   return AUTO_SPEED;
 }
 function getLevelGoalX(){return gameMode===M.CLASSIC?LEVELS[currentLevel].goalX:999999;}
