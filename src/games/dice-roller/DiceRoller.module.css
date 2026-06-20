@@ -1,0 +1,316 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.5rem 1rem 4rem;
+  background: var(--bg);
+}
+
+.topBar {
+  width: 100%;
+  max-width: 600px;
+  display: flex;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.backBtn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  padding: 0.25rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: color 0.15s;
+}
+
+.backBtn:hover {
+  color: var(--text);
+}
+
+.title {
+  font-size: clamp(1.3rem, 5vw, 1.75rem);
+  font-weight: 800;
+  text-align: center;
+  margin-bottom: 0.35rem;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.subtitle {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+/* ── Preset buttons ── */
+.presets {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.presetBtn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 0.65rem 1.4rem;
+  transition: all 0.15s;
+  letter-spacing: 0.02em;
+}
+
+.presetBtn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 16px rgba(108, 99, 255, 0.15);
+}
+
+.presetBtn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* ── Custom builder ── */
+.customPanel {
+  width: 100%;
+  max-width: 600px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.customTitle {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+}
+
+.diceRows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+}
+
+.diceRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.diceRow label {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  min-width: 1.5rem;
+  text-align: right;
+}
+
+.numInput {
+  width: 3.5rem;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 0.35rem 0.5rem;
+  text-align: center;
+  appearance: none;
+  -moz-appearance: textfield;
+}
+
+.numInput::-webkit-inner-spin-button,
+.numInput::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+}
+
+.numInput:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.diceLabel {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.sidesSelect {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 0.35rem 0.5rem;
+  min-width: 5rem;
+}
+
+.sidesSelect:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.removeBtn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: var(--radius-sm);
+  transition: color 0.15s, background 0.15s;
+  margin-left: auto;
+}
+
+.removeBtn:hover {
+  color: var(--accent2);
+  background: rgba(255, 101, 132, 0.1);
+}
+
+.addBtn {
+  background: none;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  padding: 0.4rem 0.85rem;
+  width: 100%;
+  transition: all 0.15s;
+}
+
+.addBtn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ── Roll button ── */
+.rollBtn {
+  width: 100%;
+  max-width: 600px;
+  padding: 0.9rem;
+  background: linear-gradient(135deg, var(--accent), #8b5cf6);
+  border: none;
+  border-radius: var(--radius);
+  color: #fff;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  transition: opacity 0.15s, transform 0.1s;
+  margin-bottom: 2rem;
+}
+
+.rollBtn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.rollBtn:active {
+  transform: translateY(0);
+}
+
+/* ── Results ── */
+.results {
+  width: 100%;
+  max-width: 600px;
+}
+
+.resultGroup {
+  margin-bottom: 1.5rem;
+}
+
+.groupLabel {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 0.75rem;
+}
+
+.diceGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+/* ── Die SVG wrappers ── */
+.dieWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.dieSvg {
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.4));
+  transition: transform 0.15s;
+}
+
+.dieSvg:hover {
+  transform: scale(1.08);
+}
+
+@keyframes rollIn {
+  0%   { transform: rotate(-20deg) scale(0.6); opacity: 0; }
+  60%  { transform: rotate(5deg) scale(1.08); opacity: 1; }
+  100% { transform: rotate(0deg) scale(1); opacity: 1; }
+}
+
+.rolling {
+  animation: rollIn 0.35s ease forwards;
+}
+
+/* ── Total ── */
+.totalBar {
+  width: 100%;
+  max-width: 600px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+}
+
+.totalLabel {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.totalValue {
+  font-size: 2rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.totalBreakdown {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  text-align: right;
+  margin-top: 0.25rem;
+}

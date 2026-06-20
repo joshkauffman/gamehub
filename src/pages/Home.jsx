@@ -23,6 +23,13 @@ const GAMES = [
     emoji: '🦴',
     path: '/poetry-for-neanderthals',
   },
+  {
+    id: 'dice-roller',
+    title: 'Dice Roller',
+    description: 'Roll any combination of dice. d4 through d100, built for D&D.',
+    emoji: '🎲',
+    path: '/dice-roller',
+  },
 ]
 
 export default function Home() {
