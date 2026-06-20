@@ -16,6 +16,13 @@ const GAMES = [
     emoji: '🐾',
     path: '/dog-man-dash',
   },
+  {
+    id: 'poetry-for-neanderthals',
+    title: 'Poetry for Neanderthals',
+    description: 'One syllable or bust. Digital card deck for the party game.',
+    emoji: '🦴',
+    path: '/poetry-for-neanderthals',
+  },
 ]
 
 export default function Home() {
