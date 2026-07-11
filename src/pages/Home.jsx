@@ -37,6 +37,27 @@ const GAMES = [
     emoji: '🪢',
     path: '/hangman',
   },
+  {
+    id: 'simpsons-tcg',
+    title: 'Simpsons TCG Pocket',
+    description: 'Pick a Simpson, build a deck, battle through Springfield.',
+    emoji: '🍩',
+    path: '/simpsons-tcg',
+  },
+  {
+    id: 'treehouse-tcg',
+    title: 'Treehouse of Horror TCG',
+    description: 'Battle Kang, Dracula Burns, Zombie Ned, and more Halloween nightmares.',
+    emoji: '🎃',
+    path: '/treehouse-tcg',
+  },
+  {
+    id: 'flappy-goose',
+    title: 'Flappy Goose',
+    description: 'A goose with a propeller hat. Tap to flap. Try not to honk into a pipe.',
+    emoji: '🪿',
+    path: '/flappy-goose',
+  },
 ]
 
 export default function Home() {

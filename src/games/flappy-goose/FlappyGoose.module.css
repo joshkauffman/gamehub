@@ -1,0 +1,34 @@
+.wrapper {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #1a3a5c;
+}
+
+.canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.homeLink {
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  color: rgba(255, 255, 255, 0.65);
+  text-decoration: none;
+  font-size: 14px;
+  font-family: Arial, sans-serif;
+  font-weight: bold;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 6px 12px;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+  z-index: 10;
+}
+.homeLink:hover {
+  color: #fff;
+  background: rgba(0, 0, 0, 0.6);
+}

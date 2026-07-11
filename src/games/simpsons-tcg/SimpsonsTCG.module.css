@@ -1,0 +1,511 @@
+/* ── Shared ─────────────────────────────────────────────────── */
+* { box-sizing: border-box; }
+
+.startBtn {
+  background: #FED90F;
+  color: #1a1a1a;
+  border: 4px solid #1a1a1a;
+  padding: 14px 44px;
+  font-size: 22px;
+  font-weight: 900;
+  font-family: 'Arial Black', Arial, sans-serif;
+  cursor: pointer;
+  border-radius: 8px;
+  letter-spacing: 2px;
+  box-shadow: 4px 4px 0 #1a1a1a;
+  transition: transform 0.1s, box-shadow 0.1s;
+  display: block;
+  margin: 0 auto 16px;
+}
+.startBtn:hover  { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 #1a1a1a; }
+.startBtn:active { transform: translate(2px,2px);   box-shadow: 2px 2px 0 #1a1a1a; }
+
+.backBtn {
+  background: transparent;
+  border: 2px solid #1a1a1a;
+  color: #1a1a1a;
+  padding: 8px 20px;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 6px;
+  margin-top: 16px;
+  display: block;
+}
+.backBtn:hover { background: rgba(0,0,0,0.08); }
+
+.backLink {
+  display: block;
+  color: #555;
+  text-decoration: none;
+  font-size: 15px;
+  margin-top: 8px;
+  text-align: center;
+}
+.backLink:hover { text-decoration: underline; color: #1a1a1a; }
+
+.hpBarWrap {
+  width: 100%;
+  height: 12px;
+  background: #ddd;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 2px solid #1a1a1a;
+}
+.hpBarFill {
+  height: 100%;
+  background: #4CAF50;
+  border-radius: 4px;
+  transition: width 0.3s ease, background 0.3s;
+}
+
+@keyframes shakeX {
+  0%,100% { transform: translateX(0); }
+  20%      { transform: translateX(-10px); }
+  40%      { transform: translateX(10px); }
+  60%      { transform: translateX(-7px); }
+  80%      { transform: translateX(7px); }
+}
+.shakeX { animation: shakeX 0.35s ease; }
+
+/* ── Title Screen ───────────────────────────────────────────── */
+.title {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #5DC8E8 0%, #87CEEB 45%, #FED90F 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Arial Black', Arial, sans-serif;
+}
+.titleInner { text-align: center; padding: 40px 20px; }
+
+.skyArt {
+  font-size: 32px;
+  margin-bottom: 20px;
+  letter-spacing: 6px;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+}
+.titleGame {
+  font-size: clamp(52px, 10vw, 88px);
+  font-weight: 900;
+  color: #FED90F;
+  text-shadow: 5px 5px 0 #1a1a1a, -2px -2px 0 #1a1a1a, 2px -2px 0 #1a1a1a, -2px 2px 0 #1a1a1a;
+  letter-spacing: 4px;
+  margin: 0;
+  line-height: 1;
+}
+.titleSub {
+  font-size: clamp(22px, 5vw, 38px);
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 3px 3px 0 #1a1a1a;
+  letter-spacing: 8px;
+  margin: 4px 0 20px;
+}
+.titleTagline {
+  color: #1a1a1a;
+  font-size: 17px;
+  margin-bottom: 40px;
+  opacity: 0.75;
+  font-style: italic;
+}
+
+/* ── Character Select ───────────────────────────────────────── */
+.charSelect {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #FED90F 0%, #fff9d6 100%);
+  padding: 32px 20px 40px;
+  font-family: Arial, sans-serif;
+}
+.csTitle {
+  text-align: center;
+  font-size: 32px;
+  font-weight: 900;
+  color: #1a1a1a;
+  font-family: 'Arial Black', Arial, sans-serif;
+  margin-bottom: 6px;
+}
+.csSubtitle {
+  text-align: center;
+  color: #555;
+  font-size: 15px;
+  margin-bottom: 28px;
+}
+.charGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  max-width: 1200px;
+  margin: 0 auto 24px;
+}
+.charCard {
+  background: #fff;
+  border: 4px solid #1a1a1a;
+  border-radius: 12px;
+  padding: 20px 16px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 4px 4px 0 #1a1a1a;
+  transition: transform 0.12s, box-shadow 0.12s;
+  text-align: center;
+  font-family: Arial, sans-serif;
+}
+.charCard:hover  { transform: translate(-3px,-3px); box-shadow: 7px 7px 0 #1a1a1a; }
+.charCard:active { transform: translate(1px,1px);   box-shadow: 3px 3px 0 #1a1a1a; }
+
+.charSpriteWrap {
+  height: 110px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.charName   { font-size: 18px; font-weight: 900; color: #1a1a1a; }
+.charTagline { font-size: 13px; color: #666; font-style: italic; }
+.charStats  { display: flex; gap: 12px; font-size: 13px; color: #333; margin-top: 4px; }
+.charDeck   { display: flex; flex-direction: column; gap: 4px; width: 100%; margin-top: 8px; }
+.miniCard   {
+  background: #FFF9D6;
+  border: 1.5px solid #d4a200;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 12px;
+  color: #333;
+  text-align: left;
+}
+
+/* ── Overworld ──────────────────────────────────────────────── */
+.overworld {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #87CEEB 0%, #c8e8c8 100%);
+  padding: 0 0 40px;
+  font-family: Arial, sans-serif;
+}
+.owHeader {
+  background: #1a1a1a;
+  color: #fff;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.owTitle {
+  font-size: 22px;
+  font-weight: 900;
+  font-family: 'Arial Black', Arial, sans-serif;
+  color: #FED90F;
+  white-space: nowrap;
+}
+.owPlayer   { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 200px; }
+.owCharName { font-weight: bold; font-size: 16px; }
+.statRow    { display: flex; gap: 16px; font-size: 14px; color: #ccc; flex-wrap: wrap; }
+.expBarWrap {
+  width: 100%;
+  max-width: 320px;
+  height: 8px;
+  background: #444;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.expBarFill {
+  height: 100%;
+  background: #2196F3;
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+.expLabel { font-size: 12px; color: #aaa; }
+
+.enemyList {
+  max-width: 800px;
+  margin: 24px auto;
+  padding: 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.enemyRow {
+  background: #fff;
+  border: 3px solid #1a1a1a;
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  box-shadow: 3px 3px 0 #1a1a1a;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.enemyRow:hover:not(.defeatedRow):not(.lockedRow) {
+  transform: translate(-2px,-2px);
+  box-shadow: 5px 5px 0 #1a1a1a;
+}
+.defeatedRow { opacity: 0.55; cursor: default; }
+.lockedRow   { opacity: 0.65; cursor: not-allowed; background: #f0f0f0; }
+.bossRow     { border-color: #c8a000; background: #fffbe6; box-shadow: 3px 3px 0 #c8a000; }
+
+.erEmoji {
+  font-size: 38px;
+  flex-shrink: 0;
+  width: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.erInfo  { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.erInfo strong { font-size: 17px; color: #1a1a1a; }
+.erInfo small  { font-size: 12px; color: #888; }
+.erInfo em     { font-size: 13px; color: #555; font-style: italic; }
+.erStats {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 13px;
+  color: #444;
+  text-align: right;
+  flex-shrink: 0;
+}
+.reqBadge     { background: #FF8C00; color: #fff; border-radius: 4px; padding: 2px 6px; font-size: 11px; font-weight: bold; }
+.defeatedBadge { background: #4CAF50; color: #fff; border-radius: 6px; padding: 4px 10px; font-size: 12px; font-weight: bold; flex-shrink: 0; }
+.fightBtn      { background: #E53935; color: #fff; border-radius: 6px; padding: 6px 12px; font-size: 14px; font-weight: bold; flex-shrink: 0; white-space: nowrap; }
+.lockedLabel   { color: #999; font-size: 13px; flex-shrink: 0; white-space: nowrap; }
+
+/* ── Battle ─────────────────────────────────────────────────── */
+.battle {
+  min-height: 100vh;
+  background: #0e0e1a;
+  display: flex;
+  flex-direction: column;
+  font-family: Arial, sans-serif;
+  color: #fff;
+}
+
+.enemyZone {
+  background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+  padding: 20px 24px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 3px solid #FED90F;
+}
+.enemyTopBar {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.enemyLabel   { font-size: 20px; font-weight: 900; color: #FED90F; font-family: 'Arial Black', Arial, sans-serif; }
+.enemyHpText  { font-size: 14px; color: #ccc; }
+.hpBarWrap    { width: 100%; max-width: 480px; }
+.enemyBigEmoji {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 160px;
+  filter: drop-shadow(0 4px 16px rgba(254,217,15,0.25));
+}
+.enemyFlavorText { font-size: 13px; color: #888; font-style: italic; max-width: 480px; text-align: center; }
+
+.battleLog {
+  padding: 12px 20px;
+  background: #111;
+  border-bottom: 2px solid #222;
+  min-height: 90px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.logLine {
+  font-size: 14px;
+  color: #e0e0e0;
+  padding: 2px 0;
+  transition: opacity 0.2s;
+}
+
+.playerBar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  background: #1a1a1a;
+  border-bottom: 2px solid #222;
+}
+.playerSprite { flex-shrink: 0; display: flex; align-items: center; }
+.playerName   { font-size: 14px; font-weight: bold; white-space: nowrap; flex-shrink: 0; }
+.lvBadge      { background: #FED90F; color: #1a1a1a; border-radius: 4px; padding: 2px 7px; font-size: 12px; font-weight: bold; flex-shrink: 0; }
+.playerHpText { font-size: 13px; color: #ccc; white-space: nowrap; flex-shrink: 0; }
+
+.phaseBanner {
+  background: #E53935;
+  color: #fff;
+  text-align: center;
+  font-size: 14px;
+  font-weight: bold;
+  padding: 6px;
+  letter-spacing: 1px;
+}
+
+.cardsRow {
+  display: flex;
+  gap: 10px;
+  padding: 14px 16px;
+  overflow-x: auto;
+  flex: 1;
+  align-items: stretch;
+}
+
+.cardBtn {
+  position: relative;
+  background: #fff9d6;
+  border: 3px solid #1a1a1a;
+  border-radius: 10px;
+  padding: 12px 10px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  min-width: 130px;
+  flex: 1;
+  max-width: 180px;
+  box-shadow: 3px 3px 0 #1a1a1a;
+  transition: transform 0.1s, box-shadow 0.1s;
+  text-align: center;
+  color: #1a1a1a;
+  font-family: Arial, sans-serif;
+}
+.cardBtn:hover:not(:disabled) { transform: translateY(-4px); box-shadow: 3px 7px 0 #1a1a1a; }
+.cardBtn:active:not(:disabled){ transform: translateY(0); box-shadow: 3px 3px 0 #1a1a1a; }
+.cardDisabled { opacity: 0.5; cursor: not-allowed; }
+.cardDisabled:hover { transform: none; }
+
+.cdOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+.cardEmoji { font-size: 32px; line-height: 1; }
+.cardName  { font-size: 13px; font-weight: 900; color: #1a1a1a; line-height: 1.2; }
+.cardDmg   { font-size: 14px; font-weight: bold; color: #E53935; }
+.cardDesc  { font-size: 11px; color: #666; font-style: italic; }
+
+/* ── Overlays (level up, game over, win) ────────────────────── */
+.overlay {
+  min-height: 100vh;
+  background: rgba(10,10,30,0.97);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: Arial, sans-serif;
+}
+
+.luBox, .goBox, .winBox {
+  background: #fff;
+  border: 5px solid #1a1a1a;
+  border-radius: 16px;
+  padding: 40px 48px;
+  text-align: center;
+  box-shadow: 8px 8px 0 #1a1a1a;
+  max-width: 440px;
+  width: 90%;
+}
+
+.luStars { font-size: 36px; letter-spacing: 8px; margin-bottom: 8px; }
+.luTitle { font-size: 42px; font-weight: 900; color: #FED90F; font-family: 'Arial Black', Arial, sans-serif; text-shadow: 3px 3px 0 #1a1a1a; margin: 0 0 8px; }
+.luLevel { font-size: 28px; font-weight: bold; color: #1a1a1a; margin-bottom: 16px; }
+.luStats { display: flex; flex-direction: column; gap: 8px; font-size: 16px; color: #333; margin-bottom: 28px; }
+
+.bigEmoji { font-size: 72px; margin-bottom: 12px; }
+.goTitle  { font-size: 38px; font-weight: 900; color: #E53935; font-family: 'Arial Black', Arial, sans-serif; margin: 0 0 12px; }
+.goBox p  { color: #444; font-size: 16px; margin-bottom: 6px; }
+.finalStat { font-weight: bold; color: #1a1a1a !important; }
+.goBox .startBtn { margin-top: 20px; }
+
+.winTitle { font-size: 30px; font-weight: 900; color: #FED90F; font-family: 'Arial Black', Arial, sans-serif; text-shadow: 2px 2px 0 #c8a000; margin: 0 0 10px; }
+.winSub   { color: #555; font-size: 15px; margin-bottom: 16px; }
+.winStats { display: flex; flex-direction: column; gap: 6px; font-size: 16px; color: #333; margin-bottom: 24px; font-weight: bold; }
+
+/* ── Locked / Unlockable char cards ──────────────────────────── */
+.charCardLocked {
+  background: #f5f5f5;
+  border-color: #aaa;
+  box-shadow: 4px 4px 0 #aaa;
+  cursor: not-allowed;
+}
+.charCardLocked:hover { transform: none; box-shadow: 4px 4px 0 #aaa; }
+
+.charCardUnlocked {
+  border-color: #8B5CF6;
+  box-shadow: 4px 4px 0 #8B5CF6;
+  background: #f9f5ff;
+}
+.charCardUnlocked:hover  { box-shadow: 7px 7px 0 #8B5CF6; }
+
+.lockHint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  color: #888;
+  font-size: 13px;
+}
+.lockIcon { font-size: 28px; }
+
+/* ── Unlock Screen ───────────────────────────────────────────── */
+.unlockBox {
+  background: #fff;
+  border: 5px solid #8B5CF6;
+  border-radius: 16px;
+  padding: 36px 44px;
+  text-align: center;
+  box-shadow: 8px 8px 0 #8B5CF6;
+  max-width: 440px;
+  width: 90%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+@keyframes unlockPop {
+  0%   { transform: scale(0.7); opacity: 0; }
+  70%  { transform: scale(1.08); }
+  100% { transform: scale(1);   opacity: 1; }
+}
+.unlockBox { animation: unlockPop 0.45s cubic-bezier(0.34,1.56,0.64,1) both; }
+
+.unlockStars  { font-size: 30px; letter-spacing: 6px; }
+.unlockBanner {
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: #8B5CF6;
+  font-family: 'Arial Black', Arial, sans-serif;
+  text-transform: uppercase;
+}
+.unlockSpriteWrap {
+  height: 155px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  filter: drop-shadow(0 4px 12px rgba(139,92,246,0.35));
+}
+.unlockName    { font-size: 28px; font-weight: 900; color: #1a1a1a; margin: 0; font-family: 'Arial Black', Arial, sans-serif; }
+.unlockTagline { font-size: 13px; color: #666; font-style: italic; }
+.unlockStats   { display: flex; gap: 16px; font-size: 14px; color: #333; }
+.unlockCards   { display: flex; flex-direction: column; gap: 4px; width: 100%; }
+.unlockCard    { background: #f3eeff; border: 1.5px solid #8B5CF6; border-radius: 6px; padding: 4px 8px; font-size: 12px; color: #333; text-align: left; }
+.unlockHint    { font-size: 13px; color: #8B5CF6; font-weight: bold; margin-top: 4px; }
