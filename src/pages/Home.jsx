@@ -52,6 +52,13 @@ const GAMES = [
     path: '/treehouse-tcg',
   },
   {
+    id: 'snake-clash',
+    title: 'Snake Clash',
+    description: 'Slither through the ocean, eat fruit, grow massive, and outlast 8 rivals.',
+    emoji: '🐍',
+    path: '/snake-clash',
+  },
+  {
     id: 'flappy-goose',
     title: 'Flappy Goose',
     description: 'A goose with a propeller hat. Tap to flap. Try not to honk into a pipe.',

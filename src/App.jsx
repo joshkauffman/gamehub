@@ -8,6 +8,7 @@ import Hangman from './games/hangman/Hangman.jsx'
 import SimpsonsTCG from './games/simpsons-tcg/SimpsonsTCG.jsx'
 import TreehouseTCG from './games/treehouse-tcg/TreehouseTCG.jsx'
 import FlappyGoose from './games/flappy-goose/FlappyGoose.jsx'
+import SnakeClash from './games/snake-clash/SnakeClash.jsx'
 
 export default function App() {
   return (
@@ -21,6 +22,7 @@ export default function App() {
       <Route path="/simpsons-tcg" element={<SimpsonsTCG />} />
       <Route path="/treehouse-tcg" element={<TreehouseTCG />} />
       <Route path="/flappy-goose" element={<FlappyGoose />} />
+      <Route path="/snake-clash" element={<SnakeClash />} />
     </Routes>
   )
 }
