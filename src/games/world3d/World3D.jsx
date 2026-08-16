@@ -1,7 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import * as THREE from 'three'
+import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
+import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js'
 import styles from './World3D.module.css'
+
+function roundedBox(w, h, d) {
+  const radius = Math.min(0.16, Math.min(w, h, d) * 0.14)
+  return new RoundedBoxGeometry(w, h, d, 2, radius)
+}
 
 // ── Constants ─────────────────────────────────────────────────────────
 const GRAVITY        = 16
@@ -148,7 +158,7 @@ function makeTree(x, z) {
 }
 function makeStone(x, z, rot) {
   const stone = new THREE.Mesh(
-    new THREE.BoxGeometry(0.7, 1.3, 0.5),
+    roundedBox(0.7, 1.3, 0.5),
     new THREE.MeshStandardMaterial({ color: 0x6b6b73, roughness: 1 })
   )
   stone.position.set(x, 0.55, z)
@@ -176,7 +186,7 @@ function makeColumn(x, z, height = 4, tilt = 0) {
   shaft.castShadow = true
   g.add(shaft)
   const cap = new THREE.Mesh(
-    new THREE.BoxGeometry(1.3, 0.3, 1.3),
+    roundedBox(1.3, 0.3, 1.3),
     new THREE.MeshStandardMaterial({ color: 0x8f8264, roughness: 1 })
   )
   cap.position.y = height + 0.15
@@ -230,7 +240,18 @@ export default function World3D() {
     renderer.setSize(mount.clientWidth, mount.clientHeight)
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     renderer.shadowMap.enabled = true
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap
+    renderer.toneMapping = THREE.ACESFilmicToneMapping
+    renderer.toneMappingExposure = 1.15
     mount.appendChild(renderer.domElement)
+
+    const composer = new EffectComposer(renderer)
+    composer.addPass(new RenderPass(scene, camera))
+    const bloomPass = new UnrealBloomPass(
+      new THREE.Vector2(mount.clientWidth, mount.clientHeight), 0.65, 0.5, 0.82
+    )
+    composer.addPass(bloomPass)
+    composer.addPass(new OutputPass())
 
     // Lights — warm dusk sun + cool fill
     scene.add(new THREE.HemisphereLight(0xffe6c0, 0x445577, 1.0))
@@ -272,8 +293,8 @@ export default function World3D() {
     const allPlatformDefs = [...MEADOW_PLATFORMS, ...RUINS_PLATFORMS]
     const platformMeshes = allPlatformDefs.map(p => {
       const mesh = new THREE.Mesh(
-        new THREE.BoxGeometry(p.w, p.h, p.d),
-        new THREE.MeshStandardMaterial({ color: p.color, roughness: 0.9, metalness: 0 })
+        roundedBox(p.w, p.h, p.d),
+        new THREE.MeshStandardMaterial({ color: p.color, roughness: 0.75, metalness: 0.05 })
       )
       mesh.position.set(p.x, p.y, p.z)
       mesh.castShadow = true
@@ -382,7 +403,7 @@ export default function World3D() {
     const orbGeo = new THREE.SphereGeometry(0.22, 12, 10)
     const orbs = ALL_ORBS.map((o, i) => {
       const mat = new THREE.MeshStandardMaterial({
-        color: 0xfff2c0, emissive: 0xffdd88, emissiveIntensity: 1.6, roughness: 0.4, metalness: 0,
+        color: 0xfff2c0, emissive: 0xffdd88, emissiveIntensity: 1.1, roughness: 0.4, metalness: 0,
       })
       const mesh = new THREE.Mesh(orbGeo, mat)
       mesh.position.set(o.x, o.y, o.z)
@@ -622,7 +643,7 @@ export default function World3D() {
 
       setEnergyPct(energy / ENERGY_MAX)
 
-      renderer.render(scene, camera)
+      composer.render()
     }
     tick()
 
@@ -630,6 +651,8 @@ export default function World3D() {
       camera.aspect = mount.clientWidth / mount.clientHeight
       camera.updateProjectionMatrix()
       renderer.setSize(mount.clientWidth, mount.clientHeight)
+      composer.setSize(mount.clientWidth, mount.clientHeight)
+      bloomPass.setSize(mount.clientWidth, mount.clientHeight)
     }
     window.addEventListener('resize', onResize)
 
