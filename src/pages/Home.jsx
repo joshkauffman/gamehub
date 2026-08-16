@@ -67,9 +67,9 @@ const GAMES = [
   },
   {
     id: 'world3d',
-    title: '3D World',
-    description: 'A starter 3D playground. Walk, jump, and explore a flat world with platforms.',
-    emoji: '🧊',
+    title: 'Skylight',
+    description: 'A dusky 3D world in third person. Gather glowing light to fuel flight and soar between floating islands.',
+    emoji: '✨',
     path: '/world3d',
   },
 ]
