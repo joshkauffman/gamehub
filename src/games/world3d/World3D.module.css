@@ -1,0 +1,88 @@
+.wrapper {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #8fc7e8;
+}
+
+.canvasWrap {
+  position: absolute;
+  inset: 0;
+  cursor: crosshair;
+}
+
+.canvasWrap canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.crosshair {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+  z-index: 5;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(15, 15, 19, 0.35);
+  color: #fff;
+  font-family: Arial, sans-serif;
+  text-align: center;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.title {
+  font-size: 32px;
+  margin: 0;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.hint {
+  font-size: 16px;
+  font-weight: bold;
+  margin: 0;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+.controls {
+  font-size: 13px;
+  opacity: 0.85;
+  margin: 0;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+.homeLink {
+  position: fixed;
+  top: 16px;
+  left: 10px;
+  color: rgba(255, 255, 255, 0.85);
+  text-decoration: none;
+  font-size: 13px;
+  font-family: Arial, sans-serif;
+  font-weight: bold;
+  background: rgba(0, 0, 0, 0.45);
+  padding: 5px 10px;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+  z-index: 10;
+}
+.homeLink:hover {
+  color: #fff;
+  background: rgba(0, 0, 0, 0.65);
+}

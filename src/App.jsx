@@ -9,6 +9,7 @@ import SimpsonsTCG from './games/simpsons-tcg/SimpsonsTCG.jsx'
 import TreehouseTCG from './games/treehouse-tcg/TreehouseTCG.jsx'
 import FlappyGoose from './games/flappy-goose/FlappyGoose.jsx'
 import SnakeClash from './games/snake-clash/SnakeClash.jsx'
+import World3D from './games/world3d/World3D.jsx'
 
 export default function App() {
   return (
@@ -23,6 +24,7 @@ export default function App() {
       <Route path="/treehouse-tcg" element={<TreehouseTCG />} />
       <Route path="/flappy-goose" element={<FlappyGoose />} />
       <Route path="/snake-clash" element={<SnakeClash />} />
+      <Route path="/world3d" element={<World3D />} />
     </Routes>
   )
 }

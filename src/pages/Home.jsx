@@ -65,6 +65,13 @@ const GAMES = [
     emoji: '🪿',
     path: '/flappy-goose',
   },
+  {
+    id: 'world3d',
+    title: '3D World',
+    description: 'A starter 3D playground. Walk, jump, and explore a flat world with platforms.',
+    emoji: '🧊',
+    path: '/world3d',
+  },
 ]
 
 export default function Home() {
