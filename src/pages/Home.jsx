@@ -68,7 +68,7 @@ const GAMES = [
   {
     id: 'world3d',
     title: 'Skylight',
-    description: 'A dusky 3D world in third person. Gather glowing light to fuel flight and soar between floating islands.',
+    description: 'A dusky first-person world. Gather light to fuel flight, then free the spirits you find to unlock new maps to explore.',
     emoji: '✨',
     path: '/world3d',
   },
