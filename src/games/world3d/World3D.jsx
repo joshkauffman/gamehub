@@ -10,13 +10,9 @@ const MAX_RISE_SPEED  = 8
 const MAX_FALL_SPEED  = -11
 const JUMP_SPEED      = 7
 const MOVE_SPEED      = 6
-const TURN_LERP       = 10
 const PLAYER_RADIUS   = 0.4
 const GROUND_SIZE     = 200
-
-const CAM_DISTANCE = 6.5
-const CAM_HEIGHT   = 2.2
-const CAM_LERP     = 6
+const EYE_HEIGHT      = 1.7
 
 const ENERGY_MAX      = 100
 const ENERGY_START    = 45
@@ -176,17 +172,20 @@ export default function World3D() {
     const fireflies = new THREE.Points(fireflyGeo, fireflyMat)
     scene.add(fireflies)
 
-    // Player character — simple robed figure
+    // Player character — simple robed figure, hidden in first person but
+    // still tracked so its light halo follows along.
     const playerGroup = new THREE.Group()
     const robeMat = new THREE.MeshStandardMaterial({ color: 0x4a3d72, roughness: 0.8, metalness: 0 })
     const robe = new THREE.Mesh(new THREE.ConeGeometry(0.42, 1.25, 8), robeMat)
     robe.position.y = 0.9
     robe.castShadow = true
+    robe.visible = false
     playerGroup.add(robe)
     const headMat = new THREE.MeshStandardMaterial({ color: 0xe8c9a0, roughness: 0.7, metalness: 0 })
     const head = new THREE.Mesh(new THREE.SphereGeometry(0.26, 12, 10), headMat)
     head.position.y = 1.65
     head.castShadow = true
+    head.visible = false
     playerGroup.add(head)
     const capeMat = new THREE.MeshStandardMaterial({
       color: 0xd97757, side: THREE.DoubleSide, emissive: 0x4a2a1c, emissiveIntensity: 0.15, roughness: 0.8, metalness: 0,
@@ -194,6 +193,7 @@ export default function World3D() {
     const cape = new THREE.Mesh(new THREE.PlaneGeometry(0.85, 1.15), capeMat)
     cape.position.set(0, 1.0, 0.32)
     cape.rotation.x = 0.25
+    cape.visible = false
     playerGroup.add(cape)
     scene.add(playerGroup)
 
@@ -221,14 +221,15 @@ export default function World3D() {
     // Player physics state
     const player = { x: 0, y: 0, z: 16 }
     const velocity = { y: 0 }
-    let camYaw = 3.0
-    let camPitch = 0.35
-    let facing = camYaw
+    let yaw = 0.15
+    let pitch = -0.05
     let onGround = true
     let energy = ENERGY_START
     let totalCollected = 0
 
-    camera.position.set(player.x, player.y + 3, player.z + CAM_DISTANCE)
+    camera.rotation.order = 'YXZ'
+    camera.position.set(player.x, player.y + EYE_HEIGHT, player.z)
+    camera.rotation.set(pitch, yaw, 0)
 
     // Input
     const keys = new Set()
@@ -243,9 +244,9 @@ export default function World3D() {
     let audioCtx = null
     function onMouseMove(e) {
       if (document.pointerLockElement !== renderer.domElement) return
-      camYaw -= e.movementX * 0.0025
-      camPitch -= e.movementY * 0.002
-      camPitch = Math.max(-0.15, Math.min(1.1, camPitch))
+      yaw -= e.movementX * 0.0022
+      pitch -= e.movementY * 0.0022
+      pitch = Math.max(-Math.PI / 2 + 0.05, Math.min(Math.PI / 2 - 0.05, pitch))
     }
     document.addEventListener('mousemove', onMouseMove)
 
@@ -290,20 +291,16 @@ export default function World3D() {
       const t = clock.elapsedTime
       const active = document.pointerLockElement === renderer.domElement
 
-      let flying = false
       if (active) {
-        const forward = { x: -Math.sin(camYaw), z: -Math.cos(camYaw) }
-        const right = { x: Math.cos(camYaw), z: -Math.sin(camYaw) }
+        const forward = { x: -Math.sin(yaw), z: -Math.cos(yaw) }
+        const right = { x: Math.cos(yaw), z: -Math.sin(yaw) }
         let mx = 0, mz = 0
         if (keys.has('KeyW') || keys.has('ArrowUp'))    { mx += forward.x; mz += forward.z }
         if (keys.has('KeyS') || keys.has('ArrowDown'))  { mx -= forward.x; mz -= forward.z }
         if (keys.has('KeyD') || keys.has('ArrowRight')) { mx += right.x;   mz += right.z }
         if (keys.has('KeyA') || keys.has('ArrowLeft'))  { mx -= right.x;   mz -= right.z }
         const len = Math.hypot(mx, mz)
-        if (len > 0) {
-          mx /= len; mz /= len
-          facing = Math.atan2(mx, mz) + Math.PI
-        }
+        if (len > 0) { mx /= len; mz /= len }
 
         const dx = mx * MOVE_SPEED * dt
         const dz = mz * MOVE_SPEED * dt
@@ -316,7 +313,6 @@ export default function World3D() {
           velocity.y = JUMP_SPEED
           onGround = false
         } else if (keys.has('Space') && !onGround && energy > 0) {
-          flying = true
           velocity.y += FLY_ACCEL * dt
           velocity.y = Math.min(velocity.y, MAX_RISE_SPEED)
           energy = Math.max(0, energy - ENERGY_DRAIN * dt)
@@ -336,27 +332,12 @@ export default function World3D() {
         onGround = false
       }
 
-      // Smoothly rotate character to face movement direction
-      let da = facing - playerGroup.rotation.y
-      da = ((da + Math.PI) % (Math.PI * 2)) - Math.PI
-      playerGroup.rotation.y += da * Math.min(1, TURN_LERP * dt)
       playerGroup.position.set(player.x, player.y, player.z)
-
-      // Cape flutters more while flying/falling
-      const capeTarget = flying ? -0.35 : (onGround ? 0.25 : 0.05)
-      cape.rotation.x += (capeTarget - cape.rotation.x) * Math.min(1, 6 * dt)
+      playerGroup.rotation.y = yaw
       playerGlow.intensity = 0.5 + (energy / ENERGY_MAX) * 0.9
 
-      // Orbit camera around the player, damped
-      const desiredX = player.x - Math.sin(camYaw) * Math.cos(camPitch) * CAM_DISTANCE
-      const desiredZ = player.z - Math.cos(camYaw) * Math.cos(camPitch) * CAM_DISTANCE
-      const desiredY = player.y + CAM_HEIGHT + Math.sin(camPitch) * CAM_DISTANCE
-      const lerpAmt = Math.min(1, CAM_LERP * dt)
-      camera.position.x += (desiredX - camera.position.x) * lerpAmt
-      camera.position.y += (desiredY - camera.position.y) * lerpAmt
-      camera.position.z += (desiredZ - camera.position.z) * lerpAmt
-      if (camera.position.y < 0.4) camera.position.y = 0.4
-      camera.lookAt(player.x, player.y + 1.1, player.z)
+      camera.position.set(player.x, player.y + EYE_HEIGHT, player.z)
+      camera.rotation.set(pitch, yaw, 0)
 
       // Animate orbs + collection
       for (const orb of orbs) {
@@ -427,12 +408,13 @@ export default function World3D() {
       {allFound && (
         <div className={styles.winBanner}>You gathered all the Light ✨</div>
       )}
+      {locked && <div className={styles.crosshair} />}
       {!locked && (
         <div className={styles.overlay}>
           <h1 className={styles.title}>Skylight</h1>
           <p className={styles.hint}>Click to begin</p>
           <p className={styles.controls}>
-            WASD to walk · Mouse to orbit the view · Space to jump, then hold Space to fly on gathered light · Esc to release
+            WASD to walk · Mouse to look around · Space to jump, then hold Space to fly on gathered light · Esc to release
           </p>
         </div>
       )}
