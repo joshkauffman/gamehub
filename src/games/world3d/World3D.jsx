@@ -197,6 +197,138 @@ function makeColumn(x, z, height = 4, tilt = 0) {
   return g
 }
 
+function tintColor(hex, hueShift, satShift, lightShift) {
+  const c = new THREE.Color(hex)
+  c.offsetHSL(hueShift, satShift, lightShift)
+  return c
+}
+
+// A "floating island" platform: a rock body capped with a lighter crust,
+// a glowing rim trim, dangling root tendrils underneath, and (on larger
+// islands) a few crystal shards — instead of a single flat-colored box.
+function makePlatformIsland(p) {
+  const group = new THREE.Group()
+  const baseColor = new THREE.Color(p.color)
+
+  const body = new THREE.Mesh(
+    roundedBox(p.w, p.h, p.d),
+    new THREE.MeshStandardMaterial({ color: baseColor, roughness: 0.85, metalness: 0.05 })
+  )
+  body.castShadow = true
+  body.receiveShadow = true
+  group.add(body)
+
+  const capColor = tintColor(p.color, 0, 0.08, 0.16)
+  const capH = Math.min(0.3, Math.max(0.12, p.h * 0.16))
+  const cap = new THREE.Mesh(
+    roundedBox(p.w * 0.97, capH, p.d * 0.97),
+    new THREE.MeshStandardMaterial({ color: capColor, roughness: 0.6 })
+  )
+  cap.position.y = p.h / 2 + capH / 2 - 0.03
+  cap.castShadow = true
+  cap.receiveShadow = true
+  group.add(cap)
+
+  const trim = new THREE.LineSegments(
+    new THREE.EdgesGeometry(new THREE.BoxGeometry(p.w * 0.985, 0.01, p.d * 0.985)),
+    new THREE.LineBasicMaterial({ color: tintColor(p.color, 0, 0.2, 0.28), transparent: true, opacity: 0.85 })
+  )
+  trim.position.y = p.h / 2 + capH - 0.02
+  group.add(trim)
+
+  const rootColor = tintColor(p.color, 0, -0.05, -0.24)
+  const rootMat = new THREE.MeshStandardMaterial({ color: rootColor, roughness: 1 })
+  const rootCount = 3 + Math.round(Math.min(p.w, p.d))
+  for (let i = 0; i < rootCount; i++) {
+    const rl = 0.5 + Math.random() * (0.4 + p.h * 0.2)
+    const root = new THREE.Mesh(new THREE.ConeGeometry(0.16 + Math.random() * 0.18, rl, 6), rootMat)
+    root.position.set(
+      (Math.random() - 0.5) * (p.w * 0.75),
+      -p.h / 2 - rl / 2 + 0.2,
+      (Math.random() - 0.5) * (p.d * 0.75)
+    )
+    root.rotation.x = (Math.random() - 0.5) * 0.25
+    root.rotation.z = (Math.random() - 0.5) * 0.25
+    root.castShadow = true
+    group.add(root)
+  }
+
+  if (Math.min(p.w, p.d) >= 3) {
+    const crystalColor = tintColor(p.color, 0, 0.25, 0.32)
+    const crystalMat = new THREE.MeshStandardMaterial({
+      color: crystalColor, emissive: crystalColor, emissiveIntensity: 0.55, roughness: 0.3,
+    })
+    const corners = [
+      [p.w / 2 - 0.45, p.d / 2 - 0.45], [-p.w / 2 + 0.45, p.d / 2 - 0.45],
+      [p.w / 2 - 0.45, -p.d / 2 + 0.45], [-p.w / 2 + 0.45, -p.d / 2 + 0.45],
+    ]
+    corners.forEach(([cx, cz]) => {
+      if (Math.random() < 0.45) return
+      const crystal = new THREE.Mesh(new THREE.OctahedronGeometry(0.2 + Math.random() * 0.14), crystalMat)
+      crystal.position.set(cx, p.h / 2 + capH + 0.28, cz)
+      crystal.rotation.y = Math.random() * Math.PI
+      crystal.castShadow = true
+      group.add(crystal)
+    })
+  }
+
+  group.position.set(p.x, p.y, p.z)
+  return group
+}
+
+// An elder spirit: a tall hooded, cloaked figure with a fanned cape and a
+// halo of light — echoing the elder statues of Sky: Children of the Light,
+// scaled well above the player rather than a small robed sprite.
+function makeSpiritFigure(color) {
+  const g = new THREE.Group()
+  const mat = (emissiveIntensity = 0.4, roughness = 0.55) => new THREE.MeshStandardMaterial({
+    color, emissive: color, emissiveIntensity, roughness, metalness: 0.05,
+  })
+
+  const cloak = new THREE.Mesh(new THREE.ConeGeometry(1.05, 2.6, 16, 1, true), mat(0.3, 0.6))
+  cloak.position.y = 1.3
+  cloak.castShadow = true
+  g.add(cloak)
+
+  const hem = new THREE.Mesh(new THREE.TorusGeometry(1.05, 0.16, 10, 24), mat(0.25, 0.7))
+  hem.position.y = 0.05
+  hem.rotation.x = Math.PI / 2
+  hem.castShadow = true
+  g.add(hem)
+
+  const cape = new THREE.Mesh(
+    new THREE.TorusGeometry(1.5, 0.06, 8, 24, Math.PI * 1.15),
+    mat(0.35, 0.5)
+  )
+  cape.position.set(0, 2.15, -0.1)
+  cape.rotation.set(Math.PI / 2.4, 0, Math.PI / 2 - (Math.PI * 1.15) / 2)
+  cape.castShadow = true
+  g.add(cape)
+
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.42, 16, 14), mat(0.55, 0.45))
+  head.position.y = 2.75
+  g.add(head)
+
+  const hood = new THREE.Mesh(new THREE.ConeGeometry(0.5, 0.7, 16), mat(0.3, 0.55))
+  hood.position.y = 3.15
+  g.add(hood)
+
+  const halo = new THREE.Mesh(
+    new THREE.TorusGeometry(0.62, 0.05, 10, 28),
+    new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 1.1, roughness: 0.3 })
+  )
+  halo.position.y = 3.55
+  halo.rotation.x = Math.PI / 2.3
+  g.add(halo)
+  g.userData.halo = halo
+
+  const glow = new THREE.PointLight(color, 1.8, 11)
+  glow.position.y = 2.2
+  g.add(glow)
+
+  return g
+}
+
 // ── Component ────────────────────────────────────────────────────────
 export default function World3D() {
   const mountRef = useRef(null)
@@ -289,17 +421,11 @@ export default function World3D() {
     ground.receiveShadow = true
     scene.add(ground)
 
-    // Walkable platforms
+    // Walkable platforms — floating islands with rock/crust/root detail
     const allPlatformDefs = [...MEADOW_PLATFORMS, ...RUINS_PLATFORMS]
     const platformMeshes = allPlatformDefs.map(p => {
-      const mesh = new THREE.Mesh(
-        roundedBox(p.w, p.h, p.d),
-        new THREE.MeshStandardMaterial({ color: p.color, roughness: 0.75, metalness: 0.05 })
-      )
-      mesh.position.set(p.x, p.y, p.z)
-      mesh.castShadow = true
-      mesh.receiveShadow = true
-      scene.add(mesh)
+      const island = makePlatformIsland(p)
+      scene.add(island)
       return {
         top: p.y + p.h / 2,
         minX: p.x - p.w / 2 - PLAYER_RADIUS,
@@ -349,26 +475,10 @@ export default function World3D() {
     playerGroup.add(playerGlow)
     scene.add(playerGroup)
 
-    // Spirits — freed with E, unlocking maps/finale instead of expressions
+    // Elder spirits — freed with E, unlocking maps/finale instead of expressions
     const spirits = SPIRITS.map(s => {
-      const g = new THREE.Group()
-      const robe = new THREE.Mesh(
-        new THREE.ConeGeometry(0.4, 1.2, 8),
-        new THREE.MeshStandardMaterial({ color: s.color, emissive: s.color, emissiveIntensity: 0.35, roughness: 0.6 })
-      )
-      robe.position.y = 0.6
-      robe.castShadow = true
-      g.add(robe)
-      const head = new THREE.Mesh(
-        new THREE.SphereGeometry(0.24, 12, 10),
-        new THREE.MeshStandardMaterial({ color: s.color, emissive: s.color, emissiveIntensity: 0.5, roughness: 0.5 })
-      )
-      head.position.y = 1.25
-      g.add(head)
-      const glow = new THREE.PointLight(s.color, 1.1, 7)
-      glow.position.y = 1
-      g.add(glow)
-      g.position.set(s.x, s.y - 1.3, s.z)
+      const g = makeSpiritFigure(s.color)
+      g.position.set(s.x, s.y - 1.2, s.z)
       scene.add(g)
       return { ...s, group: g, freed: false, freeStartT: null }
     })
@@ -565,8 +675,9 @@ export default function World3D() {
       let nearestName = null
       for (const s of spirits) {
         if (!s.freed) {
-          s.group.position.y = (s.y - 1.3) + Math.sin(t * 1.2) * 0.08
+          s.group.position.y = (s.y - 1.2) + Math.sin(t * 1.2) * 0.08
           s.group.rotation.y = Math.sin(t * 0.4) * 0.3
+          if (s.group.userData.halo) s.group.userData.halo.rotation.z = t * 0.6
           const dx = s.x - player.x, dy = s.y - 1.2 - player.y, dz = s.z - player.z
           if (dx * dx + dy * dy + dz * dz < INTERACT_RANGE * INTERACT_RANGE) nearestName = s.name
         } else {
@@ -574,7 +685,7 @@ export default function World3D() {
           if (dt2 < 1.4) {
             const k = Math.max(0, 1 - dt2 / 1.4)
             s.group.scale.setScalar(k)
-            s.group.position.y = (s.y - 1.3) + dt2 * 1.5
+            s.group.position.y = (s.y - 1.2) + dt2 * 1.5
           } else if (s.group.visible) {
             s.group.visible = false
           }
