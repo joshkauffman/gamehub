@@ -32,3 +32,82 @@
   color: #fff;
   background: rgba(0, 0, 0, 0.6);
 }
+
+.builderBar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(10, 20, 32, 0.92);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  font-family: Arial, sans-serif;
+}
+
+.builderInput {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 5px;
+  color: #fff;
+  padding: 5px 8px;
+  font-size: 13px;
+}
+
+.builderLabel {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.builderDivider {
+  width: 1px;
+  align-self: stretch;
+  background: rgba(255, 255, 255, 0.15);
+  margin: 0 2px;
+}
+
+.builderBtn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 5px;
+  color: #fff;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s;
+}
+.builderBtn:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+.builderBtn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.builderBtnActive {
+  background: rgba(255, 215, 0, 0.28);
+  border-color: #ffd700;
+}
+.builderBtnPrimary {
+  background: rgba(60, 180, 90, 0.35);
+  border-color: #4fd06a;
+}
+
+.builderSpacer {
+  flex: 1;
+}
+
+.builderStatus {
+  color: #ffd700;
+  font-size: 12px;
+  font-weight: bold;
+}
