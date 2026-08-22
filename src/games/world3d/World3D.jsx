@@ -36,6 +36,11 @@ const TELEPORT_LOCK   = 0.8  // seconds of immunity after a teleport
 const MEADOW_SPAWN = { x: 0, y: 0, z: 16, yaw: 0.15 }
 const RUINS_SPAWN  = { x: 0, y: 0, z: -130, yaw: 0 }
 
+// Each area's geometry is only shown while the player is within its
+// radius (in XZ), so the zones can't be seen from one another.
+const MEADOW_ZONE = { x: 0, z: -5, radius: 55 }
+const RUINS_ZONE  = { x: 0, z: -165, radius: 55 }
+
 // Walkable, collidable platforms (axis-aligned boxes only — collision math
 // assumes no rotation).
 const MEADOW_PLATFORMS = [
@@ -102,6 +107,35 @@ const SPIRITS = [
     unlockMessage: "The Ruins Spirit is free ✨ You've freed every spirit of Skylight.",
   },
 ]
+
+// ── Aviary Village — an explorable, customizable bird hamlet ────────
+const AVIARY_THEME_KEY = 'skylight-aviary-theme'
+
+const VILLAGE_ORIGIN = { x: 110, z: 30 }
+const VILLAGE_SPAWN  = { x: 110, y: 0, z: 17, yaw: Math.PI }
+const VILLAGE_PORTAL = { x: 9, z: 20 }
+const VILLAGE_ZONE = { x: VILLAGE_ORIGIN.x, z: VILLAGE_ORIGIN.z, radius: 55 }
+
+const VILLAGE_HUTS = [
+  { x: 119,   z: 30 },
+  { x: 114.5, z: 37.8 },
+  { x: 105.5, z: 37.8 },
+  { x: 101,   z: 30 },
+  { x: 105.5, z: 22.2 },
+  { x: 114.5, z: 22.2 },
+]
+const VILLAGE_PERCHES = [
+  { x: 110,   z: 34 },
+  { x: 106.5, z: 26 },
+  { x: 113.5, z: 26 },
+]
+
+const ROOF_PALETTE    = [0xd97757, 0x6c63ff, 0xe0c07a, 0x4fa3d1, 0x9fe0d6, 0xff8fa3]
+const ROOF_NAMES      = ['Terracotta', 'Violet', 'Golden', 'Sky Blue', 'Seafoam', 'Blossom']
+const BANNER_PALETTE  = [0xffffff, 0xffd9a0, 0x9fe0d6, 0xff8fa3, 0x8a7dff, 0xe0c07a]
+const BANNER_NAMES    = ['Snow', 'Amber', 'Seafoam', 'Blossom', 'Violet', 'Golden']
+const LANTERN_PALETTE = [0xffe6b0, 0xff8fa3, 0x9fe0d6, 0x8a7dff, 0xffffff]
+const LANTERN_NAMES   = ['Honey', 'Blossom', 'Seafoam', 'Violet', 'Moonlight']
 
 // ── tiny WebAudio chimes, no assets ─────────────────────────────────
 function playChime(ctx, base = 740, top = 1320) {
@@ -329,6 +363,169 @@ function makeSpiritFigure(color) {
   return g
 }
 
+// ── Aviary Village builders ──────────────────────────────────────────
+function makeHut(roofColor) {
+  const g = new THREE.Group()
+  const wallMat = new THREE.MeshStandardMaterial({ color: 0xe8d9b8, roughness: 0.85 })
+  const wall = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.25, 1.6, 10), wallMat)
+  wall.position.y = 0.8
+  wall.castShadow = true
+  wall.receiveShadow = true
+  g.add(wall)
+
+  const roofMat = new THREE.MeshStandardMaterial({ color: roofColor, roughness: 0.6 })
+  const roof = new THREE.Mesh(new THREE.ConeGeometry(1.5, 1.3, 10), roofMat)
+  roof.position.y = 2.25
+  roof.castShadow = true
+  g.add(roof)
+
+  const door = new THREE.Mesh(
+    new THREE.CircleGeometry(0.32, 12),
+    new THREE.MeshStandardMaterial({ color: 0x3a2f22, roughness: 1 })
+  )
+  door.position.set(0, 0.55, 1.24)
+  g.add(door)
+
+  const perchStick = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.03, 0.03, 0.5, 6),
+    new THREE.MeshStandardMaterial({ color: 0x6b5638, roughness: 1 })
+  )
+  perchStick.position.set(0, 0.35, 1.35)
+  perchStick.rotation.x = Math.PI / 2
+  perchStick.castShadow = true
+  g.add(perchStick)
+
+  g.userData.roofMat = roofMat
+  return g
+}
+
+function makeBanner(color) {
+  const g = new THREE.Group()
+  const pole = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.025, 0.025, 1.1, 6),
+    new THREE.MeshStandardMaterial({ color: 0x6b5638, roughness: 1 })
+  )
+  pole.position.y = 0.55
+  pole.castShadow = true
+  g.add(pole)
+
+  const flagMat = new THREE.MeshStandardMaterial({ color, roughness: 0.6, side: THREE.DoubleSide })
+  const flag = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.28), flagMat)
+  flag.position.set(0.23, 0.95, 0)
+  flag.castShadow = true
+  g.add(flag)
+
+  g.userData.flagMat = flagMat
+  g.userData.flag = flag
+  return g
+}
+
+function makePerch(height = 1.8) {
+  const g = new THREE.Group()
+  const mat = new THREE.MeshStandardMaterial({ color: 0x6b5638, roughness: 1 })
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, height, 8), mat)
+  pole.position.y = height / 2
+  pole.castShadow = true
+  g.add(pole)
+  const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.9, 6), mat)
+  bar.position.y = height
+  bar.rotation.z = Math.PI / 2
+  bar.castShadow = true
+  g.add(bar)
+  return g
+}
+
+function makeFenceSegment(x, z, ry) {
+  const g = new THREE.Group()
+  const mat = new THREE.MeshStandardMaterial({ color: 0x7a6a4a, roughness: 1 })
+  const postGeo = new THREE.CylinderGeometry(0.06, 0.06, 0.9, 6)
+  const postL = new THREE.Mesh(postGeo, mat)
+  postL.position.set(-0.9, 0.45, 0)
+  postL.castShadow = true
+  g.add(postL)
+  const postR = new THREE.Mesh(postGeo, mat)
+  postR.position.set(0.9, 0.45, 0)
+  postR.castShadow = true
+  g.add(postR)
+  const rail = new THREE.Mesh(new THREE.BoxGeometry(2, 0.08, 0.08), mat)
+  rail.position.y = 0.65
+  rail.castShadow = true
+  g.add(rail)
+  g.position.set(x, 0, z)
+  g.rotation.y = ry
+  return g
+}
+
+// A tiny low-poly bird: a cone body (nose along local +Z) with two flat
+// wing planes that flap via rotation, reused for both flying and perched
+// birds.
+function makeBird(color) {
+  const g = new THREE.Group()
+  const bodyMat = new THREE.MeshStandardMaterial({ color, roughness: 0.55 })
+  const body = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.36, 6), bodyMat)
+  body.rotation.x = Math.PI / 2
+  body.castShadow = true
+  g.add(body)
+
+  const wingGeo = new THREE.BoxGeometry(0.32, 0.02, 0.13)
+  const wingL = new THREE.Mesh(wingGeo, bodyMat)
+  wingL.position.set(-0.16, 0, 0)
+  g.add(wingL)
+  const wingR = new THREE.Mesh(wingGeo, bodyMat)
+  wingR.position.set(0.16, 0, 0)
+  g.add(wingR)
+
+  g.userData.wingL = wingL
+  g.userData.wingR = wingR
+  return g
+}
+
+// A customization plinth: an interactable pedestal with a floating,
+// glowing icon tinted to the currently-selected palette color.
+function makePlinth(color) {
+  const g = new THREE.Group()
+  const base = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.5, 0.6, 0.9, 12),
+    new THREE.MeshStandardMaterial({ color: 0x8f8264, roughness: 0.9 })
+  )
+  base.position.y = 0.45
+  base.castShadow = true
+  g.add(base)
+
+  const iconMat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.6, roughness: 0.3 })
+  const icon = new THREE.Mesh(new THREE.OctahedronGeometry(0.26), iconMat)
+  icon.position.y = 1.3
+  icon.castShadow = true
+  g.add(icon)
+
+  const glow = new THREE.PointLight(color, 0.9, 5)
+  glow.position.y = 1.3
+  g.add(glow)
+
+  g.userData.icon = icon
+  g.userData.glow = glow
+  return g
+}
+
+function loadAviaryTheme() {
+  try {
+    const raw = localStorage.getItem(AVIARY_THEME_KEY)
+    if (!raw) return { roof: 0, banner: 0, lantern: 0 }
+    const parsed = JSON.parse(raw)
+    const clamp = (v, len) => (Number.isInteger(v) && v >= 0 && v < len ? v : 0)
+    return {
+      roof: clamp(parsed.roof, ROOF_PALETTE.length),
+      banner: clamp(parsed.banner, BANNER_PALETTE.length),
+      lantern: clamp(parsed.lantern, LANTERN_PALETTE.length),
+    }
+  } catch {
+    return { roof: 0, banner: 0, lantern: 0 }
+  }
+}
+function saveAviaryTheme(theme) {
+  try { localStorage.setItem(AVIARY_THEME_KEY, JSON.stringify(theme)) } catch { /* storage unavailable */ }
+}
+
 // ── Component ────────────────────────────────────────────────────────
 export default function World3D() {
   const mountRef = useRef(null)
@@ -338,6 +535,7 @@ export default function World3D() {
   const [energyPct, setEnergyPct] = useState(ENERGY_START / ENERGY_MAX)
   const [banner, setBanner] = useState(null)
   const [nearSpirit, setNearSpirit] = useState(null)
+  const [nearCustomize, setNearCustomize] = useState(null)
 
   useEffect(() => {
     const mount = mountRef.current
@@ -421,11 +619,20 @@ export default function World3D() {
     ground.receiveShadow = true
     scene.add(ground)
 
+    // Zone groups — each area's geometry lives under its own group so it
+    // can be shown/hidden as a whole based on the player's location.
+    const meadowGroup = new THREE.Group()
+    const ruinsGroup = new THREE.Group()
+    scene.add(meadowGroup, ruinsGroup)
+
     // Walkable platforms — floating islands with rock/crust/root detail
-    const allPlatformDefs = [...MEADOW_PLATFORMS, ...RUINS_PLATFORMS]
-    const platformMeshes = allPlatformDefs.map(p => {
+    const zonedPlatformDefs = [
+      ...MEADOW_PLATFORMS.map(p => ({ p, group: meadowGroup })),
+      ...RUINS_PLATFORMS.map(p => ({ p, group: ruinsGroup })),
+    ]
+    const platformMeshes = zonedPlatformDefs.map(({ p, group }) => {
       const island = makePlatformIsland(p)
-      scene.add(island)
+      group.add(island)
       return {
         top: p.y + p.h / 2,
         minX: p.x - p.w / 2 - PLAYER_RADIUS,
@@ -436,17 +643,155 @@ export default function World3D() {
     })
 
     // Decorative scenery (no collision)
-    const decor = new THREE.Group()
-    ;[[10, 14], [-10, 12], [4, 19], [-13, 4], [13, -2]].forEach(([x, z]) => decor.add(makeTree(x, z)))
-    ;[[2, -2, 0.3], [-5, -6, -0.4], [9, 5, 0.7], [-9, -10, 0.2]].forEach(([x, z, r]) => decor.add(makeStone(x, z, r)))
-    decor.add(makeArch(0, 9, 0))
+    ;[[10, 14], [-10, 12], [4, 19], [-13, 4], [13, -2]].forEach(([x, z]) => meadowGroup.add(makeTree(x, z)))
+    ;[[2, -2, 0.3], [-5, -6, -0.4], [9, 5, 0.7], [-9, -10, 0.2]].forEach(([x, z, r]) => meadowGroup.add(makeStone(x, z, r)))
+    meadowGroup.add(makeArch(0, 9, 0))
     // ruins flanking columns + scattered broken pillars
-    decor.add(makeColumn(-4, -139, 5))
-    decor.add(makeColumn(4, -139, 5))
+    ruinsGroup.add(makeColumn(-4, -139, 5))
+    ruinsGroup.add(makeColumn(4, -139, 5))
     ;[[10, -152, 2.4, 0.5], [-11, -156, 1.8, -0.7], [-2, -170, 3, 0.3], [9, -175, 2, -0.4], [-9, -182, 2.6, 0.6]]
-      .forEach(([x, z, h, tilt]) => decor.add(makeColumn(x, z, h, tilt)))
-    decor.add(makeArch(-2, -190, 0.3, 4, 0x8f8264))
-    scene.add(decor)
+      .forEach(([x, z, h, tilt]) => ruinsGroup.add(makeColumn(x, z, h, tilt)))
+    ruinsGroup.add(makeArch(-2, -190, 0.3, 4, 0x8f8264))
+
+    // Aviary Village — huts, perches, a lantern garland, customization
+    // plinths, and birds, clustered off to the side and reached by portal.
+    const aviaryTheme = loadAviaryTheme()
+    const roofMaterials = []
+    const bannerFlags = []
+    const lanternMeshes = []
+    const villageGroup = new THREE.Group()
+
+    VILLAGE_HUTS.forEach(h => {
+      const dx = h.x - VILLAGE_ORIGIN.x, dz = h.z - VILLAGE_ORIGIN.z
+      const r = Math.hypot(dx, dz)
+      const ux = dx / r, uz = dz / r
+
+      const hut = makeHut(ROOF_PALETTE[aviaryTheme.roof])
+      hut.position.set(h.x, 0, h.z)
+      hut.rotation.y = Math.atan2(-dx, -dz)
+      villageGroup.add(hut)
+      roofMaterials.push(hut.userData.roofMat)
+
+      const banner = makeBanner(BANNER_PALETTE[aviaryTheme.banner])
+      banner.position.set(h.x + ux * 1.7, 0, h.z + uz * 1.7)
+      banner.rotation.y = hut.rotation.y
+      banner.userData.phase = Math.random() * 10
+      villageGroup.add(banner)
+      bannerFlags.push(banner)
+    })
+
+    VILLAGE_PERCHES.forEach(pp => {
+      const perch = makePerch(1.8)
+      perch.position.set(pp.x, 0, pp.z)
+      perch.rotation.y = Math.random() * Math.PI
+      villageGroup.add(perch)
+    })
+
+    ;[[104, 18, 0.5], [116, 18, -0.5]].forEach(([x, z, ry]) => villageGroup.add(makeFenceSegment(x, z, ry)))
+
+    // Lantern garland strung between two posts at the plaza entrance
+    const lanternPostMat = new THREE.MeshStandardMaterial({ color: 0x6b5638, roughness: 1 })
+    const postA = { x: 104, z: 20 }
+    const postB = { x: 116, z: 20 }
+    ;[postA, postB].forEach(post => {
+      const postMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 2.6, 8), lanternPostMat)
+      postMesh.position.set(post.x, 1.3, post.z)
+      postMesh.castShadow = true
+      villageGroup.add(postMesh)
+    })
+    const LANTERN_COUNT = 7
+    const lanternGeo = new THREE.SphereGeometry(0.14, 10, 8)
+    for (let i = 0; i < LANTERN_COUNT; i++) {
+      const tt = i / (LANTERN_COUNT - 1)
+      const x = postA.x + (postB.x - postA.x) * tt
+      const z = postA.z + (postB.z - postA.z) * tt
+      const baseY = 2.55 - Math.sin(Math.PI * tt) * 0.7
+      const color = LANTERN_PALETTE[aviaryTheme.lantern]
+      const lantern = new THREE.Mesh(
+        lanternGeo,
+        new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 1, roughness: 0.4 })
+      )
+      lantern.position.set(x, baseY, z)
+      lantern.userData.baseY = baseY
+      lantern.userData.phase = i * 0.6
+      villageGroup.add(lantern)
+      lanternMeshes.push(lantern)
+    }
+    const lanternLight = new THREE.PointLight(LANTERN_PALETTE[aviaryTheme.lantern], 1, 10)
+    lanternLight.position.set((postA.x + postB.x) / 2, 2, (postA.z + postB.z) / 2)
+    villageGroup.add(lanternLight)
+
+    // Customization plinths — press E nearby to cycle each palette
+    const roofPlinth = makePlinth(ROOF_PALETTE[aviaryTheme.roof])
+    roofPlinth.position.set(110, 0, 41)
+    villageGroup.add(roofPlinth)
+    const bannerPlinth = makePlinth(BANNER_PALETTE[aviaryTheme.banner])
+    bannerPlinth.position.set(98, 0, 30)
+    villageGroup.add(bannerPlinth)
+    const lanternPlinth = makePlinth(LANTERN_PALETTE[aviaryTheme.lantern])
+    lanternPlinth.position.set(110, 0, 19)
+    villageGroup.add(lanternPlinth)
+
+    function applyRoofTheme(idx) {
+      aviaryTheme.roof = idx
+      const color = ROOF_PALETTE[idx]
+      roofMaterials.forEach(m => m.color.setHex(color))
+      roofPlinth.userData.icon.material.color.setHex(color)
+      roofPlinth.userData.icon.material.emissive.setHex(color)
+      roofPlinth.userData.glow.color.setHex(color)
+      saveAviaryTheme(aviaryTheme)
+    }
+    function applyBannerTheme(idx) {
+      aviaryTheme.banner = idx
+      const color = BANNER_PALETTE[idx]
+      bannerFlags.forEach(b => b.userData.flagMat.color.setHex(color))
+      bannerPlinth.userData.icon.material.color.setHex(color)
+      bannerPlinth.userData.icon.material.emissive.setHex(color)
+      bannerPlinth.userData.glow.color.setHex(color)
+      saveAviaryTheme(aviaryTheme)
+    }
+    function applyLanternTheme(idx) {
+      aviaryTheme.lantern = idx
+      const color = LANTERN_PALETTE[idx]
+      lanternMeshes.forEach(l => { l.material.color.setHex(color); l.material.emissive.setHex(color) })
+      lanternLight.color.setHex(color)
+      lanternPlinth.userData.icon.material.color.setHex(color)
+      lanternPlinth.userData.icon.material.emissive.setHex(color)
+      lanternPlinth.userData.glow.color.setHex(color)
+      saveAviaryTheme(aviaryTheme)
+    }
+    const customizePlinths = [
+      { x: 110, z: 41, label: 'roof color', palette: ROOF_PALETTE, names: ROOF_NAMES, index: aviaryTheme.roof, apply: applyRoofTheme },
+      { x: 98,  z: 30, label: 'banner color', palette: BANNER_PALETTE, names: BANNER_NAMES, index: aviaryTheme.banner, apply: applyBannerTheme },
+      { x: 110, z: 19, label: 'lantern color', palette: LANTERN_PALETTE, names: LANTERN_NAMES, index: aviaryTheme.lantern, apply: applyLanternTheme },
+    ]
+
+    // Birds — a few looping the plaza, a few perched and idling
+    const BIRD_COLORS = [0xffffff, 0xffe0b0, 0x9fe0d6, 0xff8fa3, 0x8a7dff, 0xe0c07a]
+    const flyingBirds = []
+    for (let i = 0; i < 6; i++) {
+      const bird = makeBird(BIRD_COLORS[i % BIRD_COLORS.length])
+      villageGroup.add(bird)
+      flyingBirds.push({
+        group: bird,
+        radius: 6 + Math.random() * 5,
+        height: 4 + Math.random() * 3,
+        speed: 0.22 + Math.random() * 0.18,
+        dir: Math.random() < 0.5 ? 1 : -1,
+        phase: Math.random() * Math.PI * 2,
+        flapPhase: Math.random() * 10,
+      })
+    }
+    const perchedBirds = VILLAGE_PERCHES.map((pp, i) => {
+      const bird = makeBird(BIRD_COLORS[(i + 2) % BIRD_COLORS.length])
+      const baseYaw = Math.random() * Math.PI * 2
+      bird.position.set(pp.x, 1.85, pp.z)
+      bird.rotation.y = baseYaw
+      villageGroup.add(bird)
+      return { group: bird, baseY: 1.85, baseYaw, phase: Math.random() * 10 }
+    })
+
+    scene.add(villageGroup)
 
     // Firefly-style ambient particles
     const fireflyCount = 140
@@ -479,7 +824,7 @@ export default function World3D() {
     const spirits = SPIRITS.map(s => {
       const g = makeSpiritFigure(s.color)
       g.position.set(s.x, s.y - 1.2, s.z)
-      scene.add(g)
+      ;(s.id === 'meadow' ? meadowGroup : ruinsGroup).add(g)
       return { ...s, group: g, freed: false, freeStartT: null }
     })
 
@@ -504,22 +849,35 @@ export default function World3D() {
       return { group: g, ring, disc, light, color, active: false, x, y: 1.9, z }
     }
     const gatePortal = makePortal(0, -50, 0xffd9a0)
+    gatePortal.target = RUINS_SPAWN
     const returnPortal = makePortal(0, -124, 0x9fe0d6)
     returnPortal.active = true
+    returnPortal.target = MEADOW_SPAWN
+    const villagePortal = makePortal(VILLAGE_PORTAL.x, VILLAGE_PORTAL.z, 0xffd27a)
+    villagePortal.active = true
+    villagePortal.target = VILLAGE_SPAWN
+    const villageReturnPortal = makePortal(VILLAGE_SPAWN.x, VILLAGE_SPAWN.z - 3, 0x9fe0d6)
+    villageReturnPortal.active = true
+    villageReturnPortal.target = MEADOW_SPAWN
+    const allPortals = [gatePortal, returnPortal, villagePortal, villageReturnPortal]
 
-    // Collectible orbs
-    const orbGroup = new THREE.Group()
-    scene.add(orbGroup)
+    // Collectible orbs — grouped by zone so they hide/show along with it
     const orbGeo = new THREE.SphereGeometry(0.22, 12, 10)
-    const orbs = ALL_ORBS.map((o, i) => {
-      const mat = new THREE.MeshStandardMaterial({
-        color: 0xfff2c0, emissive: 0xffdd88, emissiveIntensity: 1.1, roughness: 0.4, metalness: 0,
+    function buildOrbs(defs, group) {
+      return defs.map((o, i) => {
+        const mat = new THREE.MeshStandardMaterial({
+          color: 0xfff2c0, emissive: 0xffdd88, emissiveIntensity: 1.1, roughness: 0.4, metalness: 0,
+        })
+        const mesh = new THREE.Mesh(orbGeo, mat)
+        mesh.position.set(o.x, o.y, o.z)
+        group.add(mesh)
+        return { mesh, group, x: o.x, y: o.y, z: o.z, collected: false, phase: i * 0.7 }
       })
-      const mesh = new THREE.Mesh(orbGeo, mat)
-      mesh.position.set(o.x, o.y, o.z)
-      orbGroup.add(mesh)
-      return { mesh, x: o.x, y: o.y, z: o.z, collected: false, phase: i * 0.7 }
-    })
+    }
+    const orbs = [
+      ...buildOrbs(MEADOW_ORBS, meadowGroup),
+      ...buildOrbs(RUINS_ORBS, ruinsGroup),
+    ]
 
     // Player physics state
     const player = { x: MEADOW_SPAWN.x, y: MEADOW_SPAWN.y, z: MEADOW_SPAWN.z }
@@ -559,6 +917,15 @@ export default function World3D() {
             setBanner(s.unlockMessage)
             setSpiritsFreed(n => n + 1)
             if (s.id === 'meadow') gatePortal.active = true
+          }
+        }
+        for (const p of customizePlinths) {
+          const dx = p.x - player.x, dz = p.z - player.z
+          if (dx * dx + dz * dz < INTERACT_RANGE * INTERACT_RANGE) {
+            p.index = (p.index + 1) % p.palette.length
+            p.apply(p.index)
+            playChime(ensureAudio(), 900, 1500)
+            setBanner(`Aviary ${p.label} set to ${p.names[p.index]}`)
           }
         }
       }
@@ -671,6 +1038,15 @@ export default function World3D() {
       const zt = Math.min(1, Math.max(0, (-player.z - 60) / 100))
       scene.fog.color.copy(fogMeadow).lerp(fogRuins, zt)
 
+      // Zone visibility: only show an area's geometry while the player is
+      // actually within it, so the zones can't be seen from one another.
+      const dMeadow = (player.x - MEADOW_ZONE.x) ** 2 + (player.z - MEADOW_ZONE.z) ** 2
+      const dRuins = (player.x - RUINS_ZONE.x) ** 2 + (player.z - RUINS_ZONE.z) ** 2
+      const dVillage = (player.x - VILLAGE_ZONE.x) ** 2 + (player.z - VILLAGE_ZONE.z) ** 2
+      meadowGroup.visible = dMeadow < MEADOW_ZONE.radius * MEADOW_ZONE.radius
+      ruinsGroup.visible = dRuins < RUINS_ZONE.radius * RUINS_ZONE.radius
+      villageGroup.visible = dVillage < VILLAGE_ZONE.radius * VILLAGE_ZONE.radius
+
       // Spirits: idle bob, free-animation, interact prompt
       let nearestName = null
       for (const s of spirits) {
@@ -694,7 +1070,7 @@ export default function World3D() {
       setNearSpirit(prev => (prev === nearestName ? prev : nearestName))
 
       // Portals: activate visuals + handle teleport trigger
-      for (const portal of [gatePortal, returnPortal]) {
+      for (const portal of allPortals) {
         const targetOpacity = portal.active ? 0.55 : 0.9
         portal.disc.material.opacity += (targetOpacity - portal.disc.material.opacity) * 0.1
         portal.disc.material.emissive.setHex(portal.active ? portal.color : 0x000000)
@@ -703,25 +1079,58 @@ export default function World3D() {
         if (portal.active) portal.disc.rotation.z += dt * 0.6
       }
       if (t > teleportLockUntil) {
-        if (gatePortal.active) {
-          const dx = gatePortal.x - player.x, dy = gatePortal.y - player.y, dz = gatePortal.z - player.z
+        for (const portal of allPortals) {
+          if (!portal.active) continue
+          const dx = portal.x - player.x, dy = portal.y - player.y, dz = portal.z - player.z
           if (dx * dx + dy * dy + dz * dz < PORTAL_RANGE * PORTAL_RANGE) {
-            player.x = RUINS_SPAWN.x; player.y = RUINS_SPAWN.y; player.z = RUINS_SPAWN.z
-            yaw = RUINS_SPAWN.yaw
+            const target = portal.target
+            player.x = target.x; player.y = target.y; player.z = target.z
+            yaw = target.yaw
             velocity.y = 0
             teleportLockUntil = t + TELEPORT_LOCK
-          }
-        }
-        if (returnPortal.active) {
-          const dx = returnPortal.x - player.x, dy = returnPortal.y - player.y, dz = returnPortal.z - player.z
-          if (dx * dx + dy * dy + dz * dz < PORTAL_RANGE * PORTAL_RANGE) {
-            player.x = MEADOW_SPAWN.x; player.y = MEADOW_SPAWN.y; player.z = MEADOW_SPAWN.z
-            yaw = MEADOW_SPAWN.yaw
-            velocity.y = 0
-            teleportLockUntil = t + TELEPORT_LOCK
+            break
           }
         }
       }
+
+      // Aviary Village: bird flight/perch idle, banner wave, lantern sway,
+      // plinth glow, and the nearest-customizable-object interact prompt
+      for (const b of flyingBirds) {
+        const angle = t * b.speed * b.dir + b.phase
+        const vx = -Math.sin(angle) * b.dir
+        const vz = Math.cos(angle) * b.dir
+        b.group.position.set(
+          VILLAGE_ORIGIN.x + Math.cos(angle) * b.radius,
+          b.height + Math.sin(t * 1.6 + b.phase) * 0.4,
+          VILLAGE_ORIGIN.z + Math.sin(angle) * b.radius
+        )
+        b.group.rotation.y = Math.atan2(vx, vz)
+        const flap = Math.sin(t * 9 + b.flapPhase) * 0.7
+        b.group.userData.wingL.rotation.z = flap
+        b.group.userData.wingR.rotation.z = -flap
+      }
+      for (const b of perchedBirds) {
+        b.group.position.y = b.baseY + Math.sin(t * 1.2 + b.phase) * 0.03
+        b.group.rotation.y = b.baseYaw + Math.sin(t * 0.3 + b.phase) * 0.3
+        const flap = Math.max(0, Math.sin(t * 1.4 + b.phase * 2)) * 0.25
+        b.group.userData.wingL.rotation.z = flap
+        b.group.userData.wingR.rotation.z = -flap
+      }
+      for (const banner of bannerFlags) {
+        banner.userData.flag.rotation.y = Math.sin(t * 2.5 + banner.userData.phase) * 0.35
+      }
+      for (const l of lanternMeshes) {
+        l.position.y = l.userData.baseY + Math.sin(t * 1.3 + l.userData.phase) * 0.06
+      }
+      for (const plinth of [roofPlinth, bannerPlinth, lanternPlinth]) {
+        plinth.userData.icon.rotation.y = t * 0.8
+      }
+      let nearestPlinthLabel = null
+      for (const p of customizePlinths) {
+        const dx = p.x - player.x, dz = p.z - player.z
+        if (dx * dx + dz * dz < INTERACT_RANGE * INTERACT_RANGE) nearestPlinthLabel = p.label
+      }
+      setNearCustomize(prev => (prev === nearestPlinthLabel ? prev : nearestPlinthLabel))
 
       // Animate orbs + collection
       for (const orb of orbs) {
@@ -733,7 +1142,7 @@ export default function World3D() {
         const dz = orb.z - player.z
         if (dx * dx + dy * dy + dz * dz < 1.4 * 1.4) {
           orb.collected = true
-          orbGroup.remove(orb.mesh)
+          orb.group.remove(orb.mesh)
           totalCollected += 1
           energy = Math.min(ENERGY_MAX, energy + ENERGY_PER_ORB)
           setCollected(totalCollected)
@@ -801,13 +1210,16 @@ export default function World3D() {
       {nearSpirit && locked && (
         <div className={styles.interactPrompt}>Press E to free the {nearSpirit}</div>
       )}
+      {!nearSpirit && nearCustomize && locked && (
+        <div className={styles.interactPrompt}>Press E to cycle the {nearCustomize}</div>
+      )}
       {locked && <div className={styles.crosshair} />}
       {!locked && (
         <div className={styles.overlay}>
           <h1 className={styles.title}>Skylight</h1>
           <p className={styles.hint}>Click to begin</p>
           <p className={styles.controls}>
-            WASD to walk · Mouse to look around · Space to jump, then hold Space to fly on gathered light · E to free a spirit · Esc to release
+            WASD to walk · Mouse to look around · Space to jump, then hold Space to fly on gathered light · E to free a spirit or customize the Aviary Village · Esc to release
           </p>
         </div>
       )}
