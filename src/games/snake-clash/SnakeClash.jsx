@@ -3,17 +3,18 @@ import { Link } from 'react-router-dom'
 import styles from './SnakeClash.module.css'
 
 // ── Constants ─────────────────────────────────────────────────────────
-const ARENA     = 4000
-const FOOD_N    = 260
-const SPD       = 2.8
-const SPD_BST   = 5.2
-const TURN      = 0.065
-const BST_DRAIN = 0.2   // length lost per boosting frame
+const ARENA      = 4000
+const FOOD_N     = 260
+const POWERUP_N  = 9
+const SPD        = 2.8
+const SPD_BST    = 5.2
+const TURN       = 0.065
+const BST_DRAIN  = 0.2   // length lost per boosting frame
 
-// ── Snake palettes ─────────────────────────────────────────────────────
+// ── Snake palettes (AI/boss) ────────────────────────────────────────────
 // b = body dark, h = body light/highlight, o = outline
 const PAL = [
-  { b:'#CC2200', h:'#FF5533', o:'#881100', name:'You'     },  // 0 player
+  { b:'#CC2200', h:'#FF5533', o:'#881100', name:'You'     },  // 0 player fallback
   { b:'#0044BB', h:'#3377FF', o:'#002277', name:'Kraken'  },  // 1
   { b:'#007722', h:'#22CC55', o:'#004411', name:'Yabuc'   },  // 2
   { b:'#771199', h:'#BB44EE', o:'#440066', name:'Chiplus' },  // 3
@@ -22,6 +23,38 @@ const PAL = [
   { b:'#005577', h:'#1199BB', o:'#003344', name:'SolenA'  },  // 6
   { b:'#AA4400', h:'#FF7733', o:'#662200', name:'Minivan' },  // 7
   { b:'#111122', h:'#334466', o:'#000000', name:'BOSS'    },  // 8
+]
+
+// ── Buyable player skins ─────────────────────────────────────────────
+// Each skin (besides Classic) grants a passive ability while equipped.
+// accent: extra flourish drawn for the player's snake only
+const SKINS = [
+  { id:'classic',   name:'Classic',      cost:0,
+    colors:{ b:'#CC2200', h:'#FF5533', o:'#881100' },
+    ability:null, abilityLabel:'No special ability' },
+  { id:'poolparty', name:'Pool Party',   cost:150,
+    colors:{ b:'#FF2E88', h:'#3DE0D8', o:'#7A1054' }, accent:'shades',
+    ability:'slick', abilityLabel:'Slick — 40% less boost drain' },
+  { id:'toxic',     name:'Toxic Slime',  cost:400,
+    colors:{ b:'#3DBB00', h:'#B6FF33', o:'#1F5E00' }, accent:'glow',
+    ability:'regen', abilityLabel:'Regen — slowly regrows length' },
+  { id:'angel',     name:'Angel',        cost:900,
+    colors:{ b:'#F5F5FF', h:'#FFE9A8', o:'#C9A227' }, accent:'halo',
+    ability:'guardian', abilityLabel:'Guardian — shield on spawn' },
+  { id:'clockwork', name:'Clockwork',    cost:1600,
+    colors:{ b:'#8B5A2B', h:'#D2A24C', o:'#3A2410' }, accent:'gears',
+    ability:'precision', abilityLabel:'Precision — sharper turning' },
+  { id:'galaxy',    name:'Galaxy',       cost:2600,
+    colors:{ b:'#3B1E6B', h:'#8B5FE6', o:'#170A33' }, accent:'stars',
+    ability:'gravity', abilityLabel:'Gravity — bigger pickup range' },
+]
+
+// ── Map power-ups ────────────────────────────────────────────────────
+const POWERUP_TYPES = [
+  { id:'shield', icon:'🛡️', label:'Shield',      dur:420, color:'#5AD1FF' },
+  { id:'speed',  icon:'⚡', label:'Speed Boost', dur:360, color:'#FFD23F' },
+  { id:'magnet', icon:'🧲', label:'Magnet',      dur:480, color:'#FF6FB3' },
+  { id:'multi',  icon:'✨', label:'Score x2',    dur:420, color:'#B57BFF' },
 ]
 
 const FRUITS = ['🍎','🍌','🍉','🍓','🍇','🍑','🍊','🍋','🍒','🥝','🍍','🍈']
@@ -46,25 +79,40 @@ function mkFood(n) {
   }))
 }
 
-function mkSnake({ player, boss, ci, x, y, len, score = 0 }) {
+function spawnPowerup() {
+  const t = POWERUP_TYPES[Math.floor(Math.random() * POWERUP_TYPES.length)]
+  return {
+    x: 150 + Math.random() * (ARENA - 300),
+    y: 150 + Math.random() * (ARENA - 300),
+    type: t.id, icon: t.icon, color: t.color, label: t.label, dur: t.dur, r: 22,
+  }
+}
+
+function mkPowerups(n) {
+  return Array.from({ length: n }, () => spawnPowerup())
+}
+
+function mkSnake({ player, boss, ci, x, y, len, score = 0, pal = null }) {
   const a = Math.random() * Math.PI * 2
+  const ability = pal?.ability || null
   return {
     segs: Array.from({ length: len }, (_, i) => ({
       x: x - Math.cos(a) * i * SPD,
       y: y - Math.sin(a) * i * SPD,
     })),
-    angle: a, ci,
+    angle: a, ci, pal,
     player: !!player, boss: !!boss,
     name: player ? 'You' : boss ? 'BOSS' : PAL[ci].name,
     alive: true, tlen: len, score,
     wangle: a, wtimer: 0, respawn: 0,
+    effects: { shield: ability === 'guardian' ? 180 : 0, speed: 0, magnet: 0, multi: 0 },
   }
 }
 
-function mkState() {
+function mkState(pal) {
   const mid = ARENA / 2
   const snakes = [
-    mkSnake({ player:true, ci:0, x:mid, y:mid, len:30, score:0 }),
+    mkSnake({ player:true, ci:0, x:mid, y:mid, len:30, score:0, pal }),
     ...Array.from({ length: 7 }, (_, i) => {
       const a = (i / 7) * Math.PI * 2
       const d = 500 + Math.random() * 700
@@ -74,10 +122,11 @@ function mkState() {
     mkSnake({ boss:true, ci:8, x:mid+800, y:mid-600, len:700, score:1400 }),
   ]
   return {
-    snakes, foods: mkFood(FOOD_N),
+    snakes, foods: mkFood(FOOD_N), powerups: mkPowerups(POWERUP_N),
     camX: mid, camY: mid,
     timer: 180, lastSec: Date.now(),
     dead: false, deadT: 0, over: false, frame: 0,
+    banner: null, bannerTimer: 0,
   }
 }
 
@@ -112,10 +161,22 @@ function drawFood(ctx, f) {
   ctx.fillText(f.emoji, f.x, f.y)
 }
 
+function drawPowerup(ctx, p, frame) {
+  const pulse = 1 + Math.sin(frame * 0.08 + p.x) * 0.12
+  const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 26 * pulse)
+  glow.addColorStop(0, p.color + 'aa'); glow.addColorStop(1, p.color + '00')
+  ctx.fillStyle = glow
+  ctx.beginPath(); ctx.arc(p.x, p.y, 26 * pulse, 0, Math.PI * 2); ctx.fill()
+  ctx.strokeStyle = p.color; ctx.lineWidth = 2
+  ctx.beginPath(); ctx.arc(p.x, p.y, 15, 0, Math.PI * 2); ctx.stroke()
+  ctx.font = '20px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+  ctx.fillText(p.icon, p.x, p.y)
+}
+
 function drawSnakeBody(ctx, snake, W, H, camX, camY) {
   if (!snake.alive || snake.segs.length < 2) return
   const { segs, ci } = snake
-  const pal = PAL[ci]
+  const pal = snake.pal || PAL[ci]
   const r = segR(snake)
   ctx.lineWidth = 1.5
   for (let i = segs.length - 1; i >= 1; i--) {
@@ -123,19 +184,52 @@ function drawSnakeBody(ctx, snake, W, H, camX, camY) {
     const sx = s.x - camX + W * 0.5
     const sy = s.y - camY + H * 0.5
     if (sx < -r * 3 || sx > W + r * 3 || sy < -r * 3 || sy > H + r * 3) continue
+
+    if (pal.accent === 'glow') {
+      const glow = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, r * 2.2)
+      glow.addColorStop(0, pal.h + '55'); glow.addColorStop(1, pal.h + '00')
+      ctx.fillStyle = glow
+      ctx.beginPath(); ctx.arc(s.x, s.y, r * 2.2, 0, Math.PI * 2); ctx.fill()
+    }
+
     ctx.fillStyle = (i % 2 === 0) ? pal.b : pal.h
     ctx.strokeStyle = pal.o
     ctx.beginPath(); ctx.arc(s.x, s.y, r, 0, Math.PI * 2)
     ctx.fill(); ctx.stroke()
+
+    if (pal.accent === 'gears' && i % 2 === 0) {
+      ctx.fillStyle = pal.o
+      ctx.beginPath(); ctx.arc(s.x, s.y, r * 0.28, 0, Math.PI * 2); ctx.fill()
+    }
+    if (pal.accent === 'stars' && i % 5 === 0) {
+      ctx.fillStyle = 'rgba(255,255,255,0.85)'
+      ctx.beginPath(); ctx.arc(s.x - r * 0.3, s.y - r * 0.3, r * 0.16, 0, Math.PI * 2); ctx.fill()
+    }
+  }
+
+  if (snake.effects && snake.effects.shield > 0) {
+    ctx.save()
+    ctx.globalAlpha = 0.35 + 0.25 * Math.sin(Date.now() / 120)
+    ctx.strokeStyle = '#5AD1FF'; ctx.lineWidth = 3
+    for (let i = segs.length - 1; i >= 1; i -= 4) {
+      const s = segs[i]
+      ctx.beginPath(); ctx.arc(s.x, s.y, r * 1.5, 0, Math.PI * 2); ctx.stroke()
+    }
+    ctx.restore()
   }
 }
 
 function drawSnakeHead(ctx, snake) {
   if (!snake.alive || !snake.segs.length) return
-  const { segs, ci, angle, name, player, boss, score } = snake
-  const pal = PAL[ci]
+  const { segs, ci, angle, name, player, boss, score, effects } = snake
+  const pal = snake.pal || PAL[ci]
   const head = segs[0]
   const r = segR(snake)
+
+  if (pal.accent === 'glow') {
+    ctx.strokeStyle = pal.h + '99'; ctx.lineWidth = 4
+    ctx.beginPath(); ctx.arc(head.x, head.y, r * 1.9, 0, Math.PI * 2); ctx.stroke()
+  }
 
   ctx.fillStyle = pal.h
   ctx.strokeStyle = pal.o
@@ -154,6 +248,27 @@ function drawSnakeHead(ctx, snake) {
     ctx.beginPath()
     ctx.arc(ex + Math.cos(angle) * eR * 0.35, ey + Math.sin(angle) * eR * 0.35, eR * 0.55, 0, Math.PI * 2)
     ctx.fill()
+  }
+
+  if (pal.accent === 'halo') {
+    ctx.save()
+    ctx.strokeStyle = '#FFD966'; ctx.lineWidth = 2.5
+    ctx.beginPath(); ctx.ellipse(head.x, head.y - r * 1.9, r * 0.85, r * 0.32, 0, 0, Math.PI * 2)
+    ctx.stroke()
+    ctx.restore()
+  }
+  if (pal.accent === 'shades') {
+    ctx.font = `${Math.round(r * 1.3)}px Arial`
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+    ctx.fillText('🕶️', head.x, head.y)
+  }
+
+  if (effects && effects.shield > 0) {
+    ctx.save()
+    ctx.globalAlpha = 0.55 + 0.3 * Math.sin(Date.now() / 100)
+    ctx.strokeStyle = '#5AD1FF'; ctx.lineWidth = 3
+    ctx.beginPath(); ctx.arc(head.x, head.y, r * 2.1, 0, Math.PI * 2); ctx.stroke()
+    ctx.restore()
   }
 
   // Name + score badge above head
@@ -175,15 +290,151 @@ function drawSnakeHead(ctx, snake) {
   ctx.restore()
 }
 
+// ── Menu / shop ─────────────────────────────────────────────────────────
+
+function drawSkinPreview(ctx, cx, cy, pal) {
+  const r = 16
+  for (let i = 4; i >= 1; i--) {
+    const x = cx - i * (r * 1.4)
+    ctx.fillStyle = (i % 2 === 0) ? pal.b : pal.h
+    ctx.strokeStyle = pal.o
+    ctx.lineWidth = 1.5
+    ctx.beginPath(); ctx.arc(x, cy, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke()
+    if (pal.accent === 'gears' && i % 2 === 0) {
+      ctx.fillStyle = pal.o
+      ctx.beginPath(); ctx.arc(x, cy, r * 0.28, 0, Math.PI * 2); ctx.fill()
+    }
+    if (pal.accent === 'stars' && i % 2 === 0) {
+      ctx.fillStyle = 'rgba(255,255,255,0.9)'
+      ctx.beginPath(); ctx.arc(x - r * 0.3, cy - r * 0.3, r * 0.16, 0, Math.PI * 2); ctx.fill()
+    }
+  }
+
+  if (pal.accent === 'glow') {
+    ctx.strokeStyle = pal.h + '99'; ctx.lineWidth = 4
+    ctx.beginPath(); ctx.arc(cx, cy, r * 1.9, 0, Math.PI * 2); ctx.stroke()
+  }
+
+  ctx.fillStyle = pal.h; ctx.strokeStyle = pal.o; ctx.lineWidth = 2
+  ctx.beginPath(); ctx.arc(cx, cy, r * 1.25, 0, Math.PI * 2); ctx.fill(); ctx.stroke()
+
+  const eR = r * 0.33, eDist = r * 0.72
+  for (const side of [-1, 1]) {
+    const ex = cx + eDist * 0.7, ey = cy + side * eDist * 0.55
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(ex, ey, eR, 0, Math.PI * 2); ctx.fill()
+    ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(ex + eR * 0.35, ey, eR * 0.55, 0, Math.PI * 2); ctx.fill()
+  }
+
+  if (pal.accent === 'halo') {
+    ctx.strokeStyle = '#FFD966'; ctx.lineWidth = 2.5
+    ctx.beginPath(); ctx.ellipse(cx, cy - r * 1.9, r * 0.85, r * 0.32, 0, 0, Math.PI * 2); ctx.stroke()
+  }
+  if (pal.accent === 'shades') {
+    ctx.font = `${Math.round(r * 1.3)}px Arial`
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+    ctx.fillText('🕶️', cx, cy)
+  }
+}
+
+function drawMenuScreen(ctx, W, H, skinIdx, unlocked, high, coins, flashTimer) {
+  const bg = ctx.createLinearGradient(0, 0, 0, H)
+  bg.addColorStop(0, '#1a6688'); bg.addColorStop(1, '#0a2c40')
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H)
+
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+  ctx.font = 'bold 50px Arial'
+  ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillText('SNAKE CLASH', W / 2 + 2, H * 0.15 + 2)
+  ctx.fillStyle = '#ffffff'; ctx.fillText('SNAKE CLASH', W / 2, H * 0.15)
+
+  ctx.font = 'bold 15px Arial'
+  if (high > 0) {
+    ctx.fillStyle = '#FFD700'
+    ctx.fillText(`Best score: ${high}`, W / 2, H * 0.15 + 30)
+  }
+  ctx.fillStyle = '#FFE066'
+  ctx.fillText(`🪙 ${coins}`, W / 2, H * 0.15 + 52)
+
+  const skin  = SKINS[skinIdx] || SKINS[0]
+  const pal   = { ...skin.colors, accent: skin.accent }
+  const owned = unlocked.includes(skin.id)
+  const cy    = H * 0.46
+
+  ctx.fillStyle = 'rgba(0,0,0,0.4)'
+  ctx.fillRect(W / 2 - 175, cy - 90, 350, 220)
+
+  drawSkinPreview(ctx, W / 2, cy - 32, pal)
+
+  ctx.font = '12px Arial'; ctx.fillStyle = 'rgba(255,255,255,0.5)'
+  ctx.fillText('SKIN   (◀ / ▶ to browse)', W / 2, cy + 24)
+  ctx.font = 'bold 22px Arial'; ctx.fillStyle = 'rgba(255,255,255,0.85)'
+  ctx.fillText('◀', W / 2 - 145, cy - 10)
+  ctx.fillText('▶', W / 2 + 145, cy - 10)
+  ctx.font = 'bold 18px Arial'; ctx.fillStyle = '#ffffff'
+  ctx.fillText(skin.name, W / 2, cy + 48)
+
+  ctx.font = '12px Arial'; ctx.fillStyle = '#9BE7FF'
+  ctx.fillText(skin.abilityLabel || 'No special ability', W / 2, cy + 68)
+
+  if (owned) {
+    ctx.font = 'bold 13px Arial'; ctx.fillStyle = '#7CFF9E'
+    ctx.fillText('OWNED — click / Enter to play', W / 2, cy + 94)
+  } else {
+    const afford = coins >= skin.cost
+    ctx.font = 'bold 13px Arial'
+    ctx.fillStyle = afford ? '#FFD700' : 'rgba(255,150,150,0.9)'
+    ctx.fillText(`🪙 ${skin.cost} — click / Enter to buy`, W / 2, cy + 94)
+  }
+
+  if (flashTimer > 0) {
+    ctx.font = 'bold 13px Arial'
+    ctx.fillStyle = `rgba(255,80,80,${Math.min(1, flashTimer / 30)})`
+    ctx.fillText('Not enough coins!', W / 2, cy + 114)
+  }
+
+  const dotY = cy + 132, spacing = 20
+  const startX = W / 2 - ((SKINS.length - 1) * spacing) / 2
+  for (let i = 0; i < SKINS.length; i++) {
+    const unl = unlocked.includes(SKINS[i].id)
+    const sel = i === skinIdx
+    ctx.beginPath()
+    ctx.arc(startX + i * spacing, dotY, sel ? 5.5 : 3.5, 0, Math.PI * 2)
+    ctx.fillStyle = unl ? (sel ? '#FFD700' : 'rgba(255,255,255,0.72)') : 'rgba(255,255,255,0.28)'
+    ctx.fill()
+  }
+
+  const pulse = 0.55 + 0.45 * Math.sin(Date.now() / 480)
+  ctx.font = '14px Arial'; ctx.fillStyle = `rgba(255,255,255,${pulse})`
+  ctx.fillText('Power-ups in the arena: 🛡️ Shield  ⚡ Speed  🧲 Magnet  ✨ Score x2', W / 2, H * 0.87)
+}
+
 // ── Component ─────────────────────────────────────────────────────────
 
 export default function SnakeClash() {
-  const canvasRef = useRef(null)
-  const rafRef    = useRef(null)
-  const mouseRef  = useRef({ x: 0, y: 0 })
-  const boostRef  = useRef(false)
-  const sizeRef   = useRef({ w: window.innerWidth, h: window.innerHeight })
-  const stateRef  = useRef(null)
+  const canvasRef   = useRef(null)
+  const rafRef      = useRef(null)
+  const mouseRef    = useRef({ x: 0, y: 0 })
+  const boostRef    = useRef(false)
+  const sizeRef     = useRef({ w: window.innerWidth, h: window.innerHeight })
+  const stateRef    = useRef(null)
+  const phaseRef    = useRef('menu') // 'menu' | 'playing'
+  const skinIdxRef  = useRef(0)
+  const unlockedRef = useRef(['classic'])
+  const highRef     = useRef(0)
+  const coinsRef    = useRef(0)
+  const flashRef    = useRef(0)
+
+  // Load persisted skin/unlock/coin data
+  useEffect(() => {
+    try {
+      highRef.current  = parseInt(localStorage.getItem('snakeClashHigh')  || '0', 10) || 0
+      coinsRef.current = parseInt(localStorage.getItem('snakeClashCoins') || '0', 10) || 0
+      const skins = JSON.parse(localStorage.getItem('snakeClashSkins') || '["classic"]')
+      unlockedRef.current = Array.isArray(skins) ? skins : ['classic']
+      const savedId = localStorage.getItem('snakeClashSkin')
+      const idx = SKINS.findIndex(s => s.id === savedId && unlockedRef.current.includes(s.id))
+      if (idx >= 0) skinIdxRef.current = idx
+    } catch {}
+  }, [])
 
   // Canvas resize
   useEffect(() => {
@@ -198,13 +449,53 @@ export default function SnakeClash() {
     return () => window.removeEventListener('resize', onResize)
   }, [])
 
+  function prevSkin() {
+    skinIdxRef.current = (skinIdxRef.current - 1 + SKINS.length) % SKINS.length
+  }
+
+  function nextSkin() {
+    skinIdxRef.current = (skinIdxRef.current + 1) % SKINS.length
+  }
+
+  function startGame() {
+    const skin = SKINS[skinIdxRef.current] || SKINS[0]
+    stateRef.current = mkState({ ...skin.colors, accent: skin.accent || null, ability: skin.ability || null })
+    phaseRef.current  = 'playing'
+  }
+
+  // Buy the currently-browsed skin if unowned, or play with it if owned
+  function selectAction() {
+    const skin  = SKINS[skinIdxRef.current] || SKINS[0]
+    const owned = unlockedRef.current.includes(skin.id)
+    if (owned) {
+      try { localStorage.setItem('snakeClashSkin', skin.id) } catch {}
+      startGame()
+    } else if (coinsRef.current >= skin.cost) {
+      coinsRef.current -= skin.cost
+      unlockedRef.current = [...unlockedRef.current, skin.id]
+      try {
+        localStorage.setItem('snakeClashSkins', JSON.stringify(unlockedRef.current))
+        localStorage.setItem('snakeClashCoins', String(coinsRef.current))
+      } catch {}
+    } else {
+      flashRef.current = 45
+    }
+  }
+
   // Input
   useEffect(() => {
     const canvas = canvasRef.current
     const onMove     = e => { mouseRef.current = { x: e.clientX, y: e.clientY } }
     const onDown     = () => { boostRef.current = true }
     const onUp       = () => { boostRef.current = false }
-    const onKey      = e => { if (e.code === 'Space') { e.preventDefault(); boostRef.current = true } }
+    const onKey      = e => {
+      if (e.code === 'Space') { e.preventDefault(); boostRef.current = true }
+      if (phaseRef.current === 'menu') {
+        if (e.code === 'ArrowLeft')  prevSkin()
+        if (e.code === 'ArrowRight') nextSkin()
+        if (e.code === 'Enter')      selectAction()
+      }
+    }
     const onKeyUp    = e => { if (e.code === 'Space') boostRef.current = false }
     const onTouchMv  = e => {
       if (e.touches[0]) mouseRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
@@ -233,7 +524,6 @@ export default function SnakeClash() {
   useEffect(() => {
     const canvas = canvasRef.current
     const ctx    = canvas.getContext('2d')
-    stateRef.current = mkState()
 
     function nearestFood(hx, hy, range, foods) {
       const r2 = range * range
@@ -243,6 +533,12 @@ export default function SnakeClash() {
         if (d < bd) { best = f; bd = d }
       }
       return best
+    }
+
+    function awardCoins(amount) {
+      if (amount <= 0) return
+      coinsRef.current += amount
+      try { localStorage.setItem('snakeClashCoins', String(coinsRef.current)) } catch {}
     }
 
     function killSnake(g, sn) {
@@ -255,8 +551,12 @@ export default function SnakeClash() {
           pts: 15, r: 18,
         })
       }
-      if (sn.player) { g.dead = true; g.deadT = 210 }
-      else sn.respawn = 200 + Math.floor(Math.random() * 160)
+      if (sn.player) {
+        awardCoins(Math.floor(sn.score / 8))
+        g.dead = true; g.deadT = 210
+      } else {
+        sn.respawn = 200 + Math.floor(Math.random() * 160)
+      }
     }
 
     function spawnFood() {
@@ -269,24 +569,38 @@ export default function SnakeClash() {
     }
 
     function step() {
+      const { w: W, h: H } = sizeRef.current
+
+      if (phaseRef.current === 'menu') {
+        if (flashRef.current > 0) flashRef.current--
+        drawMenuScreen(ctx, W, H, skinIdxRef.current, unlockedRef.current, highRef.current, coinsRef.current, flashRef.current)
+        rafRef.current = requestAnimationFrame(step)
+        return
+      }
+
       const g = stateRef.current
       if (!g) { rafRef.current = requestAnimationFrame(step); return }
-      const { w: W, h: H } = sizeRef.current
       g.frame++
+      if (g.bannerTimer > 0) g.bannerTimer--
 
       // Countdown
       const now = Date.now()
       if (now - g.lastSec >= 1000 && !g.over && !g.dead) {
         g.timer = Math.max(0, g.timer - 1)
         g.lastSec = now
-        if (g.timer === 0) g.over = true
+        if (g.timer === 0) {
+          g.over = true
+          const p = g.snakes.find(s => s.player)
+          if (p) awardCoins(Math.floor(p.score / 8))
+        }
       }
 
-      // Dead → auto restart
+      // Dead → auto restart (same equipped skin)
       if (g.dead) {
         g.deadT--
         if (g.deadT <= 0) {
-          stateRef.current = mkState()
+          const skin = SKINS[skinIdxRef.current] || SKINS[0]
+          stateRef.current = mkState({ ...skin.colors, accent: skin.accent || null, ability: skin.ability || null })
           rafRef.current = requestAnimationFrame(step)
           return
         }
@@ -303,6 +617,7 @@ export default function SnakeClash() {
               const sx = ARENA/2 + Math.cos(a)*d, sy = ARENA/2 + Math.sin(a)*d
               sn.segs  = Array.from({ length: 60 }, (_, i) => ({ x: sx-Math.cos(a)*i*SPD, y: sy-Math.sin(a)*i*SPD }))
               sn.tlen  = 60; sn.score = 120; sn.angle = a; sn.alive = true
+              sn.effects = { shield: 0, speed: 0, magnet: 0, multi: 0 }
             }
           }
         }
@@ -310,8 +625,11 @@ export default function SnakeClash() {
         // Update each alive snake
         for (const sn of g.snakes) {
           if (!sn.alive) continue
-          const head     = sn.segs[0]
-          const boosting = sn.player && boostRef.current && sn.segs.length > 40
+          for (const k in sn.effects) if (sn.effects[k] > 0) sn.effects[k]--
+
+          const head        = sn.segs[0]
+          const manualBoost = sn.player && boostRef.current && sn.segs.length > 40
+          const speedActive = manualBoost || sn.effects.speed > 0
           let ta = sn.angle
 
           if (sn.player) {
@@ -335,26 +653,45 @@ export default function SnakeClash() {
             }
           }
 
-          // Steer
+          // Steer (Clockwork's Precision ability turns sharper)
+          const turnRate = sn.pal?.ability === 'precision' ? TURN * 1.6 : TURN
           const da = adiff(ta, sn.angle)
-          sn.angle += Math.sign(da) * Math.min(Math.abs(da), TURN)
+          sn.angle += Math.sign(da) * Math.min(Math.abs(da), turnRate)
 
           // Move
-          const spd = boosting ? SPD_BST : sn.boss ? 2.0 : SPD
+          const spd = speedActive ? SPD_BST : sn.boss ? 2.0 : SPD
           const nx  = Math.max(5, Math.min(ARENA - 5, head.x + Math.cos(sn.angle) * spd))
           const ny  = Math.max(5, Math.min(ARENA - 5, head.y + Math.sin(sn.angle) * spd))
           sn.segs.unshift({ x: nx, y: ny })
-          if (boosting) sn.tlen = Math.max(30, sn.tlen - BST_DRAIN)
+          if (manualBoost) {
+            const drainMult = sn.pal?.ability === 'slick' ? 0.6 : 1
+            sn.tlen = Math.max(30, sn.tlen - BST_DRAIN * drainMult)
+          }
+          if (sn.pal?.ability === 'regen') sn.tlen += 0.035
           while (sn.segs.length > Math.ceil(sn.tlen)) sn.segs.pop()
 
           // Eat food
-          const er2 = (segR(sn) + 16) ** 2
+          const magnetBonus = (sn.effects.magnet > 0 ? 55 : 0) + (sn.pal?.ability === 'gravity' ? 25 : 0)
+          const er2 = (segR(sn) + 16 + magnetBonus) ** 2
+          const mult = sn.effects.multi > 0 ? 2 : 1
           for (let i = g.foods.length - 1; i >= 0; i--) {
             const f = g.foods[i]
             if ((nx - f.x) ** 2 + (ny - f.y) ** 2 < er2) {
-              sn.tlen += 12; sn.score += f.pts
+              sn.tlen += 12; sn.score += f.pts * mult
               g.foods.splice(i, 1)
               g.foods.push(spawnFood())
+            }
+          }
+
+          // Grab power-ups
+          const pr2 = (segR(sn) + 20) ** 2
+          for (let i = g.powerups.length - 1; i >= 0; i--) {
+            const p = g.powerups[i]
+            if ((nx - p.x) ** 2 + (ny - p.y) ** 2 < pr2) {
+              sn.effects[p.type] = (sn.effects[p.type] || 0) + p.dur
+              g.powerups.splice(i, 1)
+              g.powerups.push(spawnPowerup())
+              if (sn.player) { g.banner = p; g.bannerTimer = 100 }
             }
           }
 
@@ -372,21 +709,25 @@ export default function SnakeClash() {
             if (hitJ < 0) continue
 
             if (sn.score > other.score) {
-              // sn is bigger — sever other at the hit point, tail becomes food
-              const dropped = other.segs.splice(hitJ)
-              other.tlen = other.segs.length
-              for (let k = 0; k < dropped.length; k += 2) {
-                g.foods.push({
-                  x: dropped[k].x, y: dropped[k].y,
-                  emoji: FRUITS[Math.floor(Math.random() * FRUITS.length)],
-                  pts: 12, r: 18,
-                })
+              if (other.effects.shield > 0) {
+                // other is shielded — collision has no effect
+              } else {
+                // sn is bigger — sever other at the hit point, tail becomes food
+                const dropped = other.segs.splice(hitJ)
+                other.tlen = other.segs.length
+                for (let k = 0; k < dropped.length; k += 2) {
+                  g.foods.push({
+                    x: dropped[k].x, y: dropped[k].y,
+                    emoji: FRUITS[Math.floor(Math.random() * FRUITS.length)],
+                    pts: 12, r: 18,
+                  })
+                }
+                sn.score += Math.floor(dropped.length * 2)
+                sn.tlen  += Math.floor(dropped.length * 0.35)
+                if (other.segs.length < 12) killSnake(g, other)
               }
-              sn.score += Math.floor(dropped.length * 2)
-              sn.tlen  += Math.floor(dropped.length * 0.35)
-              if (other.segs.length < 12) killSnake(g, other)
-            } else {
-              // sn is smaller or equal — sn dies
+            } else if (sn.effects.shield <= 0) {
+              // sn is smaller or equal, and unshielded — sn dies
               killSnake(g, sn)
             }
             break
@@ -399,6 +740,12 @@ export default function SnakeClash() {
       if (player && player.alive) {
         g.camX += (player.segs[0].x - g.camX) * 0.12
         g.camY += (player.segs[0].y - g.camY) * 0.12
+      }
+
+      // High score (based on player's current run score)
+      if (player && player.score > highRef.current) {
+        highRef.current = player.score
+        try { localStorage.setItem('snakeClashHigh', String(player.score)) } catch {}
       }
 
       // ── DRAW ──────────────────────────────────────────────────────
@@ -425,6 +772,14 @@ export default function SnakeClash() {
         const fy = f.y - g.camY + H / 2
         if (fx < -40 || fx > W + 40 || fy < -40 || fy > H + 40) continue
         drawFood(ctx, f)
+      }
+
+      // Power-ups
+      for (const p of g.powerups) {
+        const px = p.x - g.camX + W / 2
+        const py = p.y - g.camY + H / 2
+        if (px < -40 || px > W + 40 || py < -40 || py > H + 40) continue
+        drawPowerup(ctx, p, g.frame)
       }
 
       // Snake bodies (enemies first, player last = on top)
@@ -457,7 +812,7 @@ export default function SnakeClash() {
       ctx.fillStyle = '#aaddff'; ctx.fillText('LEADERBOARD', lbX + lbW / 2, lbY + 10)
       for (let i = 0; i < Math.min(alive.length, 8); i++) {
         const sn  = alive[i]
-        const pal = PAL[sn.ci]
+        const pal = sn.pal || PAL[sn.ci]
         const py  = lbY + 20 + i * 24 + 10
         if (sn.player) {
           ctx.fillStyle = 'rgba(255,100,40,0.28)'
@@ -473,12 +828,29 @@ export default function SnakeClash() {
       }
 
       // Boost indicator (bottom left)
-      const boosting = boostRef.current && player && player.alive
+      const boosting = (boostRef.current || (player?.effects?.speed > 0)) && player && player.alive
       ctx.fillStyle = 'rgba(0,0,0,0.55)'
       ctx.fillRect(10, H - 50, 220, 40)
       ctx.font = '13px Arial'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'
       ctx.fillStyle = boosting ? '#ffcc33' : 'rgba(255,255,255,0.5)'
       ctx.fillText(boosting ? '⚡ SPEED BOOST' : 'Hold click / space to boost', 18, H - 30)
+
+      // Active power-up effects (above boost bar)
+      if (player && player.alive) {
+        const active = POWERUP_TYPES.filter(t => player.effects[t.id] > 0)
+        if (active.length) {
+          const bw = 58
+          active.forEach((t, i) => {
+            const bx = 10 + i * (bw + 6), by = H - 96
+            ctx.fillStyle = 'rgba(0,0,0,0.55)'
+            ctx.fillRect(bx, by, bw, 34)
+            ctx.font = '16px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+            ctx.fillText(t.icon, bx + 18, by + 17)
+            ctx.font = '11px Arial'; ctx.fillStyle = '#fff'
+            ctx.fillText(Math.ceil(player.effects[t.id] / 60) + 's', bx + 42, by + 17)
+          })
+        }
+      }
 
       // Timer (bottom right)
       const mins = String(Math.floor(g.timer / 60)).padStart(1, '0')
@@ -490,6 +862,16 @@ export default function SnakeClash() {
       ctx.font = `bold 20px Arial`
       ctx.fillStyle = g.timer < 30 ? '#ff4422' : '#ffffff'
       ctx.fillText(`${mins}:${secs}`, W - 60, H - 23)
+
+      // Power-up pickup banner
+      if (g.bannerTimer > 0 && g.banner) {
+        const a = Math.min(1, g.bannerTimer / 20) * Math.min(1, (100 - g.bannerTimer + 20) / 20)
+        ctx.fillStyle = `rgba(0,0,0,${0.72 * a})`
+        ctx.fillRect(W / 2 - 150, 12, 300, 40)
+        ctx.font = 'bold 14px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+        ctx.fillStyle = g.banner.color
+        ctx.fillText(`${g.banner.icon} ${g.banner.label} activated!`, W / 2, 32)
+      }
 
       // Dead overlay
       if (g.dead) {
@@ -507,14 +889,14 @@ export default function SnakeClash() {
         ctx.fillStyle = '#FFD700'; ctx.fillText("TIME'S UP!", W / 2, H / 2 - 70)
         const top = g.snakes.filter(sn => sn.alive).sort((a, b) => b.score - a.score)[0]
         if (top) {
-          const pal = PAL[top.ci]
+          const pal = top.pal || PAL[top.ci]
           ctx.font = 'bold 30px Arial'; ctx.fillStyle = pal.h
           ctx.fillText(`🏆 ${top.name} wins!`, W / 2, H / 2 - 15)
           ctx.font = '22px Arial'; ctx.fillStyle = '#cccccc'
           ctx.fillText(`Score: ${top.score}`, W / 2, H / 2 + 24)
         }
         ctx.font = '17px Arial'; ctx.fillStyle = 'rgba(255,255,255,0.6)'
-        ctx.fillText('Click to play again', W / 2, H / 2 + 68)
+        ctx.fillText('Click for menu', W / 2, H / 2 + 78)
       }
 
       rafRef.current = requestAnimationFrame(step)
@@ -524,9 +906,21 @@ export default function SnakeClash() {
     return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current) }
   }, [])
 
-  function handleClick() {
+  function handleClick(e) {
+    const { w: W } = sizeRef.current
+
+    if (phaseRef.current === 'menu') {
+      if (e.clientX < W * 0.18) { prevSkin(); return }
+      if (e.clientX > W * 0.82) { nextSkin(); return }
+      selectAction()
+      return
+    }
+
     const g = stateRef.current
-    if (g && g.over) stateRef.current = mkState()
+    if (g && g.over) {
+      phaseRef.current = 'menu'
+      stateRef.current = null
+    }
   }
 
   return (
