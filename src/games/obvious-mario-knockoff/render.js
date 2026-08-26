@@ -4,6 +4,7 @@
 import { W, H, GROUND_Y, THEMES } from './constants.js'
 import { LEVELS } from './levels.js'
 import { currentLevel } from './engine.js'
+import { CHARACTERS } from './characters.js'
 
 function drawBackground(ctx, theme, camX) {
   const g = ctx.createLinearGradient(0, 0, 0, H)
@@ -34,6 +35,13 @@ function drawBackground(ctx, theme, camX) {
   }
   if (theme.lava) {
     ctx.fillStyle = 'rgba(255,90,20,0.12)'
+    for (let i = 0; i < 5; i++) {
+      const x = ((i * 260 - camX * 0.4) % (W + 200) + (W + 200)) % (W + 200) - 100
+      ctx.beginPath(); ctx.arc(x, H - 20, 90, Math.PI, 0); ctx.fill()
+    }
+  }
+  if (theme.fog) {
+    ctx.fillStyle = theme.fogColor || 'rgba(255,90,20,0.12)'
     for (let i = 0; i < 5; i++) {
       const x = ((i * 260 - camX * 0.4) % (W + 200) + (W + 200)) % (W + 200) - 100
       ctx.beginPath(); ctx.arc(x, H - 20, 90, Math.PI, 0); ctx.fill()
@@ -80,7 +88,7 @@ function drawBlock(ctx, theme, b, camX) {
   }
 }
 
-function drawPipe(ctx, p, camX) {
+function drawPipe(ctx, p, camX, frame) {
   const x = p.x - camX
   if (x < -100 || x > W + 100) return
   ctx.fillStyle = '#2f9e4a'
@@ -91,6 +99,19 @@ function drawPipe(ctx, p, camX) {
   ctx.fillRect(x - 6, p.y, p.w + 12, 16)
   ctx.fillStyle = '#3fc75f'
   ctx.fillRect(x - 6, p.y, 10, 16)
+
+  // Enterable pipes get a bouncing "press down" hint so it reads as a door,
+  // not just an obstacle.
+  if (p.enterable) {
+    const bob = Math.sin(frame * 0.1) * 4
+    ctx.fillStyle = '#fff8e0'
+    ctx.beginPath()
+    ctx.moveTo(x + p.w / 2 - 10, p.y - 16 + bob)
+    ctx.lineTo(x + p.w / 2 + 10, p.y - 16 + bob)
+    ctx.lineTo(x + p.w / 2, p.y - 4 + bob)
+    ctx.closePath()
+    ctx.fill()
+  }
 }
 
 function drawEnemy(ctx, e, camX) {
@@ -152,6 +173,35 @@ function drawBoss(ctx, boss, camX) {
   ctx.restore()
 }
 
+// A spiky chomping hazard sitting right on the ground — not a platform,
+// just something to jump over (or, if you're Yoshi, ignore entirely).
+function drawMuncher(ctx, m, camX, frame) {
+  const x = m.x - camX
+  if (x < -40 || x > W + 40) return
+  const chomp = Math.sin(frame * 0.25 + m.x) * 0.15
+  ctx.save()
+  ctx.translate(x + m.w / 2, m.y + m.h)
+  ctx.fillStyle = '#173a12'
+  ctx.fillRect(-3, -m.h, 6, m.h * 0.4)
+  ctx.fillStyle = '#111'
+  ctx.beginPath(); ctx.arc(0, -m.h * 0.85, m.w * 0.42, 0, Math.PI * 2); ctx.fill()
+  ctx.fillStyle = '#fff'
+  ;[-1, 0, 1].forEach(i => {
+    const wobble = 1 + chomp * i
+    ctx.beginPath()
+    ctx.moveTo(i * m.w * 0.2, -m.h * 0.85 - 2)
+    ctx.lineTo(i * m.w * 0.2 - 4 * wobble, -m.h * 0.85 + 9)
+    ctx.lineTo(i * m.w * 0.2 + 4 * wobble, -m.h * 0.85 + 9)
+    ctx.closePath(); ctx.fill()
+  })
+  ctx.fillStyle = '#ff3b3b'
+  ctx.beginPath()
+  ctx.arc(-m.w * 0.16, -m.h * 0.95, 3, 0, Math.PI * 2)
+  ctx.arc(m.w * 0.16, -m.h * 0.95, 3, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.restore()
+}
+
 function drawCoin(ctx, c, camX, frame) {
   if (c.taken) return
   const x = c.x - camX
@@ -169,6 +219,50 @@ function drawCoin(ctx, c, camX, frame) {
 function drawPowerup(ctx, pu, camX, frame) {
   const x = pu.x - camX
   if (x < -50 || x > W + 50) return
+  if (pu.type === 'shield') {
+    const pulse = 1 + Math.sin(frame * 0.15) * 0.08
+    ctx.save()
+    ctx.translate(x + pu.w / 2, pu.y + pu.h / 2)
+    ctx.scale(pulse, pulse)
+    ctx.beginPath(); ctx.arc(0, 0, 16, 0, Math.PI * 2)
+    ctx.fillStyle = 'rgba(120,200,255,0.35)'; ctx.fill()
+    ctx.strokeStyle = '#bfe8ff'; ctx.lineWidth = 2.5; ctx.stroke()
+    ctx.beginPath(); ctx.arc(-5, -5, 4, 0, Math.PI * 2)
+    ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.fill()
+    ctx.restore()
+    return
+  }
+  if (pu.type === 'sneaker') {
+    ctx.save()
+    ctx.translate(x + pu.w / 2, pu.y + pu.h / 2)
+    ctx.fillStyle = '#2fd0c0'
+    ctx.beginPath(); ctx.ellipse(0, 4, 14, 8, 0, 0, Math.PI * 2); ctx.fill()
+    ctx.fillStyle = '#1a8a7d'
+    ctx.fillRect(-14, 4, 28, 5)
+    ctx.fillStyle = '#fff'
+    ctx.beginPath(); ctx.moveTo(6, -2); ctx.lineTo(20, -10); ctx.lineTo(14, 2); ctx.closePath(); ctx.fill()
+    ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = 2
+    for (let i = 0; i < 3; i++) {
+      ctx.beginPath(); ctx.moveTo(-20 - i * 4, -2 + i * 4); ctx.lineTo(-12 - i * 4, -2 + i * 4); ctx.stroke()
+    }
+    ctx.restore()
+    return
+  }
+  if (pu.type === 'feather') {
+    ctx.save()
+    ctx.translate(x + pu.w / 2, pu.y + pu.h / 2)
+    ctx.rotate(Math.sin(frame * 0.08) * 0.3)
+    ctx.fillStyle = '#f5d97a'
+    ctx.beginPath(); ctx.ellipse(0, 0, 7, 16, 0, 0, Math.PI * 2); ctx.fill()
+    ctx.strokeStyle = '#c9a53c'; ctx.lineWidth = 1.5
+    ctx.beginPath(); ctx.moveTo(0, -14); ctx.lineTo(0, 14); ctx.stroke()
+    for (let i = -1; i <= 1; i += 2) {
+      ctx.beginPath(); ctx.moveTo(0, -6); ctx.lineTo(i * 6, -2); ctx.stroke()
+      ctx.beginPath(); ctx.moveTo(0, 2); ctx.lineTo(i * 6, 6); ctx.stroke()
+    }
+    ctx.restore()
+    return
+  }
   if (pu.type === 'star') {
     const hue = (frame * 6) % 360
     ctx.fillStyle = `hsl(${hue},90%,60%)`
@@ -244,37 +338,53 @@ function drawFlag(ctx, level, camX) {
   ctx.fillRect(cx + 95, GROUND_Y - 70, 30, 70)
 }
 
+// A cape flap trailing off the back of whatever body shape drew, and a
+// shield bubble ring around the whole sprite — both generic overlays used
+// regardless of which character body is underneath them.
+function drawCapeFlap(ctx, bodyW, bodyY, bodyH, frame) {
+  const flap = Math.sin(frame * 0.3) * 6
+  ctx.fillStyle = '#f5d97a'
+  ctx.beginPath()
+  ctx.moveTo(-bodyW / 2 - 2, bodyY + 2)
+  ctx.lineTo(-bodyW / 2 - 16 - flap, bodyY + bodyH * 0.5)
+  ctx.lineTo(-bodyW / 2 - 2, bodyY + bodyH)
+  ctx.closePath()
+  ctx.fill()
+  ctx.strokeStyle = '#c9a53c'; ctx.lineWidth = 1.5; ctx.stroke()
+}
+
+function drawShieldRing(ctx, w, h) {
+  ctx.strokeStyle = 'rgba(150,220,255,0.9)'
+  ctx.lineWidth = 3
+  ctx.beginPath(); ctx.arc(0, 0, Math.max(w, h) * 0.62, 0, Math.PI * 2); ctx.stroke()
+  ctx.fillStyle = 'rgba(150,220,255,0.15)'
+  ctx.fill()
+}
+
 // A side-view plumber-guy, drawn as layered rounded shapes rather than a
 // pixel bitmap — cap+brim, poofy sideburn hair, big nose, mustache,
 // overalls with a bib button, one visible sleeve/glove, and two-tone shoes.
 // Recolors for the fire form (white overalls, red shirt) and flashes
-// through a color cycle while starred.
-function drawPlayer(ctx, p, camX, frame) {
-  if (p.invincible > 0 && p.starTimer <= 0 && Math.floor(p.invincible / 4) % 2 === 0 && !p.dead) return
-  const x = p.x - camX
-  const w = p.w, h = p.h
-  ctx.save()
-  ctx.translate(x + w / 2, p.y + h / 2)
-  if (p.dead) ctx.rotate(Math.PI)
-  ctx.scale(p.facing, 1)
-
-  const starColors = ['#ff4d4d', '#ffd93d', '#4dd2ff', '#7bff4d', '#ff4dde']
-  const starred = p.starTimer > 0
-  const capColor = starred ? starColors[Math.floor(frame / 4) % starColors.length] : '#d43a2f'
-  const overallColor = p.powerState === 'fire' ? '#f4f0e6' : '#2f6fd0'
-  const overallDark = p.powerState === 'fire' ? '#d8d0bc' : '#1f4a90'
+// through a color cycle while starred. bodyScale/headScale let the same
+// routine read as bulkier (Wario) or lankier (Waluigi) without new geometry.
+function drawPlumberBody(ctx, p, w, h, frame, character, starred, accentCycle) {
+  const baseCap = character.cap
+  const capColor = starred ? accentCycle : baseCap
+  const overallColor = p.powerState === 'fire' ? '#f4f0e6' : character.overall
+  const overallDark = p.powerState === 'fire' ? '#d8d0bc' : character.overallDark
   const skin = '#f2c299'
-  const hairMustache = '#4a2f18'
+  const hairMustache = character.hair
+  const headScale = character.headScale || 1
 
   const headH = h * 0.34
   const bodyH = h * 0.5
   const legH = h * 0.16
-  const bodyW = w * 0.82
+  const bodyW = w * 0.82 * (character.bodyScale || 1)
 
   // legs — a light walk-cycle wiggle while moving
   const walking = Math.abs(p.vx) > 0.3 && p.onGround
   const stride = walking ? Math.sin(frame * 0.5) * (w * 0.12) : 0
-  ctx.fillStyle = hairMustache
+  ctx.fillStyle = p.sneakerTimer > 0 ? '#2fd0c0' : hairMustache
   ctx.fillRect(-bodyW / 2 - stride * 0.3, h / 2 - legH, bodyW * 0.42, legH)
   ctx.fillRect(bodyW / 2 - bodyW * 0.42 + stride * 0.3, h / 2 - legH, bodyW * 0.42, legH)
 
@@ -292,7 +402,7 @@ function drawPlayer(ctx, p, camX, frame) {
   ctx.beginPath(); ctx.arc(bodyW * 0.06, bodyY + bodyH * 0.2, 2.6, 0, Math.PI * 2); ctx.fill()
   // shirt sleeve (front arm) + glove
   const armSwing = walking ? Math.sin(frame * 0.5 + Math.PI) * 6 : (p.onGround ? 0 : -14)
-  ctx.fillStyle = starred ? capColor : '#d43a2f'
+  ctx.fillStyle = starred ? capColor : baseCap
   if (p.powerState === 'fire') ctx.fillStyle = starred ? capColor : '#e8503c'
   ctx.save()
   ctx.translate(bodyW * 0.3, bodyY + bodyH * 0.12)
@@ -302,11 +412,16 @@ function drawPlayer(ctx, p, camX, frame) {
   ctx.beginPath(); ctx.arc(0.5, bodyH * 0.42, 5.5, 0, Math.PI * 2); ctx.fill()
   ctx.restore()
   // back sleeve peek
-  ctx.fillStyle = p.powerState === 'fire' ? '#e8503c' : '#d43a2f'
+  ctx.fillStyle = p.powerState === 'fire' ? '#e8503c' : baseCap
   ctx.fillRect(-bodyW / 2 - 2, bodyY, 8, bodyH * 0.32)
 
-  // head
+  // head — scaled around its own center so a bigger/smaller head doesn't
+  // shift bodyY/bodyW (which the cape/shield overlays rely on downstream).
   const headY = bodyY - headH * 0.72
+  ctx.save()
+  ctx.translate(0, headY + headH / 2)
+  ctx.scale(headScale, headScale)
+  ctx.translate(0, -(headY + headH / 2))
   ctx.fillStyle = skin
   ctx.beginPath()
   ctx.roundRect(-w * 0.34, headY, w * 0.68, headH, 8)
@@ -333,6 +448,260 @@ function drawPlayer(ctx, p, camX, frame) {
   ctx.beginPath()
   ctx.ellipse(w * 0.16, headY + headH * 0.78, w * 0.24, headH * 0.16, 0, 0, Math.PI * 2)
   ctx.fill()
+  ctx.restore()
+
+  return { bodyW, bodyY, bodyH }
+}
+
+// A dress-and-crown frame for the royal cast (Peach/Daisy/Rosalina) — a
+// bell-shaped skirt instead of overalls, flowing hair instead of a cap.
+function drawRoyalBody(ctx, p, w, h, frame, character, starred, accentCycle) {
+  const dressColor = p.powerState === 'fire' ? '#f4f0e6' : character.dress
+  const dressDark = p.powerState === 'fire' ? '#d8d0bc' : character.dressDark
+  const skin = '#f2c299'
+  const hair = character.hair
+  const crownColor = starred ? accentCycle : character.crown
+
+  const headH = h * 0.32
+  const bodyH = h * 0.54
+  const legH = h * 0.1
+  const bodyW = w * 0.92
+
+  const walking = Math.abs(p.vx) > 0.3 && p.onGround
+  const stride = walking ? Math.sin(frame * 0.5) * (w * 0.08) : 0
+
+  // feet peeking under the dress hem
+  ctx.fillStyle = p.sneakerTimer > 0 ? '#2fd0c0' : '#fff5e8'
+  ctx.fillRect(-w * 0.14 - stride * 0.3, h / 2 - legH, w * 0.14, legH)
+  ctx.fillRect(stride * 0.3, h / 2 - legH, w * 0.14, legH)
+
+  // dress — a bell shape flaring from the waist to the hem
+  const bodyY = h / 2 - legH - bodyH
+  const waistY = bodyY + bodyH * 0.3
+  ctx.fillStyle = dressColor
+  ctx.beginPath()
+  ctx.moveTo(-bodyW * 0.18, waistY)
+  ctx.lineTo(bodyW * 0.18, waistY)
+  ctx.lineTo(bodyW / 2, bodyY + bodyH)
+  ctx.lineTo(-bodyW / 2, bodyY + bodyH)
+  ctx.closePath()
+  ctx.fill()
+  // bodice
+  ctx.fillStyle = dressDark
+  ctx.beginPath()
+  ctx.roundRect(-bodyW * 0.2, bodyY, bodyW * 0.4, bodyH * 0.34, 4)
+  ctx.fill()
+  // brooch
+  ctx.fillStyle = '#ffd93d'
+  ctx.beginPath(); ctx.arc(0, bodyY + bodyH * 0.16, 2.6, 0, Math.PI * 2); ctx.fill()
+
+  // sleeve/arm (front)
+  const armSwing = walking ? Math.sin(frame * 0.5 + Math.PI) * 6 : (p.onGround ? 0 : -14)
+  ctx.fillStyle = dressColor
+  ctx.save()
+  ctx.translate(bodyW * 0.28, bodyY + bodyH * 0.14)
+  ctx.rotate((armSwing * Math.PI) / 180)
+  ctx.fillRect(-4, 0, 8, bodyH * 0.34)
+  ctx.fillStyle = skin
+  ctx.beginPath(); ctx.arc(0.5, bodyH * 0.34, 5, 0, Math.PI * 2); ctx.fill()
+  ctx.restore()
+
+  // head
+  const headY = bodyY - headH * 0.7
+  ctx.fillStyle = skin
+  ctx.beginPath()
+  ctx.roundRect(-w * 0.32, headY, w * 0.64, headH, 8)
+  ctx.fill()
+  // hair framing the face and flowing past the shoulders
+  ctx.fillStyle = hair
+  ctx.beginPath(); ctx.ellipse(-w * 0.2, headY + headH * 0.75, w * 0.16, headH * 0.55, 0, 0, Math.PI * 2); ctx.fill()
+  ctx.beginPath()
+  ctx.roundRect(-w * 0.34, headY - headH * 0.08, w * 0.7, headH * 0.4, 6)
+  ctx.fill()
+  // crown
+  ctx.fillStyle = crownColor
+  ctx.beginPath()
+  ctx.moveTo(-w * 0.24, headY - headH * 0.06)
+  ctx.lineTo(-w * 0.14, headY - headH * 0.32)
+  ctx.lineTo(-w * 0.02, headY - headH * 0.1)
+  ctx.lineTo(w * 0.1, headY - headH * 0.34)
+  ctx.lineTo(w * 0.2, headY - headH * 0.06)
+  ctx.closePath()
+  ctx.fill()
+  // eye
+  ctx.fillStyle = '#1a1a1a'
+  ctx.beginPath(); ctx.arc(w * 0.08, headY + headH * 0.42, 2.2, 0, Math.PI * 2); ctx.fill()
+  // small smile
+  ctx.strokeStyle = '#a5652f'; ctx.lineWidth = 1.2
+  ctx.beginPath(); ctx.arc(w * 0.14, headY + headH * 0.58, 3, 0.1, Math.PI - 0.4); ctx.stroke()
+
+  return { bodyW, bodyY, bodyH }
+}
+
+// A big spotted mushroom-cap frame for Toad/Toadette — the "hat" is most of
+// the head, with a small face and a plain vest instead of overalls.
+function drawMushroomBody(ctx, p, w, h, frame, character, starred, accentCycle) {
+  const capColor = starred ? accentCycle : character.cap
+  const vestColor = p.powerState === 'fire' ? '#f4f0e6' : character.vest
+  const skin = character.skin
+
+  const headH = h * 0.4
+  const bodyH = h * 0.44
+  const legH = h * 0.16
+  const bodyW = w * 0.8
+
+  const walking = Math.abs(p.vx) > 0.3 && p.onGround
+  const stride = walking ? Math.sin(frame * 0.5) * (w * 0.12) : 0
+  ctx.fillStyle = p.sneakerTimer > 0 ? '#2fd0c0' : '#7a4a22'
+  ctx.fillRect(-bodyW / 2 - stride * 0.3, h / 2 - legH, bodyW * 0.42, legH)
+  ctx.fillRect(bodyW / 2 - bodyW * 0.42 + stride * 0.3, h / 2 - legH, bodyW * 0.42, legH)
+
+  // vest
+  const bodyY = h / 2 - legH - bodyH
+  ctx.fillStyle = vestColor
+  ctx.beginPath()
+  ctx.roundRect(-bodyW / 2, bodyY, bodyW, bodyH, 8)
+  ctx.fill()
+  ctx.fillStyle = '#fff'
+  ctx.fillRect(-bodyW * 0.1, bodyY, bodyW * 0.2, bodyH * 0.5)
+
+  // arm
+  const armSwing = walking ? Math.sin(frame * 0.5 + Math.PI) * 6 : (p.onGround ? 0 : -14)
+  ctx.fillStyle = vestColor
+  ctx.save()
+  ctx.translate(bodyW * 0.32, bodyY + bodyH * 0.1)
+  ctx.rotate((armSwing * Math.PI) / 180)
+  ctx.fillRect(-4, 0, 8, bodyH * 0.4)
+  ctx.fillStyle = skin
+  ctx.beginPath(); ctx.arc(0.5, bodyH * 0.4, 5, 0, Math.PI * 2); ctx.fill()
+  ctx.restore()
+
+  const headY = bodyY - headH * 0.5
+
+  // pigtails (Toadette), drawn before the cap so the cap overlaps their base
+  if (character.pigtails) {
+    ctx.fillStyle = '#f5a63a'
+    ctx.beginPath(); ctx.arc(-w * 0.34, headY + headH * 0.2, w * 0.09, 0, Math.PI * 2); ctx.fill()
+    ctx.beginPath(); ctx.arc(w * 0.34, headY + headH * 0.1, w * 0.09, 0, Math.PI * 2); ctx.fill()
+  }
+
+  // face peeking under the cap
+  ctx.fillStyle = skin
+  ctx.beginPath()
+  ctx.roundRect(-w * 0.26, headY + headH * 0.35, w * 0.52, headH * 0.4, 6)
+  ctx.fill()
+
+  // mushroom cap dome + rim
+  ctx.fillStyle = capColor
+  ctx.beginPath()
+  ctx.ellipse(0, headY, w * 0.4, headH * 0.42, 0, Math.PI, 0)
+  ctx.fill()
+  ctx.fillRect(-w * 0.4, headY, w * 0.8, headH * 0.18)
+  // spots
+  ctx.fillStyle = character.spots
+  ;[[-w * 0.2, headY - headH * 0.12], [w * 0.12, headY - headH * 0.2], [w * 0.28, headY - headH * 0.02]].forEach(([sx, sy]) => {
+    ctx.beginPath(); ctx.arc(sx, sy, w * 0.06, 0, Math.PI * 2); ctx.fill()
+  })
+
+  // eyes
+  ctx.fillStyle = '#1a1a1a'
+  ctx.beginPath()
+  ctx.arc(-w * 0.02, headY + headH * 0.5, 2, 0, Math.PI * 2)
+  ctx.arc(w * 0.14, headY + headH * 0.5, 2, 0, Math.PI * 2)
+  ctx.fill()
+
+  return { bodyW, bodyY, bodyH }
+}
+
+// A dinosaur frame for Yoshi — egg-shaped torso, snout, saddle, stubby
+// boot-feet, no cap or overalls concept at all.
+function drawYoshiBody(ctx, p, w, h, frame, character, starred, accentCycle) {
+  const mainColor = p.powerState === 'fire' ? '#f4f0e6' : character.main
+  const saddleColor = starred ? accentCycle : character.saddle
+  const belly = character.belly
+
+  const legH = h * 0.16
+  const bodyH = h * 0.56
+  const bodyW = w * 0.9
+  const bodyY = h / 2 - legH - bodyH
+
+  const walking = Math.abs(p.vx) > 0.3 && p.onGround
+  const stride = walking ? Math.sin(frame * 0.5) * (w * 0.1) : 0
+
+  // stubby boot-feet
+  ctx.fillStyle = p.sneakerTimer > 0 ? '#2fd0c0' : '#e8503c'
+  ctx.beginPath(); ctx.ellipse(-bodyW * 0.24 - stride * 0.2, h / 2 - legH * 0.3, bodyW * 0.16, legH * 0.5, 0, 0, Math.PI * 2); ctx.fill()
+  ctx.beginPath(); ctx.ellipse(bodyW * 0.24 + stride * 0.2, h / 2 - legH * 0.3, bodyW * 0.16, legH * 0.5, 0, 0, Math.PI * 2); ctx.fill()
+
+  // tail nub
+  ctx.fillStyle = mainColor
+  ctx.beginPath(); ctx.ellipse(-bodyW * 0.5, bodyY + bodyH * 0.7, bodyW * 0.14, bodyH * 0.18, -0.4, 0, Math.PI * 2); ctx.fill()
+
+  // egg-shaped torso
+  ctx.beginPath()
+  ctx.ellipse(0, bodyY + bodyH * 0.55, bodyW * 0.46, bodyH * 0.5, 0, 0, Math.PI * 2)
+  ctx.fill()
+  // belly patch
+  ctx.fillStyle = belly
+  ctx.beginPath()
+  ctx.ellipse(bodyW * 0.02, bodyY + bodyH * 0.68, bodyW * 0.28, bodyH * 0.3, 0, 0, Math.PI * 2)
+  ctx.fill()
+  // saddle
+  ctx.fillStyle = saddleColor
+  ctx.beginPath()
+  ctx.roundRect(-bodyW * 0.22, bodyY + bodyH * 0.16, bodyW * 0.44, bodyH * 0.18, 4)
+  ctx.fill()
+
+  // head + snout
+  const headCx = bodyW * 0.34
+  const headCy = bodyY + bodyH * 0.14
+  ctx.fillStyle = mainColor
+  ctx.beginPath(); ctx.ellipse(headCx, headCy, bodyW * 0.26, bodyH * 0.24, 0, 0, Math.PI * 2); ctx.fill()
+  ctx.beginPath()
+  ctx.roundRect(headCx + bodyW * 0.06, headCy + bodyH * 0.02, bodyW * 0.26, bodyH * 0.14, 6)
+  ctx.fill()
+  // eye
+  ctx.fillStyle = '#fff'
+  ctx.beginPath(); ctx.arc(headCx + bodyW * 0.08, headCy - bodyH * 0.06, 5, 0, Math.PI * 2); ctx.fill()
+  ctx.fillStyle = '#1a1a1a'
+  ctx.beginPath(); ctx.arc(headCx + bodyW * 0.1, headCy - bodyH * 0.06, 2.2, 0, Math.PI * 2); ctx.fill()
+
+  return { bodyW, bodyY, bodyH, mouthX: headCx + bodyW * 0.32, mouthY: headCy + bodyH * 0.09 }
+}
+
+// The tongue flick, timed against p.tongueTimer counting down from
+// TONGUE_DURATION — extends fast, holds briefly, then snaps back.
+function drawTongue(ctx, mouthX, mouthY, timer) {
+  const t = timer / 14
+  const len = 44 * Math.sin(Math.min(t * 1.6, 1) * Math.PI)
+  ctx.strokeStyle = '#ff6fae'; ctx.lineWidth = 6; ctx.lineCap = 'round'
+  ctx.beginPath(); ctx.moveTo(mouthX, mouthY); ctx.lineTo(mouthX + len, mouthY); ctx.stroke()
+  ctx.fillStyle = '#ff6fae'
+  ctx.beginPath(); ctx.arc(mouthX + len, mouthY, 4.5, 0, Math.PI * 2); ctx.fill()
+}
+
+const BODY_DRAWERS = { plumber: drawPlumberBody, royal: drawRoyalBody, mushroom: drawMushroomBody, yoshi: drawYoshiBody }
+
+export function drawPlayer(ctx, p, camX, frame, character = CHARACTERS[0]) {
+  if (p.invincible > 0 && p.starTimer <= 0 && Math.floor(p.invincible / 4) % 2 === 0 && !p.dead) return
+  const x = p.x - camX
+  const w = p.w, h = p.h
+  ctx.save()
+  ctx.translate(x + w / 2, p.y + h / 2)
+  if (p.dead) ctx.rotate(Math.PI)
+  ctx.scale(p.facing, 1)
+
+  const starColors = ['#ff4d4d', '#ffd93d', '#4dd2ff', '#7bff4d', '#ff4dde']
+  const starred = p.starTimer > 0
+  const accentCycle = starColors[Math.floor(frame / 4) % starColors.length]
+
+  const drawBody = BODY_DRAWERS[character.body] || drawPlumberBody
+  const { bodyW, bodyY, bodyH, mouthX, mouthY } = drawBody(ctx, p, w, h, frame, character, starred, accentCycle)
+
+  // cape and shield are cosmetic overlays shared by every body type
+  if (p.powerState === 'cape') drawCapeFlap(ctx, bodyW, bodyY, bodyH, frame)
+  if (p.tongueTimer > 0 && mouthX != null) drawTongue(ctx, mouthX, mouthY, p.tongueTimer)
+  if (p.shield) drawShieldRing(ctx, w, h)
 
   ctx.restore()
 }
@@ -393,18 +762,21 @@ function drawHUD(ctx, state) {
 
 export function render(ctx, state) {
   const level = currentLevel(state)
-  const theme = THEMES[level.theme]
+  // A whole-hub cheat (press H): every course renders with the horror
+  // palette regardless of its own theme, until toggled back off.
+  const theme = state.horrorMode ? THEMES.horror : THEMES[level.theme]
   drawBackground(ctx, theme, state.camX)
   drawGround(ctx, theme, level, state.camX)
-  state.pipes.forEach(p => drawPipe(ctx, p, state.camX))
+  state.pipes.forEach(p => drawPipe(ctx, p, state.camX, state.frame))
   state.blocks.forEach(b => drawBlock(ctx, theme, b, state.camX))
+  state.munchers.forEach(m => drawMuncher(ctx, m, state.camX, state.frame))
   state.coins.forEach(c => drawCoin(ctx, c, state.camX, state.frame))
   state.powerups.forEach(pu => drawPowerup(ctx, pu, state.camX, state.frame))
   state.fireballs.forEach(fb => drawFireball(ctx, fb, state.camX, state.frame))
   state.enemies.forEach(e => drawEnemy(ctx, e, state.camX))
   if (state.boss) drawBoss(ctx, state.boss, state.camX)
   drawFlag(ctx, level, state.camX)
-  drawPlayer(ctx, state.player, state.camX, state.frame)
+  drawPlayer(ctx, state.player, state.camX, state.frame, state.character)
   drawParticles(ctx, state.particles, state.camX)
   drawHUD(ctx, state)
 }
