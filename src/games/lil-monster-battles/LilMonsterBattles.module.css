@@ -6,8 +6,6 @@
   color: #fff;
   font-family: Arial, sans-serif;
   display: flex;
-  align-items: center;
-  justify-content: center;
   padding: 24px;
 }
 
@@ -19,6 +17,12 @@
   text-align: center;
   max-width: 900px;
   width: 100%;
+  /* `margin: auto` (rather than align-items/justify-content: center on
+     .page) centers this when it's shorter than the viewport but degrades to
+     normal top-anchored flow when it's taller — the flex-centering
+     alternative traps the top/bottom of tall content outside the
+     scrollable range. */
+  margin: auto;
 }
 
 .title {
@@ -344,6 +348,20 @@
   box-shadow: 0 0 6px rgba(255,60,70,0.7);
 }
 
+.megaBadge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 6px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  color: #3a2600;
+  background: linear-gradient(#ffe873, #ffb020);
+  border-radius: 5px;
+  vertical-align: middle;
+  box-shadow: 0 0 6px rgba(255,200,60,0.7);
+}
+
 .hpBarBg {
   width: 100%;
   height: 14px;
@@ -468,6 +486,139 @@
   flex-wrap: wrap;
   padding: 0 10px;
   pointer-events: none;
+}
+
+.labLayout {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  justify-content: center;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.labPreview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255,255,255,0.07);
+  border: 2px solid rgba(255,255,255,0.12);
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.labNameInput {
+  width: 180px;
+  text-align: center;
+  font-size: 14px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.25);
+  background: rgba(0,0,0,0.3);
+  color: #fff;
+}
+.labNameInput::placeholder { color: rgba(255,255,255,0.4); }
+
+.labControls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 280px;
+  max-width: 420px;
+  text-align: left;
+}
+
+.labRow { display: flex; flex-direction: column; gap: 6px; }
+.labRowLabel {
+  font-size: 12px;
+  font-weight: bold;
+  color: rgba(255,255,255,0.65);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.labOptions { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.labOptionBtn {
+  font-size: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 2px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  cursor: pointer;
+}
+.labOptionBtn:hover:not(:disabled) { background: rgba(255,255,255,0.16); }
+.labOptionBtnActive { border-color: #ffd873; background: rgba(255,216,115,0.18); }
+.labOptionBtnLocked { opacity: 0.45; cursor: not-allowed; }
+
+.labColorSwatch {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.25);
+  cursor: pointer;
+  font-size: 12px;
+}
+.labColorSwatchActive { border-color: #fff; box-shadow: 0 0 0 2px #ffd873; }
+.labColorSwatch:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.labAnimalGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.labAnimalBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: bold;
+  padding: 18px 14px;
+  border-radius: 14px;
+  border: 2px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s, border-color 0.15s;
+}
+.labAnimalBtn:hover { background: rgba(255,255,255,0.16); transform: translateY(-2px); }
+.labAnimalBtnActive { border-color: #ffd873; background: rgba(255,216,115,0.18); }
+.labAnimalEmoji { font-size: 34px; }
+
+.labLockedPanel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255,255,255,0.05);
+  border: 2px dashed rgba(255,255,255,0.18);
+  border-radius: 16px;
+  padding: 32px 24px;
+  max-width: 420px;
+}
+.labLockedIcon { font-size: 40px; }
+
+.labFusionPlaceholder {
+  width: 180px;
+  height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 13px;
+  color: rgba(255,255,255,0.5);
+  background: rgba(0,0,0,0.2);
+  border-radius: 12px;
+}
+
+.labCreationThumb {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
 }
 
 @media (max-width: 640px) {

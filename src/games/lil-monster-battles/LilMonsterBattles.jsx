@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import * as THREE from 'three'
 import styles from './LilMonsterBattles.module.css'
@@ -10,7 +10,7 @@ import styles from './LilMonsterBattles.module.css'
 // times, and a short backstory tying it to a home turf on Monster Isle.
 const MONSTERS = [
   {
-    id: 'furrocub', name: 'Furrocub', mix: 'Cat + Bear', mixEmoji: '🐱+🐻',
+    id: 'furrocub', name: 'Furrocub', mix: 'Cat + Bear', mixEmoji: '🐱+🐻', animals: ['cat', 'bear'],
     color: '#C97A3D', dark: '#7A4A22', accent: '#FFD873', sizeScale: 0.88,
     ear: 'round', snout: 'short', spikes: false, tailTip: 'tuft',
     special: { name: 'Bear Hug Slam', type: 'lunge', range: 136, dmg: 22, knock: 14 },
@@ -18,7 +18,7 @@ const MONSTERS = [
     lore: 'Wandered into a den of Volcano Peak bears as a lost kitten and never left — kept the curiosity, gained the hug.',
   },
   {
-    id: 'clawrex', name: 'Clawrex', mix: 'Cat + Dino', mixEmoji: '🐱+🦖',
+    id: 'clawrex', name: 'Clawrex', mix: 'Cat + Dino', mixEmoji: '🐱+🦖', animals: ['cat', 'dino'],
     color: '#4E9A51', dark: '#2B5C2E', accent: '#FFEE58', sizeScale: 1.0,
     ear: 'point', snout: 'short', spikes: true, tailTip: 'spike',
     special: { name: 'Tail Whirl', type: 'spin', range: 162, dmg: 16, knock: 10 },
@@ -26,7 +26,7 @@ const MONSTERS = [
     lore: 'Hatched from an egg a Wild Jungle farm cat adopted by accident. Struts around like it owns every fern.',
   },
   {
-    id: 'snaptail', name: 'Snaptail', mix: 'Cat + Alligator', mixEmoji: '🐱+🐊',
+    id: 'snaptail', name: 'Snaptail', mix: 'Cat + Alligator', mixEmoji: '🐱+🐊', animals: ['cat', 'alligator'],
     color: '#2FA6A1', dark: '#186460', accent: '#E0FFFB', sizeScale: 0.94,
     ear: 'point', snout: 'long', spikes: false, tailTip: 'paddle',
     special: { name: 'Death Roll', type: 'dash', range: 289, dmg: 18, knock: 20 },
@@ -34,7 +34,7 @@ const MONSTERS = [
     lore: 'Naps on the one warm rock in Frozen Cave and swims like an alligator whenever nap time is over too soon.',
   },
   {
-    id: 'thornbear', name: 'Thornbear', mix: 'Bear + Dino', mixEmoji: '🐻+🦖',
+    id: 'thornbear', name: 'Thornbear', mix: 'Bear + Dino', mixEmoji: '🐻+🦖', animals: ['bear', 'dino'],
     color: '#8C6B45', dark: '#4F3A23', accent: '#D6FF6B', sizeScale: 1.18,
     ear: 'round', snout: 'short', spikes: true, tailTip: 'spike',
     special: { name: 'Ground Pound', type: 'aoe', range: 238, dmg: 20, knock: 16 },
@@ -42,7 +42,7 @@ const MONSTERS = [
     lore: 'The gentle giant of Volcano Peak. Slow to anger — but when Thornbear jumps, the whole mountain feels it.',
   },
   {
-    id: 'chompclaw', name: 'Chompclaw', mix: 'Bear + Alligator', mixEmoji: '🐻+🐊',
+    id: 'chompclaw', name: 'Chompclaw', mix: 'Bear + Alligator', mixEmoji: '🐻+🐊', animals: ['bear', 'alligator'],
     color: '#5C7A3D', dark: '#33471F', accent: '#FFD1E8', sizeScale: 1.1,
     ear: 'round', snout: 'long', spikes: false, tailTip: 'paddle',
     special: { name: 'Chomp Lunge', type: 'lunge', range: 162, dmg: 27, knock: 8 },
@@ -50,7 +50,7 @@ const MONSTERS = [
     lore: 'Guards the swampy edge of Wild Jungle and has never once lost a staring contest.',
   },
   {
-    id: 'rexjaw', name: 'Rexjaw', mix: 'Dino + Alligator', mixEmoji: '🦖+🐊',
+    id: 'rexjaw', name: 'Rexjaw', mix: 'Dino + Alligator', mixEmoji: '🦖+🐊', animals: ['dino', 'alligator'],
     color: '#3D6B7A', dark: '#203945', accent: '#FFB86B', sizeScale: 1.12,
     ear: 'none', snout: 'long', spikes: true, tailTip: 'spike',
     special: { name: 'Horn Charge', type: 'dash', range: 272, dmg: 16, knock: 26 },
@@ -166,6 +166,163 @@ function loadUnlocked() {
 }
 function saveUnlocked(list) {
   try { localStorage.setItem(UNLOCKS_KEY, JSON.stringify(list)) } catch {}
+}
+
+// ── Monster Lab — build a custom monster from unlockable parts. Parts
+// unlock as you play Quick Battle / Story Mode ("normal mode"), tracked by
+// a simple lifetime battle counter — just enough progression to give repeat
+// play a reason to check back in on the Lab.
+const BATTLE_COUNT_KEY = 'lilMonsterBattlesBattleCount'
+function loadBattleCount() {
+  const n = parseInt(localStorage.getItem(BATTLE_COUNT_KEY) || '0', 10)
+  return Number.isFinite(n) ? n : 0
+}
+function saveBattleCount(n) {
+  try { localStorage.setItem(BATTLE_COUNT_KEY, String(n)) } catch {}
+}
+
+const CREATIONS_KEY = 'lilMonsterBattlesCreations'
+function loadCreations() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(CREATIONS_KEY) || '[]')
+    return Array.isArray(saved) ? saved : []
+  } catch { return [] }
+}
+function saveCreations(list) {
+  try { localStorage.setItem(CREATIONS_KEY, JSON.stringify(list)) } catch {}
+}
+
+const LAB_EARS = [
+  { id: 'round', name: 'Round Ears', unlockAt: 0 },
+  { id: 'point', name: 'Pointy Ears', unlockAt: 0 },
+  { id: 'none', name: 'No Ears', unlockAt: 3 },
+]
+const LAB_SNOUTS = [
+  { id: 'short', name: 'Short Snout', unlockAt: 0 },
+  { id: 'long', name: 'Long Snout', unlockAt: 0 },
+]
+const LAB_SPIKES = [
+  { id: 'off', name: 'Smooth Back', value: false, unlockAt: 0 },
+  { id: 'on', name: 'Spiky Back', value: true, unlockAt: 2 },
+]
+const LAB_TAILS = [
+  { id: 'tuft', name: 'Tufted Tail', unlockAt: 0 },
+  { id: 'spike', name: 'Spiked Tail', unlockAt: 2 },
+  { id: 'paddle', name: 'Paddle Tail', unlockAt: 4 },
+]
+// Special-move stat blocks are reused wholesale from already-tuned base
+// monsters (Furrocub/Clawrex/Rexjaw/Thornbear) rather than inventing new
+// numbers, so lab creations stay balanced against the rest of the roster.
+const LAB_SPECIALS = [
+  { id: 'lunge', name: 'Power Lunge', type: 'lunge', range: 150, dmg: 20, knock: 14, unlockAt: 0 },
+  { id: 'spin', name: 'Tail Whirl', type: 'spin', range: 162, dmg: 16, knock: 10, unlockAt: 3 },
+  { id: 'dash', name: 'Charge Dash', type: 'dash', range: 280, dmg: 18, knock: 20, unlockAt: 5 },
+  { id: 'aoe', name: 'Ground Pound', type: 'aoe', range: 238, dmg: 20, knock: 16, unlockAt: 7 },
+]
+const LAB_COLORS = [
+  { id: 'orange', name: 'Sunset Orange', color: '#C97A3D', dark: '#7A4A22', accent: '#FFD873', unlockAt: 0 },
+  { id: 'green', name: 'Jungle Green', color: '#4E9A51', dark: '#2B5C2E', accent: '#FFEE58', unlockAt: 0 },
+  { id: 'teal', name: 'Sea Teal', color: '#2FA6A1', dark: '#186460', accent: '#E0FFFB', unlockAt: 0 },
+  { id: 'brown', name: 'Mountain Brown', color: '#8C6B45', dark: '#4F3A23', accent: '#D6FF6B', unlockAt: 0 },
+  { id: 'olive', name: 'Swamp Olive', color: '#5C7A3D', dark: '#33471F', accent: '#FFD1E8', unlockAt: 2 },
+  { id: 'slate', name: 'Slate Blue', color: '#3D6B7A', dark: '#203945', accent: '#FFB86B', unlockAt: 4 },
+  { id: 'ruby', name: 'Ruby Red', color: '#C7382E', dark: '#6E1A17', accent: '#FFB63D', unlockAt: 6 },
+  { id: 'gold', name: 'Golden', color: '#D9B35C', dark: '#7A5A22', accent: '#FFF3D6', unlockAt: 8 },
+  { id: 'purple', name: 'Royal Purple', color: '#8B5CF6', dark: '#4C2E8F', accent: '#E9D8FF', unlockAt: 10 },
+  { id: 'pink', name: 'Bubblegum Pink', color: '#E85D8A', dark: '#7A2B47', accent: '#FFD6E8', unlockAt: 12 },
+]
+function isLabUnlocked(option, battleCount) { return battleCount >= (option.unlockAt || 0) }
+
+// Step 1 of the Lab: pick two of the four base animals to mix. The trait
+// recipe for each pair is copied straight from the matching base monster
+// above (e.g. cat+bear derives the same ear/snout/spikes/tail as Furrocub),
+// so a lab mix always looks like something that could belong on Monster
+// Isle, and picking a pair doubles as a preview of "what would this be".
+const LAB_ANIMALS = [
+  { id: 'cat', name: 'Cat', emoji: '🐱' },
+  { id: 'bear', name: 'Bear', emoji: '🐻' },
+  { id: 'dino', name: 'Dino', emoji: '🦖' },
+  { id: 'alligator', name: 'Alligator', emoji: '🐊' },
+]
+const LAB_MIX_RECIPES = {
+  'bear,cat': { ear: 'round', snout: 'short', spikes: false, tailTip: 'tuft', specialId: 'lunge' },
+  'cat,dino': { ear: 'point', snout: 'short', spikes: true, tailTip: 'spike', specialId: 'spin' },
+  'alligator,cat': { ear: 'point', snout: 'long', spikes: false, tailTip: 'paddle', specialId: 'dash' },
+  'bear,dino': { ear: 'round', snout: 'short', spikes: true, tailTip: 'spike', specialId: 'aoe' },
+  'alligator,bear': { ear: 'round', snout: 'long', spikes: false, tailTip: 'paddle', specialId: 'lunge' },
+  'alligator,dino': { ear: 'none', snout: 'long', spikes: true, tailTip: 'spike', specialId: 'dash' },
+}
+function deriveMix(idA, idB) { return LAB_MIX_RECIPES[[idA, idB].sort().join(',')] }
+
+// ── Mega Fusion — unlocked by beating Tim in Story Mode. Fuses two of the
+// six starter monsters (not legendaries, not other lab creations) into one
+// bigger, stronger monster, spending one Fusion Shard per fusion.
+const FUSION_SHARDS_KEY = 'lilMonsterBattlesFusionShards'
+function loadFusionShards() {
+  const n = parseInt(localStorage.getItem(FUSION_SHARDS_KEY) || '0', 10)
+  return Number.isFinite(n) ? n : 0
+}
+function saveFusionShards(n) {
+  try { localStorage.setItem(FUSION_SHARDS_KEY, String(n)) } catch {}
+}
+
+// Derives a fusion's body traits straight from its two parents' own
+// ear/snout/spikes/tailTip, using the same "who's present wins" dominance
+// order the base roster's mixes already follow (round ears beat point ears
+// beat none; a spiked tail beats a paddle tail beats a tuft; spikes show up
+// if either parent has them). Reading it off the parents directly — rather
+// than off which of the 4 base animals they're made of — means this works
+// for ANY pair, including legendaries that aren't a cat/bear/dino/alligator
+// mix at all.
+function deriveTraitsFromParents(a, b) {
+  return {
+    ear: (a.ear === 'round' || b.ear === 'round') ? 'round' : (a.ear === 'point' || b.ear === 'point') ? 'point' : 'none',
+    snout: (a.snout === 'long' || b.snout === 'long') ? 'long' : 'short',
+    spikes: a.spikes || b.spikes,
+    tailTip: (a.tailTip === 'spike' || b.tailTip === 'spike') ? 'spike' : (a.tailTip === 'paddle' || b.tailTip === 'paddle') ? 'paddle' : 'tuft',
+  }
+}
+
+// A legendary's wings/beak/blocky-body/fluff are each just an independent
+// opt flag buildChibiModel already knows how to render — fusing two
+// legendaries (or a legendary with a starter) just OR's those flags
+// together, so e.g. Dragon + Golem comes out blocky AND winged.
+function bodyOptsFor(data) {
+  if (data.bodyType === 'dragon') return { wings: true }
+  if (data.bodyType === 'griffin') return { wings: true, beak: true }
+  if (data.bodyType === 'golem') return { blocky: true, glowEyes: true }
+  if (data.bodyType === 'fluff') return { fluffy: true }
+  return {}
+}
+function mergeBodyOpts(a, b) {
+  const oa = bodyOptsFor(a), ob = bodyOptsFor(b)
+  const merged = {
+    wings: !!(oa.wings || ob.wings), beak: !!(oa.beak || ob.beak),
+    blocky: !!(oa.blocky || ob.blocky), glowEyes: !!(oa.glowEyes || ob.glowEyes),
+    fluffy: !!(oa.fluffy || ob.fluffy),
+  }
+  return Object.fromEntries(Object.entries(merged).filter(([, v]) => v))
+}
+
+function hexToRgb(hex) {
+  const n = parseInt(hex.slice(1), 16)
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+}
+function lerpColor(hexA, hexB, t) {
+  const a = hexToRgb(hexA), b = hexToRgb(hexB)
+  return '#' + a.map((v, i) => Math.round(v + (b[i] - v) * t).toString(16).padStart(2, '0')).join('')
+}
+
+// A mega monster's special is the stronger of its two parents' specials,
+// scaled up further — "mega" should hit noticeably harder than either
+// starter it came from.
+function deriveMegaSpecial(specialA, specialB) {
+  const power = s => s.dmg + s.knock
+  const base = power(specialA) >= power(specialB) ? specialA : specialB
+  return {
+    name: `Mega ${base.name}`, type: base.type,
+    range: Math.round(base.range * 1.1), dmg: Math.round(base.dmg * 1.3), knock: Math.round(base.knock * 1.2),
+  }
 }
 
 // A synthesized "dun dun DUNNN" — three descending sawtooth notes with a
@@ -410,17 +567,25 @@ function buildWingGeometry() {
   return new THREE.ExtrudeGeometry(shape, { depth: 0.025, bevelEnabled: false })
 }
 
-// Scatters small cone "fur tufts" outward from a center point — used for
-// Tim's fluffy pom-pom texture. Each tuft is oriented so its point faces
-// away from the center, via a quaternion rather than manually-picked
-// rotations (there are too many of them to hand-place).
+// Scatters small soft "fur clumps" outward from a center point — used for
+// Tim's fluffy pom-pom texture. Each clump is a sphere stretched slightly
+// along its outward direction (via a quaternion rather than manually-picked
+// rotations, since there are too many to hand-place) — rounded at the tip
+// like a tuft of fur, not pointed like a spike.
 function scatterFluff(group, mat, center, radius, count) {
   const up = new THREE.Vector3(0, 1, 0)
   for (let i = 0; i < count; i++) {
     const dir = new THREE.Vector3(Math.random() * 2 - 1, Math.random() * 2 - 1, Math.random() * 2 - 1).normalize()
-    const tuft = new THREE.Mesh(new THREE.ConeGeometry(0.045 + Math.random() * 0.03, 0.12 + Math.random() * 0.08, 6), mat)
-    tuft.position.copy(center).addScaledVector(dir, radius)
+    // Jitter each tuft's depth (not just its direction) so they layer at
+    // slightly different distances from center instead of sitting on one
+    // thin shell — that's what actually closes the gaps a viewer could see
+    // the body through.
+    const r = radius * (0.75 + Math.random() * 0.4)
+    const size = 0.09 + Math.random() * 0.06
+    const tuft = new THREE.Mesh(new THREE.SphereGeometry(size, 8, 6), mat)
+    tuft.position.copy(center).addScaledVector(dir, r)
     tuft.quaternion.setFromUnitVectors(up, dir)
+    tuft.scale.set(0.8 + Math.random() * 0.2, 1.3 + Math.random() * 0.3, 0.8 + Math.random() * 0.2)
     group.add(tuft)
   }
 }
@@ -435,9 +600,20 @@ function scatterFluff(group, mat, center, radius, count) {
 //   beak     — griffin (replaces the snout)
 //   blocky   — golem (faceted icosahedron body/head, no snout/tail/fangs)
 //   glowEyes — golem (single glowing eye instead of white+pupil)
+// Overall size bump applied to every monster model — makes the whole
+// roster read as bigger/tougher without touching any monster's individual
+// sizeScale (which other code, like Mega Fusion's size math, relies on).
+const MODEL_SCALE_BOOST = 1.18
+
 function buildChibiModel(data, opts = {}) {
   const group = new THREE.Group()
   const flat = opts.blocky ? { flatShading: true } : {}
+  // "Bulk" scales limb/torso thickness with a monster's sizeScale, so
+  // already-big/tough monsters (Thornbear, Rexjaw, Dragon, Mega Fusions...)
+  // read as visibly stronger-built than leaner ones (Furrocub, Snaptail) —
+  // pure data-driven variety, no per-monster geometry needed. Golem and Tim
+  // keep their own distinct builds untouched.
+  const bulk = (!opts.blocky && !opts.fluffy) ? clamp(((data.sizeScale || 1) - 0.85) * 1.3, 0, 0.6) : 0
   const colorMat = new THREE.MeshToonMaterial({ color: data.color, gradientMap: TOON_GRADIENT, emissive: 0xffffff, emissiveIntensity: 0, ...flat })
   const darkMat = new THREE.MeshToonMaterial({ color: data.dark, gradientMap: TOON_GRADIENT, ...flat })
   const accentMat = new THREE.MeshToonMaterial({ color: data.accent, gradientMap: TOON_GRADIENT, emissive: data.accent, emissiveIntensity: 0.25, ...flat })
@@ -450,35 +626,46 @@ function buildChibiModel(data, opts = {}) {
   const bodyGeo = opts.blocky ? new THREE.IcosahedronGeometry(0.46, 0) : buildBodyGeometry()
   const body = new THREE.Mesh(bodyGeo, colorMat)
   body.position.set(-0.1, 0.5, 0)
-  body.scale.set(0.78, 0.66, 0.72)
+  body.scale.set(0.78 + bulk * 0.5, 0.66 + bulk * 0.3, 0.72 + bulk * 0.42)
   group.add(body)
 
   function makeLeg(zOff) {
     const pivot = new THREE.Group()
     pivot.position.set(-0.05, 0.26, zOff)
-    const leg = new THREE.Mesh(new THREE.CapsuleGeometry(0.15, 0.1, 4, 10), darkMat)
+    const leg = new THREE.Mesh(new THREE.CapsuleGeometry(0.15 + bulk * 0.13, 0.1, 4, 10), darkMat)
     leg.position.y = -0.08
     pivot.add(leg)
-    const paw = new THREE.Mesh(new THREE.SphereGeometry(0.17, 12, 10), darkMat)
+    const paw = new THREE.Mesh(new THREE.SphereGeometry(0.17 + bulk * 0.11, 12, 10), darkMat)
     paw.position.y = -0.2
     paw.scale.set(1.1, 0.6, 1.15)
     pivot.add(paw)
     group.add(pivot)
     return pivot
   }
-  const legL = makeLeg(0.2)
-  const legR = makeLeg(-0.2)
+  const legSpread = 0.2 + bulk * 0.12
+  const legL = makeLeg(legSpread)
+  const legR = makeLeg(-legSpread)
 
   const armPivot = new THREE.Group()
   armPivot.position.set(0.26, 0.56, 0)
-  const arm = new THREE.Mesh(new THREE.CapsuleGeometry(0.13, 0.14, 4, 10), darkMat)
+  const arm = new THREE.Mesh(new THREE.CapsuleGeometry(0.13 + bulk * 0.13, 0.14, 4, 10), darkMat)
   arm.rotation.z = Math.PI / 2
   arm.position.x = 0.1
   armPivot.add(arm)
-  const fist = new THREE.Mesh(new THREE.SphereGeometry(0.15, 12, 10), darkMat)
+  const fist = new THREE.Mesh(new THREE.SphereGeometry(0.15 + bulk * 0.15, 12, 10), darkMat)
   fist.position.x = 0.2
   armPivot.add(fist)
   group.add(armPivot)
+
+  // Shoulder muscle — only shows up once a monster is bulky enough to
+  // warrant it, so leaner monsters (Furrocub, Snaptail) keep their light,
+  // quick-looking build instead of every monster getting the same bump.
+  if (bulk > 0.08) {
+    const shoulderPad = new THREE.Mesh(new THREE.SphereGeometry(0.13 + bulk * 0.16, 12, 10), darkMat)
+    shoulderPad.position.set(0.2, 0.66, 0)
+    shoulderPad.scale.set(1, 0.75, 1.05)
+    group.add(shoulderPad)
+  }
 
   // head — the dominant shape, overlapping the body so it reads as one
   // cohesive character rather than a ball glued onto another ball
@@ -506,6 +693,39 @@ function buildChibiModel(data, opts = {}) {
       bump.scale.set(1, 0.78, 1.05)
       headGroup.add(bump)
     }
+
+    // Open mouth, big sharp teeth — a dark cavity under the snout with a
+    // zigzag row of small teeth plus two bigger corner fangs. Anchored
+    // differently per snout shape so it sits right at the jawline for both
+    // the short bump and the long capsule snout.
+    const mouthAnchor = data.snout === 'long' ? { x: 0.64, y: -0.24 } : { x: 0.48, y: -0.27 }
+    const mouthMat = new THREE.MeshBasicMaterial({ color: 0x2a0e0e })
+    const mouthGroup = new THREE.Group()
+    mouthGroup.position.set(mouthAnchor.x, mouthAnchor.y, 0)
+    headGroup.add(mouthGroup)
+
+    const cavity = new THREE.Mesh(new THREE.SphereGeometry(0.21, 12, 10), mouthMat)
+    cavity.scale.set(0.65, 0.62, 1.25)
+    cavity.userData.noOutline = true
+    mouthGroup.add(cavity)
+
+    const toothSpread = 0.18
+    for (let i = 0; i < 4; i++) {
+      const tz = -toothSpread + (toothSpread * 2 * i) / 3
+      const upper = new THREE.Mesh(new THREE.ConeGeometry(0.046, 0.14, 6), eyeWhiteMat)
+      upper.position.set(0.01, 0.07, tz)
+      upper.rotation.x = Math.PI
+      mouthGroup.add(upper)
+      const lower = new THREE.Mesh(new THREE.ConeGeometry(0.042, 0.11, 6), eyeWhiteMat)
+      lower.position.set(0.01, -0.07, tz)
+      mouthGroup.add(lower)
+    }
+    ;[toothSpread + 0.04, -(toothSpread + 0.04)].forEach(z => {
+      const fang = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.22, 8), eyeWhiteMat)
+      fang.position.set(0.02, 0.05, z)
+      fang.rotation.x = Math.PI * 0.92
+      mouthGroup.add(fang)
+    })
   }
 
   if (data.ear === 'round') {
@@ -524,7 +744,7 @@ function buildChibiModel(data, opts = {}) {
 
   // horns — every monster gets these
   ;[0.17, -0.17].forEach(z => {
-    const horn = new THREE.Mesh(new THREE.ConeGeometry(0.095, 0.36, 10), accentMat)
+    const horn = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.4, 10), accentMat)
     horn.position.set(0.08, 0.52, z)
     horn.rotation.x = z > 0 ? -0.35 : 0.35
     headGroup.add(horn)
@@ -555,12 +775,6 @@ function buildChibiModel(data, opts = {}) {
     brow.position.set(0.32, 0.28, z)
     brow.rotation.z = 0.45
     headGroup.add(brow)
-    if (!opts.blocky && !opts.beak) {
-      const fang = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.11, 8), eyeWhiteMat)
-      fang.position.set(0.34, -0.28, z * 0.5)
-      fang.rotation.x = Math.PI
-      headGroup.add(fang)
-    }
   })
   eyeMeshes.forEach(m => { m.userData.noOutline = true })
 
@@ -634,12 +848,17 @@ function buildChibiModel(data, opts = {}) {
     group.add(wingR)
   }
 
-  // fluff — Tim only. Tiny cone tufts scattered over the head/body give a
-  // pom-pom texture; each one is too small to bother outlining.
+  // fluff — Tim only. Dense, overlapping cone tufts blanket the head, body,
+  // and legs so thickly that the actual body/head shapes underneath barely
+  // show through — a proper pom-pom, not just a light dusting. Each tuft is
+  // too small to bother outlining.
   if (opts.fluffy) {
     const fluffMat = new THREE.MeshToonMaterial({ color: data.accent, gradientMap: TOON_GRADIENT })
     const fluffStart = group.children.length
-    scatterFluff(group, fluffMat, new THREE.Vector3(0.05, 0.85, 0), 0.5, 45)
+    scatterFluff(group, fluffMat, new THREE.Vector3(0.15, 1.0, 0), 0.56, 140)
+    scatterFluff(group, fluffMat, new THREE.Vector3(-0.1, 0.55, 0), 0.44, 100)
+    scatterFluff(group, fluffMat, new THREE.Vector3(0, 0.28, 0.15), 0.24, 35)
+    scatterFluff(group, fluffMat, new THREE.Vector3(0, 0.28, -0.15), 0.24, 35)
     for (let i = fluffStart; i < group.children.length; i++) group.children[i].userData.noOutline = true
   }
 
@@ -662,14 +881,18 @@ function buildChibiModel(data, opts = {}) {
   })
   outlineTargets.forEach(m => withOutline(m))
 
-  group.scale.setScalar(data.sizeScale || 1)
+  group.scale.setScalar((data.sizeScale || 1) * MODEL_SCALE_BOOST)
 
   return { group, legL, legR, armPivot, tailPivot, glowRing, colorMat, wingL, wingR }
 }
 
 // Base six get the plain chibi rig; legendaries reuse it with a few parts
 // swapped (see buildChibiModel's opts) instead of a whole separate build.
+// A Mega Fusion monster carries its own pre-merged `bodyOpts` (see
+// mergeBodyOpts) instead of a single bodyType, since it can combine
+// features from two different legendaries at once.
 function buildMonsterModel(data) {
+  if (data.bodyOpts) return buildChibiModel(data, data.bodyOpts)
   if (data.bodyType === 'dragon') return buildChibiModel(data, { wings: true })
   if (data.bodyType === 'griffin') return buildChibiModel(data, { wings: true, beak: true })
   if (data.bodyType === 'golem') return buildChibiModel(data, { blocky: true, glowEyes: true })
@@ -1237,13 +1460,13 @@ function Battle({ p1Data, p2Data, mode, arena, onFinish }) {
 
       <div className={styles.hudTop}>
         <div className={styles.fighterPanel}>
-          <span className={styles.fighterName}>P1 · {p1Data.name}{p1Data.mix === 'Final Boss' ? <span className={styles.bossBadge}>FINAL BOSS</span> : null}</span>
+          <span className={styles.fighterName}>P1 · {p1Data.name}{p1Data.mix === 'Final Boss' ? <span className={styles.bossBadge}>FINAL BOSS</span> : null}{p1Data.mega ? <span className={styles.megaBadge}>⚡ MEGA</span> : null}</span>
           <div className={styles.hpBarBg}><div ref={hpP1Ref} className={styles.hpBarFill} /></div>
           <div className={styles.meterBarBg}><div ref={meterP1Ref} className={styles.meterBarFill} style={{ background: p1Data.accent }} /></div>
         </div>
         <div className={styles.arenaLabel}>{arena.name}</div>
         <div className={`${styles.fighterPanel} ${styles.fighterPanelRight}`}>
-          <span className={styles.fighterName}>{mode === 'cpu' ? 'CPU' : 'P2'} · {p2Data.name}{p2Data.mix === 'Final Boss' ? <span className={styles.bossBadge}>FINAL BOSS</span> : null}</span>
+          <span className={styles.fighterName}>{mode === 'cpu' ? 'CPU' : 'P2'} · {p2Data.name}{p2Data.mix === 'Final Boss' ? <span className={styles.bossBadge}>FINAL BOSS</span> : null}{p2Data.mega ? <span className={styles.megaBadge}>⚡ MEGA</span> : null}</span>
           <div className={styles.hpBarBg}><div ref={hpP2Ref} className={styles.hpBarFill} /></div>
           <div className={styles.meterBarBg}><div ref={meterP2Ref} className={styles.meterBarFill} style={{ background: p2Data.accent }} /></div>
         </div>
@@ -1491,6 +1714,344 @@ function MonsterThumb({ monster, size = 96 }) {
   return <div ref={mountRef} className={styles.thumb3d} style={{ width: size, height: size }} />
 }
 
+// ── Monster Lab screen — build-your-own monster from unlockable parts ──
+function LabOptionRow({ label, options, value, battleCount, onSelect }) {
+  return (
+    <div className={styles.labRow}>
+      <span className={styles.labRowLabel}>{label}</span>
+      <div className={styles.labOptions}>
+        {options.map(opt => {
+          const locked = !isLabUnlocked(opt, battleCount)
+          return (
+            <button
+              key={opt.id}
+              className={`${styles.labOptionBtn} ${value === opt.id ? styles.labOptionBtnActive : ''} ${locked ? styles.labOptionBtnLocked : ''}`}
+              disabled={locked}
+              title={locked ? `Win ${opt.unlockAt - battleCount} more battle${opt.unlockAt - battleCount === 1 ? '' : 's'} to unlock!` : opt.name}
+              onClick={() => onSelect(opt.id)}
+            >
+              {locked ? '🔒 ' : ''}{opt.name}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function blankLabBuilder() {
+  return { name: '', animals: [], ear: 'round', snout: 'short', spikesId: 'off', tailTip: 'tuft', colorId: 'orange', specialId: 'lunge' }
+}
+
+function MegaFusionPanel({ unlocked, fusionShards, onSpendFusionShard, onSaveCreation }) {
+  const [picks, setPicks] = useState([])
+  const [name, setName] = useState('')
+
+  const fusableMonsters = [...MONSTERS, ...LEGENDARY_MONSTERS.filter(m => unlocked.includes(m.id))]
+
+  function togglePick(id) {
+    setPicks(prev => {
+      if (prev.includes(id)) return prev.filter(x => x !== id)
+      if (prev.length < 2) return [...prev, id]
+      return [prev[1], id]
+    })
+  }
+
+  const preview = useMemo(() => {
+    if (picks.length !== 2) return null
+    const a = fusableMonsters.find(m => m.id === picks[0])
+    const b = fusableMonsters.find(m => m.id === picks[1])
+    if (!a || !b) return null
+    const traits = deriveTraitsFromParents(a, b)
+    return {
+      id: 'mega-preview',
+      color: lerpColor(a.color, b.color, 0.5), dark: lerpColor(a.dark, b.dark, 0.5), accent: lerpColor(a.accent, b.accent, 0.5),
+      sizeScale: Math.max(a.sizeScale, b.sizeScale) * 1.15,
+      ...traits,
+      bodyOpts: mergeBodyOpts(a, b),
+      special: deriveMegaSpecial(a.special, b.special),
+      parentA: a, parentB: b,
+    }
+  }, [picks, fusableMonsters])
+
+  function handleFuse() {
+    if (!preview || fusionShards < 1) return
+    const monster = {
+      id: `mega-${Date.now()}`, name: name.trim() || `Mega ${preview.parentA.name}`,
+      mix: `${preview.parentA.name} + ${preview.parentB.name}`, mixEmoji: '⚡',
+      color: preview.color, dark: preview.dark, accent: preview.accent, sizeScale: preview.sizeScale,
+      ear: preview.ear, snout: preview.snout, spikes: preview.spikes, tailTip: preview.tailTip,
+      bodyOpts: preview.bodyOpts,
+      special: preview.special, custom: true, mega: true,
+      blurb: 'A mega fusion forged in the Lab!',
+      lore: `Forged by fusing ${preview.parentA.name} and ${preview.parentB.name} with a Fusion Shard.`,
+    }
+    onSaveCreation(monster, null)
+    onSpendFusionShard()
+    setPicks([])
+    setName('')
+  }
+
+  if (!unlocked.includes('tim')) {
+    return (
+      <div className={styles.labLockedPanel}>
+        <span className={styles.labLockedIcon}>🔒</span>
+        <p className={styles.storyIntro}>Defeat Tim, the final boss of Story Mode, to unlock Mega Fusion!</p>
+      </div>
+    )
+  }
+
+  return (
+    <>
+      <p className={styles.storyIntro}>Pick any two monsters — starters or legendaries — to fuse into one MEGA monster! Each fusion costs 1 Fusion Shard.</p>
+      <div className={styles.labLayout}>
+        <div className={styles.labPreview}>
+          {preview ? <MonsterThumb monster={preview} size={180} /> : <div className={styles.labFusionPlaceholder}>Pick 2 monsters!</div>}
+          <input
+            className={styles.labNameInput}
+            placeholder="Name your mega monster"
+            value={name}
+            maxLength={24}
+            disabled={!preview}
+            onChange={e => setName(e.target.value)}
+          />
+          {preview && <span className={styles.monsterSpecial}>✨ {preview.special.name}</span>}
+        </div>
+
+        <div className={styles.labControls}>
+          <div className={styles.labRow}>
+            <span className={styles.labRowLabel}>Monsters</span>
+            <div className={styles.labOptions}>
+              {fusableMonsters.map(m => (
+                <button
+                  key={m.id}
+                  className={`${styles.labOptionBtn} ${picks.includes(m.id) ? styles.labOptionBtnActive : ''}`}
+                  onClick={() => togglePick(m.id)}
+                >
+                  {m.name}{m.legendary ? ' ⭐' : ''}
+                </button>
+              ))}
+            </div>
+          </div>
+          <p className={styles.cpuNote}>💠 Fusion Shards: {fusionShards}</p>
+          <button className={styles.bigBtn} disabled={!preview || fusionShards < 1} onClick={handleFuse}>⚡ Fuse! (1 💠)</button>
+          {fusionShards < 1 && <p className={styles.cpuNote}>Beat Tim again in Story Mode to earn more Fusion Shards!</p>}
+        </div>
+      </div>
+    </>
+  )
+}
+
+function Lab({ battleCount, creations, unlocked, fusionShards, onSpendFusionShard, onSaveCreation, onDeleteCreation, onBack }) {
+  // Two tabs: Build (pick two animals to mix, then fine-tune body parts)
+  // and Mega Fusion (unlocked by beating Tim — fuses two starter monsters
+  // into one, spending a Fusion Shard). Editing an existing creation drops
+  // straight into the parts step since its animal mix, if any, was already
+  // decided when it was made.
+  const [labMode, setLabMode] = useState('build')
+  const [step, setStep] = useState('animals')
+  const [builder, setBuilder] = useState(blankLabBuilder)
+  const [editingId, setEditingId] = useState(null)
+
+  const mixRecipe = builder.animals.length === 2 ? deriveMix(builder.animals[0], builder.animals[1]) : null
+  const activeSpecialId = step === 'animals' && mixRecipe ? mixRecipe.specialId : builder.specialId
+  const specialOpt = LAB_SPECIALS.find(o => o.id === activeSpecialId) || LAB_SPECIALS[0]
+
+  // Only the parts that actually change the 3D model are memoized into the
+  // preview object — the name field is display-only, so keeping it out of
+  // this object (and this object's identity stable while typing) means the
+  // MonsterThumb canvas doesn't get torn down and rebuilt every keystroke.
+  const previewVisual = useMemo(() => {
+    const spikesOpt = LAB_SPIKES.find(o => o.id === builder.spikesId) || LAB_SPIKES[0]
+    const colorOpt = LAB_COLORS.find(o => o.id === builder.colorId) || LAB_COLORS[0]
+    const sOpt = LAB_SPECIALS.find(o => o.id === activeSpecialId) || LAB_SPECIALS[0]
+    const traits = step === 'animals' && mixRecipe
+      ? { ear: mixRecipe.ear, snout: mixRecipe.snout, spikes: mixRecipe.spikes, tailTip: mixRecipe.tailTip }
+      : { ear: builder.ear, snout: builder.snout, spikes: spikesOpt.value, tailTip: builder.tailTip }
+    return {
+      id: 'lab-preview', mix: 'Custom', mixEmoji: '🧪',
+      color: colorOpt.color, dark: colorOpt.dark, accent: colorOpt.accent, sizeScale: 1,
+      ...traits,
+      special: { name: sOpt.name, type: sOpt.type, range: sOpt.range, dmg: sOpt.dmg, knock: sOpt.knock },
+      blurb: 'A one-of-a-kind lab creation!', lore: 'Built from scratch in the Monster Lab.',
+    }
+  }, [step, mixRecipe, activeSpecialId, builder.ear, builder.snout, builder.spikesId, builder.tailTip, builder.colorId])
+
+  function set(field) { return (id) => setBuilder(b => ({ ...b, [field]: id })) }
+
+  function toggleAnimal(id) {
+    setBuilder(b => {
+      if (b.animals.includes(id)) return { ...b, animals: b.animals.filter(x => x !== id) }
+      if (b.animals.length < 2) return { ...b, animals: [...b.animals, id] }
+      return { ...b, animals: [b.animals[1], id] }
+    })
+  }
+
+  function confirmMix() {
+    if (mixRecipe) {
+      setBuilder(b => ({ ...b, ear: mixRecipe.ear, snout: mixRecipe.snout, spikesId: mixRecipe.spikes ? 'on' : 'off', tailTip: mixRecipe.tailTip, specialId: mixRecipe.specialId }))
+    }
+    setStep('parts')
+  }
+
+  function loadCreationIntoBuilder(c) {
+    setEditingId(c.id)
+    setStep('parts')
+    setBuilder({
+      name: c.name, animals: c.animals || [], ear: c.ear, snout: c.snout,
+      spikesId: c.spikes ? 'on' : 'off', tailTip: c.tailTip,
+      colorId: LAB_COLORS.find(o => o.color === c.color)?.id || 'orange',
+      specialId: LAB_SPECIALS.find(o => o.type === c.special.type)?.id || 'lunge',
+    })
+  }
+
+  function handleSave() {
+    const id = editingId || `custom-${Date.now()}`
+    const mixAnimals = builder.animals.map(aid => LAB_ANIMALS.find(a => a.id === aid))
+    const monster = {
+      ...previewVisual, id, name: builder.name.trim() || 'My Monster', custom: true,
+      animals: builder.animals,
+      mix: mixAnimals.length === 2 ? mixAnimals.map(a => a.name).join(' + ') : 'Custom',
+      mixEmoji: mixAnimals.length === 2 ? mixAnimals.map(a => a.emoji).join('+') : '🧪',
+    }
+    onSaveCreation(monster, editingId)
+    setEditingId(id)
+  }
+
+  function handleNew() {
+    setEditingId(null)
+    setBuilder(blankLabBuilder())
+    setStep('animals')
+  }
+
+  return (
+    <div className={styles.center}>
+      <h2 className={styles.h2}>🧪 Monster Lab</h2>
+
+      <div className={styles.labOptions}>
+        <button className={`${styles.labOptionBtn} ${labMode === 'build' ? styles.labOptionBtnActive : ''}`} onClick={() => setLabMode('build')}>🧬 Build a Monster</button>
+        <button className={`${styles.labOptionBtn} ${labMode === 'fusion' ? styles.labOptionBtnActive : ''}`} onClick={() => setLabMode('fusion')}>⚡ Mega Fusion</button>
+      </div>
+
+      {labMode === 'fusion' ? (
+        <MegaFusionPanel unlocked={unlocked} fusionShards={fusionShards} onSpendFusionShard={onSpendFusionShard} onSaveCreation={onSaveCreation} />
+      ) : (
+        <>
+      <p className={styles.storyIntro}>
+        {step === 'animals'
+          ? 'Step 1: Pick two animals to mix together!'
+          : "Step 2: Customize your monster's body parts! Win battles in Quick Battle or Story Mode to unlock more."}
+      </p>
+
+      <div className={styles.labLayout}>
+        <div className={styles.labPreview}>
+          <MonsterThumb monster={previewVisual} size={180} />
+          {step === 'parts' ? (
+            <input
+              className={styles.labNameInput}
+              placeholder="Name your monster"
+              value={builder.name}
+              maxLength={24}
+              onChange={e => setBuilder(b => ({ ...b, name: e.target.value }))}
+            />
+          ) : (
+            <span className={styles.monsterMix}>
+              {builder.animals.length === 2
+                ? `${LAB_ANIMALS.find(a => a.id === builder.animals[0]).emoji}+${LAB_ANIMALS.find(a => a.id === builder.animals[1]).emoji} ${LAB_ANIMALS.find(a => a.id === builder.animals[0]).name} + ${LAB_ANIMALS.find(a => a.id === builder.animals[1]).name}`
+                : `Pick ${2 - builder.animals.length} more animal${2 - builder.animals.length === 1 ? '' : 's'}!`}
+            </span>
+          )}
+          <span className={styles.monsterSpecial}>✨ {specialOpt.name}</span>
+        </div>
+
+        {step === 'animals' ? (
+          <div className={styles.labControls}>
+            <div className={styles.labAnimalGrid}>
+              {LAB_ANIMALS.map(a => {
+                const selected = builder.animals.includes(a.id)
+                return (
+                  <button
+                    key={a.id}
+                    className={`${styles.labAnimalBtn} ${selected ? styles.labAnimalBtnActive : ''}`}
+                    onClick={() => toggleAnimal(a.id)}
+                  >
+                    <span className={styles.labAnimalEmoji}>{a.emoji}</span>
+                    {a.name}
+                  </button>
+                )
+              })}
+            </div>
+            <button className={styles.bigBtn} disabled={builder.animals.length !== 2} onClick={confirmMix}>Mix! ▶</button>
+          </div>
+        ) : (
+          <div className={styles.labControls}>
+            <LabOptionRow label="Ears" options={LAB_EARS} value={builder.ear} battleCount={battleCount} onSelect={set('ear')} />
+            <LabOptionRow label="Snout" options={LAB_SNOUTS} value={builder.snout} battleCount={battleCount} onSelect={set('snout')} />
+            <LabOptionRow label="Back" options={LAB_SPIKES} value={builder.spikesId} battleCount={battleCount} onSelect={set('spikesId')} />
+            <LabOptionRow label="Tail" options={LAB_TAILS} value={builder.tailTip} battleCount={battleCount} onSelect={set('tailTip')} />
+            <LabOptionRow label="Special Move" options={LAB_SPECIALS} value={builder.specialId} battleCount={battleCount} onSelect={set('specialId')} />
+            <div className={styles.labRow}>
+              <span className={styles.labRowLabel}>Color</span>
+              <div className={styles.labOptions}>
+                {LAB_COLORS.map(opt => {
+                  const locked = !isLabUnlocked(opt, battleCount)
+                  return (
+                    <button
+                      key={opt.id}
+                      className={`${styles.labColorSwatch} ${builder.colorId === opt.id ? styles.labColorSwatchActive : ''}`}
+                      style={{ background: opt.color }}
+                      disabled={locked}
+                      title={locked ? `Win ${opt.unlockAt - battleCount} more battles to unlock!` : opt.name}
+                      onClick={() => set('colorId')(opt.id)}
+                    >
+                      {locked ? '🔒' : ''}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {step === 'parts' && (
+        <div className={styles.modeRow}>
+          <button className={styles.bigBtn} onClick={handleSave}>{editingId ? '💾 Save Changes' : '💾 Save Monster'}</button>
+          {editingId && <button className={styles.backBtn} onClick={handleNew}>🆕 Build Another</button>}
+        </div>
+      )}
+        </>
+      )}
+
+      {creations.length > 0 && (
+        <>
+          <h3 className={styles.h2} style={{ fontSize: 18 }}>Your Creations</h3>
+          <div className={styles.monsterGrid}>
+            {creations.map(c => (
+              <div key={c.id} className={styles.monsterCard}>
+                <button className={styles.labCreationThumb} onClick={() => loadCreationIntoBuilder(c)}>
+                  <MonsterThumb monster={c} size={96} />
+                </button>
+                <strong className={styles.monsterName}>{c.name}{c.mega ? <span className={styles.megaBadge}>⚡ MEGA</span> : null}</strong>
+                <span className={styles.monsterMix}>{c.mixEmoji} {c.mix}</span>
+                <span className={styles.monsterSpecial}>✨ {c.special.name}</span>
+                <button className={styles.backBtn} onClick={() => onDeleteCreation(c.id)}>🗑 Delete</button>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {labMode === 'build' && (
+        <p className={styles.cpuNote}>{battleCount} battle{battleCount === 1 ? '' : 's'} played — keep playing to unlock more parts!</p>
+      )}
+      <button className={styles.backBtn} onClick={labMode === 'build' && step === 'parts' ? () => setStep('animals') : onBack}>
+        {labMode === 'build' && step === 'parts' ? '← Change Animals' : '← Back'}
+      </button>
+    </div>
+  )
+}
+
 // ── Top-level app: title / mode / select / arena / battle / result ─────
 export default function LilMonsterBattles() {
   const [screen, setScreen] = useState('title')
@@ -1502,8 +2063,35 @@ export default function LilMonsterBattles() {
   const [unlocked, setUnlocked] = useState(() => loadUnlocked())
   const [storyMode, setStoryMode] = useState(false)
   const [chapterIndex, setChapterIndex] = useState(0)
+  const [battleCount, setBattleCount] = useState(() => loadBattleCount())
+  const [creations, setCreations] = useState(() => loadCreations())
+  const [fusionShards, setFusionShards] = useState(() => loadFusionShards())
 
-  const availableMonsters = [...MONSTERS, ...LEGENDARY_MONSTERS.filter(m => unlocked.includes(m.id))]
+  const availableMonsters = [...MONSTERS, ...LEGENDARY_MONSTERS.filter(m => unlocked.includes(m.id)), ...creations]
+
+  function saveCreation(monster, editingId) {
+    setCreations(prev => {
+      const next = editingId ? prev.map(c => c.id === editingId ? monster : c) : [...prev, monster]
+      saveCreations(next)
+      return next
+    })
+  }
+
+  function deleteCreation(id) {
+    setCreations(prev => {
+      const next = prev.filter(c => c.id !== id)
+      saveCreations(next)
+      return next
+    })
+  }
+
+  function spendFusionShard() {
+    setFusionShards(prev => {
+      const next = Math.max(0, prev - 1)
+      saveFusionShards(next)
+      return next
+    })
+  }
 
   function pickMode(m) {
     setMode(m)
@@ -1538,6 +2126,7 @@ export default function LilMonsterBattles() {
   }
 
   function handleFinish(w) {
+    setBattleCount(prev => { const next = prev + 1; saveBattleCount(next); return next })
     if (storyMode) {
       if (w === 'p1') {
         const chapter = STORY_CHAPTERS[chapterIndex]
@@ -1546,6 +2135,9 @@ export default function LilMonsterBattles() {
           saveUnlocked(next)
           return next
         })
+        if (chapter.id === 'final-boss') {
+          setFusionShards(prev => { const next = prev + 2; saveFusionShards(next); return next })
+        }
         setScreen('story-victory')
       } else {
         setScreen('story-retry')
@@ -1634,9 +2226,25 @@ export default function LilMonsterBattles() {
             <button className={styles.modeBtn} onClick={startStory}>
               📖 Story Mode <span>4 trials · unlock legends</span>
             </button>
+            <button className={styles.modeBtn} onClick={() => setScreen('lab')}>
+              🧪 Monster Lab <span>build your own!</span>
+            </button>
           </div>
           <button className={styles.backBtn} onClick={() => setScreen('title')}>← Back</button>
         </div>
+      )}
+
+      {screen === 'lab' && (
+        <Lab
+          battleCount={battleCount}
+          creations={creations}
+          unlocked={unlocked}
+          fusionShards={fusionShards}
+          onSpendFusionShard={spendFusionShard}
+          onSaveCreation={saveCreation}
+          onDeleteCreation={deleteCreation}
+          onBack={() => setScreen('mode')}
+        />
       )}
 
       {screen === 'select-p1' && (
@@ -1798,7 +2406,10 @@ function SelectScreen({ title, exclude, onPick, onBack, monsters = MONSTERS, unl
           return (
             <button key={m.id} className={styles.monsterCard} onClick={() => onPick(m)}>
               <MonsterThumb monster={m} size={96} />
-              <strong className={styles.monsterName}>{m.name}{m.legendary ? ' ⭐' : ''}</strong>
+              <strong className={styles.monsterName}>
+                {m.name}{m.legendary ? ' ⭐' : ''}{!m.mega && m.custom ? ' 🧪' : ''}
+                {m.mega ? <span className={styles.megaBadge}>⚡ MEGA</span> : null}
+              </strong>
               <span className={styles.monsterMix}>{m.mixEmoji} {m.mix}</span>
               <span className={styles.monsterSpecial}>✨ {m.special.name}</span>
               <span className={styles.monsterBlurb}>{m.blurb}</span>
