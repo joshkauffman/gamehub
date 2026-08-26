@@ -1,0 +1,189 @@
+.page {
+  position: fixed;
+  inset: 0;
+  overflow: auto;
+  background: radial-gradient(circle at 50% 0%, #142838 0%, #0b1620 55%, #05090d 100%);
+  color: #fff;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  display: flex;
+  padding: 24px;
+}
+
+.center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+  max-width: 460px;
+  width: 100%;
+  /* margin: auto (not align-items/justify-content on .page) centers this
+     when short but degrades to normal scrollable flow when it overflows. */
+  margin: auto;
+}
+
+.title { font-size: clamp(26px, 5vw, 38px); margin: 0; }
+.h2 { font-size: 20px; margin: 0; }
+.blurb { color: rgba(255,255,255,0.72); font-size: 14px; line-height: 1.5; }
+
+.playerForm {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px;
+  padding: 12px 16px;
+  width: 100%;
+  max-width: 320px;
+}
+
+.textInput {
+  width: 100%;
+  text-align: center;
+  font-size: 14px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.25);
+  background: rgba(0,0,0,0.3);
+  color: #fff;
+}
+
+.avatarRow { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.avatarBtn {
+  width: 34px; height: 34px;
+  font-size: 18px;
+  border-radius: 8px;
+  border: 2px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.06);
+  cursor: pointer;
+}
+.avatarBtnActive { border-color: #5cc8ff; background: rgba(92,200,255,0.2); }
+
+.bigBtn {
+  font-size: 16px;
+  font-weight: 700;
+  padding: 12px 26px;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(#5cc8ff, #1f7fbf);
+  color: #04202f;
+  cursor: pointer;
+  box-shadow: 0 5px 0 #0f4a6b;
+  transition: transform 0.1s;
+}
+.bigBtn:hover:not(:disabled) { transform: translateY(-2px); }
+.bigBtn:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 #0f4a6b; }
+.bigBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.backBtn {
+  background: rgba(255,255,255,0.12);
+  border: none;
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.backBtn:hover { background: rgba(255,255,255,0.22); }
+
+.backLink { color: rgba(255,255,255,0.6); text-decoration: none; font-size: 14px; }
+.backLink:hover { color: #fff; }
+
+.joinRow { display: flex; gap: 8px; width: 100%; max-width: 320px; }
+.joinRow .textInput { text-align: left; }
+
+.errorBanner {
+  background: rgba(200,40,40,0.25);
+  border: 1px solid rgba(255,90,90,0.5);
+  padding: 6px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+/* ── The chat screen — its own fixed full-height flex shell, separate
+   from the centered menu layout since it needs a pinned header/composer
+   with only the message list scrolling in between. ─────────────────── */
+.chatShell {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: radial-gradient(circle at 50% 0%, #142838 0%, #0b1620 55%, #05090d 100%);
+  color: #fff;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+.chatHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  background: rgba(255,255,255,0.06);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.participants { display: flex; gap: 8px; flex-wrap: wrap; }
+.participant {
+  font-size: 12px;
+  background: rgba(255,255,255,0.08);
+  padding: 5px 10px;
+  border-radius: 14px;
+  white-space: nowrap;
+}
+.headerRight { display: flex; align-items: center; gap: 10px; }
+.roomCodeSmall { font-size: 13px; color: rgba(255,255,255,0.7); letter-spacing: 1px; white-space: nowrap; }
+
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.systemMsg {
+  align-self: center;
+  font-size: 12px;
+  font-style: italic;
+  color: rgba(255,255,255,0.45);
+  padding: 2px 0;
+}
+.msgRow { display: flex; gap: 8px; align-items: flex-end; max-width: 70%; }
+.msgRowMine { align-self: flex-end; flex-direction: row-reverse; }
+.msgAvatar { font-size: 20px; flex-shrink: 0; }
+.msgBubble {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: rgba(255,255,255,0.09);
+  border-radius: 14px;
+  padding: 8px 12px;
+}
+.msgRowMine .msgBubble { background: linear-gradient(#2a6f96, #1a4a63); }
+.msgName { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.6); }
+.msgText { font-size: 14px; line-height: 1.4; word-break: break-word; white-space: pre-wrap; }
+
+.composer {
+  display: flex;
+  gap: 10px;
+  padding: 12px 16px;
+  background: rgba(255,255,255,0.06);
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+.composerInput {
+  flex: 1;
+  font-size: 14px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.25);
+  background: rgba(0,0,0,0.3);
+  color: #fff;
+}
+
+@media (max-width: 480px) {
+  .title { font-size: 26px; }
+  .msgRow { max-width: 85%; }
+}
