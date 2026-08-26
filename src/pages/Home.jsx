@@ -79,13 +79,29 @@ const GAMES = [
     emoji: '✨',
     path: '/world3d',
   },
+  {
+    id: 'chat-lounge',
+    title: 'Chat Lounge',
+    description: 'Start a private chat and invite people with a short room code, or join one someone shared with you. No accounts, no server — just the room.',
+    emoji: '💬',
+    path: '/chat-lounge',
+  },
+  {
+    id: 'obvious-mario-knockoff',
+    title: 'The Obvious Mario Knockoff',
+    description: "A mustachioed plumber-guy runs, jumps on grumpy mushroom guys, and grabs a flagpole. It's a knockoff. It knows it's a knockoff. That's the whole bit.",
+    emoji: '🍄',
+    path: '/obvious-mario-knockoff',
+  },
 ]
 
 export default function Home() {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <h1 className={styles.logo}>GameHub</h1>
+        <h1>
+          <Link to="/kaboom-corral" className={styles.logo}>GameHub</Link>
+        </h1>
         <p className={styles.tagline}>Pick a game. Play smart.</p>
       </header>
       <main className={styles.grid}>

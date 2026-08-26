@@ -11,6 +11,9 @@ import FlappyGoose from './games/flappy-goose/FlappyGoose.jsx'
 import SnakeClash from './games/snake-clash/SnakeClash.jsx'
 import World3D from './games/world3d/World3D.jsx'
 import LilMonsterBattles from './games/lil-monster-battles/LilMonsterBattles.jsx'
+import KaboomCorral from './games/kaboom-corral/KaboomCorral.jsx'
+import ChatLounge from './games/chat-lounge/ChatLounge.jsx'
+import ObviousMarioKnockoff from './games/obvious-mario-knockoff/ObviousMarioKnockoff.jsx'
 
 export default function App() {
   return (
@@ -27,6 +30,9 @@ export default function App() {
       <Route path="/snake-clash" element={<SnakeClash />} />
       <Route path="/world3d" element={<World3D />} />
       <Route path="/lil-monster-battles" element={<LilMonsterBattles />} />
+      <Route path="/kaboom-corral" element={<KaboomCorral />} />
+      <Route path="/chat-lounge" element={<ChatLounge />} />
+      <Route path="/obvious-mario-knockoff" element={<ObviousMarioKnockoff />} />
     </Routes>
   )
 }
