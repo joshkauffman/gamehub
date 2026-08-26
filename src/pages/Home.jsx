@@ -66,6 +66,13 @@ const GAMES = [
     path: '/flappy-goose',
   },
   {
+    id: 'lil-monster-battles',
+    title: "Lil' Monster Battles",
+    description: 'Mix-and-match animal monsters throw down in themed arenas. Solo vs the computer or 2 players on one keyboard.',
+    emoji: '🐲',
+    path: '/lil-monster-battles',
+  },
+  {
     id: 'world3d',
     title: 'Skylight',
     description: 'A dusky first-person world. Gather light to fuel flight, then free the spirits you find to unlock new maps to explore.',
