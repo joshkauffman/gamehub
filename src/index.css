@@ -36,3 +36,81 @@ a {
   color: inherit;
   text-decoration: none;
 }
+
+/* Hub-wide horror cheat (press H) — see src/HorrorMode.jsx. A CSS filter on
+   #root reskins every game uniformly, canvas/WebGL/DOM alike, without any
+   per-game code. The provider withholds this class entirely while a route
+   with its own deeper reskin is showing (The Obvious Mario Knockoff) —
+   a filter can't be undone by a descendant, so exemption happens there. */
+body.horror-mode #root {
+  filter: sepia(0.4) saturate(2.6) hue-rotate(300deg) brightness(0.8) contrast(1.15);
+}
+
+body.horror-mode::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 45%, rgba(0, 0, 0, 0.55) 100%);
+  animation: horror-pulse 4s ease-in-out infinite;
+}
+
+/* Irregular steps rather than a smooth sine — reads as a dying bulb
+   flickering, not a calm breathing glow. */
+@keyframes horror-pulse {
+  0%, 100% { opacity: 0.85; }
+  8% { opacity: 0.55; }
+  14% { opacity: 0.9; }
+  15% { opacity: 0.5; }
+  32% { opacity: 0.75; }
+  58% { opacity: 1; }
+  61% { opacity: 0.6; }
+  80% { opacity: 0.95; }
+}
+
+.horror-badge {
+  position: fixed;
+  top: 12px;
+  right: 14px;
+  z-index: 9999;
+  background: rgba(10, 0, 5, 0.75);
+  color: #ff3b6b;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 13px;
+  font-family: system-ui, sans-serif;
+  border: 1px solid rgba(255, 59, 107, 0.4);
+  pointer-events: none;
+}
+
+/* Jump-scare overlay — hidden by default, briefly flashed to opacity 1 via
+   inline styles set from HorrorMode.jsx (see the timeout-scheduled scare). */
+.horror-jumpscare {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: min(45vh, 45vw);
+  line-height: 1;
+  opacity: 0;
+  transform: scale(0.6);
+  pointer-events: none;
+  filter: drop-shadow(0 0 50px rgba(255, 0, 40, 0.85));
+  background: radial-gradient(circle, rgba(120, 0, 0, 0.4), transparent 70%);
+}
+
+@keyframes horror-shake {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-6px, 4px); }
+  40% { transform: translate(6px, -4px); }
+  60% { transform: translate(-4px, -6px); }
+  80% { transform: translate(4px, 6px); }
+}
+
+body.horror-shake #root {
+  animation: horror-shake 0.4s linear;
+}

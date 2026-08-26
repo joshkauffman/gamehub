@@ -1,4 +1,5 @@
 import { Routes, Route } from 'react-router-dom'
+import { HorrorModeProvider } from './HorrorMode.jsx'
 import Home from './pages/Home.jsx'
 import UltimateTicTacToe from './games/ultimate-ttt/UltimateTicTacToe.jsx'
 import DogManDash from './games/dog-man-dash/DogManDash.jsx'
@@ -17,22 +18,24 @@ import ObviousMarioKnockoff from './games/obvious-mario-knockoff/ObviousMarioKno
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/ultimate-ttt" element={<UltimateTicTacToe />} />
-      <Route path="/dog-man-dash" element={<DogManDash />} />
-      <Route path="/poetry-for-neanderthals" element={<PoetryForNeanderthals />} />
-      <Route path="/dice-roller" element={<DiceRoller />} />
-      <Route path="/hangman" element={<Hangman />} />
-      <Route path="/simpsons-tcg" element={<SimpsonsTCG />} />
-      <Route path="/treehouse-tcg" element={<TreehouseTCG />} />
-      <Route path="/flappy-goose" element={<FlappyGoose />} />
-      <Route path="/snake-clash" element={<SnakeClash />} />
-      <Route path="/world3d" element={<World3D />} />
-      <Route path="/lil-monster-battles" element={<LilMonsterBattles />} />
-      <Route path="/kaboom-corral" element={<KaboomCorral />} />
-      <Route path="/chat-lounge" element={<ChatLounge />} />
-      <Route path="/obvious-mario-knockoff" element={<ObviousMarioKnockoff />} />
-    </Routes>
+    <HorrorModeProvider>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/ultimate-ttt" element={<UltimateTicTacToe />} />
+        <Route path="/dog-man-dash" element={<DogManDash />} />
+        <Route path="/poetry-for-neanderthals" element={<PoetryForNeanderthals />} />
+        <Route path="/dice-roller" element={<DiceRoller />} />
+        <Route path="/hangman" element={<Hangman />} />
+        <Route path="/simpsons-tcg" element={<SimpsonsTCG />} />
+        <Route path="/treehouse-tcg" element={<TreehouseTCG />} />
+        <Route path="/flappy-goose" element={<FlappyGoose />} />
+        <Route path="/snake-clash" element={<SnakeClash />} />
+        <Route path="/world3d" element={<World3D />} />
+        <Route path="/lil-monster-battles" element={<LilMonsterBattles />} />
+        <Route path="/kaboom-corral" element={<KaboomCorral />} />
+        <Route path="/chat-lounge" element={<ChatLounge />} />
+        <Route path="/obvious-mario-knockoff" element={<ObviousMarioKnockoff />} />
+      </Routes>
+    </HorrorModeProvider>
   )
 }
