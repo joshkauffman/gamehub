@@ -1,0 +1,350 @@
+.page {
+  position: fixed;
+  inset: 0;
+  overflow: auto;
+  background: radial-gradient(circle at 50% 0%, #3a2410 0%, #1f1408 55%, #100a04 100%);
+  color: #fff;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  display: flex;
+  padding: 24px;
+}
+
+.center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+  max-width: 640px;
+  width: 100%;
+  margin: auto;
+}
+
+.title { font-size: clamp(26px, 5vw, 40px); margin: 0; }
+.h2 { font-size: 22px; margin: 0; }
+.blurb { color: rgba(255,255,255,0.72); font-size: 14px; line-height: 1.5; max-width: 520px; }
+
+.modeRow { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+
+.modeBtn {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 16px;
+  font-weight: 700;
+  padding: 16px 20px;
+  border-radius: 14px;
+  border: 2px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+.modeBtn span { font-size: 12px; font-weight: 400; color: rgba(255,255,255,0.6); }
+.modeBtn:hover { background: rgba(255,255,255,0.16); transform: translateY(-2px); }
+
+.bigBtn {
+  font-size: 16px;
+  font-weight: 700;
+  padding: 12px 26px;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(#ff9d5c, #d9581f);
+  color: #2a1000;
+  cursor: pointer;
+  box-shadow: 0 5px 0 #8f3a0f;
+  transition: transform 0.1s;
+}
+.bigBtn:hover { transform: translateY(-2px); }
+.bigBtn:active { transform: translateY(3px); box-shadow: 0 1px 0 #8f3a0f; }
+.bigBtn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: 0 5px 0 #8f3a0f; }
+
+.backBtn {
+  background: rgba(255,255,255,0.12);
+  border: none;
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.backBtn:hover { background: rgba(255,255,255,0.22); }
+
+.backLink { color: rgba(255,255,255,0.6); text-decoration: none; font-size: 14px; }
+.backLink:hover { color: #fff; }
+
+.playerForm {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px;
+  padding: 12px 16px;
+  width: 100%;
+  max-width: 320px;
+}
+.playerFormLabel { font-size: 12px; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 0.5px; }
+
+.textInput {
+  width: 100%;
+  text-align: center;
+  font-size: 14px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.25);
+  background: rgba(0,0,0,0.3);
+  color: #fff;
+}
+
+.avatarRow { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.avatarBtn {
+  width: 34px; height: 34px;
+  font-size: 18px;
+  border-radius: 8px;
+  border: 2px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.06);
+  cursor: pointer;
+}
+.avatarBtnActive { border-color: #ffb066; background: rgba(255,176,102,0.2); }
+
+.countRow { display: flex; gap: 8px; }
+.countBtn {
+  font-size: 13px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 2px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.06);
+  color: #fff;
+  cursor: pointer;
+}
+.countBtnActive { border-color: #ffb066; background: rgba(255,176,102,0.18); }
+
+.roomCode {
+  font-size: 20px;
+  background: rgba(255,255,255,0.08);
+  padding: 10px 20px;
+  border-radius: 12px;
+  letter-spacing: 2px;
+}
+
+.lobbyList { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.lobbyPlayer {
+  background: rgba(255,255,255,0.08);
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-size: 14px;
+}
+
+/* ── Gameplay board ─────────────────────────────────────────────── */
+.board {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  max-width: 720px;
+  margin: auto;
+  padding: 12px 0 24px;
+}
+
+.opponents { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; width: 100%; }
+.oppCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: rgba(255,255,255,0.07);
+  border: 2px solid rgba(255,255,255,0.12);
+  border-radius: 12px;
+  padding: 8px 14px;
+  min-width: 84px;
+}
+.oppTurn { border-color: #ffb066; box-shadow: 0 0 10px rgba(255,176,102,0.4); }
+.oppDead { opacity: 0.4; }
+.oppAvatar { font-size: 24px; }
+.oppName { font-size: 12px; font-weight: 700; }
+.oppHand { font-size: 11px; color: rgba(255,255,255,0.65); }
+
+.tableRow { display: flex; gap: 24px; }
+.pileStack { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+
+/* A textured back — nobody, including the owner, can see a face-down pile,
+   so this deliberately carries no card-type coloring, just a repeating
+   diagonal weave standing in for a printed card-back pattern. */
+.cardBack {
+  position: relative;
+  width: 68px; height: 96px;
+  border-radius: 10px;
+  background:
+    repeating-linear-gradient(45deg, rgba(255,255,255,0.05) 0 6px, transparent 6px 12px),
+    linear-gradient(160deg, #4a3420 0%, #241a0e 100%);
+  border: 2px solid rgba(255,255,255,0.3);
+  box-shadow: 0 3px 0 rgba(0,0,0,0.4), 0 4px 8px rgba(0,0,0,0.3);
+}
+.cardBack::after {
+  content: '💥';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  opacity: 0.35;
+}
+.pileCount {
+  position: absolute;
+  bottom: -8px;
+  right: -8px;
+  background: #ff9d5c;
+  color: #2a1000;
+  font-size: 11px;
+  font-weight: 800;
+  border-radius: 10px;
+  padding: 2px 6px;
+  z-index: 1;
+}
+.pileLabel { font-size: 11px; color: rgba(255,255,255,0.6); }
+.emptyPile {
+  width: 68px; height: 96px;
+  border-radius: 10px;
+  border: 2px dashed rgba(255,255,255,0.2);
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(255,255,255,0.4);
+}
+
+.status { font-size: 15px; font-weight: 700; text-align: center; }
+.errorBanner {
+  background: rgba(200,40,40,0.25);
+  border: 1px solid rgba(255,90,90,0.5);
+  padding: 6px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+.hand { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; width: 100%; min-height: 148px; }
+
+/* A printed-card look: a colored face (per card type, via --card-bg/--card-edge),
+   a thin inner frame, mirrored corner indices like a real deck, and a rules
+   line at the bottom so what a card does is readable at a glance. */
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  width: 104px;
+  height: 148px;
+  padding: 6px 6px 8px;
+  border-radius: 10px;
+  border: 2px solid rgba(255,255,255,0.4);
+  background: linear-gradient(165deg, var(--card-bg, #444) 0%, var(--card-edge, #222) 100%);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 3px 0 rgba(0,0,0,0.4), 0 4px 8px rgba(0,0,0,0.3);
+  transition: transform 0.12s, box-shadow 0.12s, border-color 0.12s;
+}
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border: 1px solid rgba(255,255,255,0.28);
+  border-radius: 7px;
+  pointer-events: none;
+}
+.card:hover:not(:disabled) { transform: translateY(-6px) rotate(-1deg); }
+.card:disabled { cursor: default; opacity: 0.6; filter: grayscale(0.25); }
+.cardSelected {
+  border-color: #ffd873;
+  transform: translateY(-10px) scale(1.06);
+  box-shadow: 0 0 0 2px #ffd873, 0 8px 16px rgba(0,0,0,0.5);
+}
+.cardCorner {
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  font-size: 10px;
+  opacity: 0.9;
+}
+.cardCornerBottom { top: 4px; bottom: auto; right: 6px; left: auto; transform: rotate(180deg); }
+.cardArt {
+  font-size: 30px;
+  margin-top: 18px;
+  margin-bottom: 6px;
+  filter: drop-shadow(0 2px 2px rgba(0,0,0,0.45));
+}
+.cardName {
+  width: 100%;
+  padding: 3px 4px;
+  font-size: 10px;
+  font-weight: 800;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-top: 1px solid rgba(255,255,255,0.2);
+}
+.cardDesc {
+  width: 100%;
+  padding: 2px 4px 0;
+  font-size: 8.5px;
+  line-height: 1.25;
+  font-weight: 400;
+  color: rgba(255,255,255,0.88);
+  text-align: center;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.actionBar { display: flex; gap: 10px; min-height: 44px; }
+
+.log {
+  width: 100%;
+  max-width: 480px;
+  max-height: 100px;
+  overflow-y: auto;
+  font-size: 12px;
+  color: rgba(255,255,255,0.55);
+  background: rgba(0,0,0,0.2);
+  border-radius: 10px;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  padding: 20px;
+}
+.modal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  background: #241a10;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+}
+
+.slider { width: 100%; }
+
+@media (max-width: 480px) {
+  .title { font-size: 24px; }
+}
