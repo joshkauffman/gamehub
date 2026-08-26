@@ -1,0 +1,27 @@
+// ── The Obvious Mario Knockoff — shared constants ─────────────────────
+// Everything here is original code and procedurally-drawn shapes (no
+// sprites, no copied assets, no copyrighted names) — the "knockoff" is
+// entirely the joke, worn openly.
+
+export const W = 960, H = 540
+export const TILE = 40
+export const GROUND_Y = 460
+export const GRAVITY = 0.7
+export const JUMP_V = -14.2
+export const MOVE_ACCEL = 0.75
+export const MAX_SPEED = 4.6
+export const FRICTION = 0.78
+export const LIVES_START = 3
+export const STAR_DURATION = 480
+export const FIRE_COOLDOWN = 24
+
+export const SMALL_SIZE = { w: 30, h: 44 }
+export const BIG_SIZE = { w: 32, h: 60 }
+
+// Visual themes per level (all procedural — colors only, no assets).
+export const THEMES = {
+  overworld: { sky: ['#4ea1e8', '#bfe8ff'], ground: '#8b5a2b', groundTop: '#6dbf3c', hills: true, clouds: true, brick: '#b5652f', block: '#f0a94e', void: '#0a1420' },
+  underground: { sky: ['#050510', '#0d0d24'], ground: '#1b3a6b', groundTop: '#2a5aa0', hills: false, clouds: false, brick: '#2a4a8a', block: '#4a7ad0', void: '#000006' },
+  sky: { sky: ['#7ec8f0', '#eaf7ff'], ground: '#8a6a42', groundTop: '#5fae6a', hills: false, clouds: true, brick: '#a4824e', block: '#f5c96e', void: '#bfe4ff' },
+  castle: { sky: ['#1a0505', '#3a0a0a'], ground: '#3a2020', groundTop: '#7a1818', hills: false, clouds: false, brick: '#6a2a1a', block: '#a04a20', void: '#3a0a00', lava: true },
+}
