@@ -102,6 +102,13 @@ const CATEGORIES = [
         emoji: '🐉',
         path: '/wings-of-fire',
       },
+      {
+        id: 'avatar',
+        title: 'Avatar: Elemental Grounds',
+        description: 'Pick a bending style — Air, Water, Earth, Fire, or the rarer Lava, Metal, Sand, and Lightning — and roam an open-world proving grounds until you find your opponent, then fight. Solo vs CPU waves or 2-player duel.',
+        emoji: '🌏',
+        path: '/avatar',
+      },
     ],
   },
   {

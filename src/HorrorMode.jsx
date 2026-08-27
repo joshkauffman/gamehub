@@ -23,10 +23,11 @@ export function useHorrorMode() {
 const FILTER_EXEMPT_PATHS = ['/obvious-mario-knockoff']
 
 // Routes where H is already spoken for by the game itself (Hangman reads
-// raw keydowns to guess letters, and H is a perfectly normal one to guess)
-// — the toggle stays fully disabled here, though an already-active filter
-// from elsewhere in the hub still applies visually.
-const TOGGLE_EXEMPT_PATHS = ['/hangman']
+// raw keydowns to guess letters, and H is a perfectly normal one to guess;
+// Avatar binds H to Player 1's second bending move) — the toggle stays
+// fully disabled here, though an already-active filter from elsewhere in
+// the hub still applies visually.
+const TOGGLE_EXEMPT_PATHS = ['/hangman', '/avatar']
 
 // A hub-wide cheat: press H anywhere outside a text field to flip every
 // game — canvas, WebGL, or plain DOM, it doesn't matter which — into a

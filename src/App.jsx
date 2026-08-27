@@ -18,6 +18,7 @@ import ObviousMarioKnockoff from './games/obvious-mario-knockoff/ObviousMarioKno
 import RetroArcade from './games/retro-arcade/RetroArcade.jsx'
 import LootAndScoot from './games/loot-and-scoot/LootAndScoot.jsx'
 import WingsOfFire from './games/wings-of-fire/WingsOfFire.jsx'
+import Avatar from './games/avatar/Avatar.jsx'
 
 export default function App() {
   return (
@@ -41,6 +42,7 @@ export default function App() {
         <Route path="/retro-arcade" element={<RetroArcade />} />
         <Route path="/loot-and-scoot" element={<LootAndScoot />} />
         <Route path="/wings-of-fire" element={<WingsOfFire />} />
+        <Route path="/avatar" element={<Avatar />} />
       </Routes>
     </HorrorModeProvider>
   )
