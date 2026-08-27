@@ -49,7 +49,7 @@ export const TRIBES = [
     },
   },
   {
-    key: 'mudwing', name: 'MudWing', icon: '💪', color: 0x7a5c3a, accent: 0x5a4028,
+    key: 'mudwing', name: 'MudWing', icon: '💪', color: 0x8a6a42, accent: 0xd9954a,
     desc: 'Tough and fire-resistant — wins fights with a bone-crushing charge.',
     maxHp: 130, speedMult: 0.9,
     claw: { damage: 8, range: 3.4, cooldown: 0.45 },

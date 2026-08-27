@@ -43,34 +43,112 @@ function addOutline(parent, mesh, scale = 1.09) {
   parent.add(outline)
 }
 
-// A stylized tapered wing membrane, authored spanning local x:[0.1, 2.1]
-// (root to tip) — mirrored via scale.x for the left side. Rotating flat
-// (-90° around X) maps local +Y to world -Z, so the shape's "leading edge"
-// (larger local Y) lands toward the front of the dragon, matching the
-// head-at--Z convention above.
+// A stylized tapered wing membrane with three "finger" bumps along the
+// leading edge and a scalloped (concave) trailing edge — a bat/dragon
+// silhouette instead of one smooth ellipse — authored spanning local
+// x:[0.1, 2.3] (root to tip) in the wing's own 2D plane, mirrored via
+// scale.x for the left side. Rotating flat (-90° around X) maps local +Y
+// to world -Z, so the shape's leading edge (larger local Y) lands toward
+// the front of the dragon, matching the head-at--Z convention above.
 function makeWingGeometry() {
   const shape = new THREE.Shape()
-  shape.moveTo(0.1, 0.3)
-  shape.quadraticCurveTo(1.0, 0.68, 2.1, 0.4)
-  shape.quadraticCurveTo(1.7, 0.0, 1.3, -0.38)
-  shape.quadraticCurveTo(0.6, -0.52, 0.1, -0.2)
+  shape.moveTo(0.12, 0.22)
+  shape.quadraticCurveTo(0.55, 0.5, 1.1, 0.58)
+  shape.quadraticCurveTo(1.65, 0.64, 2.3, 0.42)
+  shape.quadraticCurveTo(2.1, 0.1, 1.85, -0.08)
+  shape.quadraticCurveTo(1.55, -0.4, 1.25, -0.14)
+  shape.quadraticCurveTo(0.95, -0.48, 0.68, -0.24)
+  shape.quadraticCurveTo(0.4, -0.5, 0.12, -0.22)
   shape.closePath()
-  return new THREE.ShapeGeometry(shape, 8)
+  return new THREE.ShapeGeometry(shape, 10)
 }
 const sharedWingGeo = makeWingGeometry()
 
+// Three thin "finger bone" struts fanning from the wrist to the leading
+// edge's bumps — cheap detail that reads as actual wing structure instead
+// of one floppy membrane blob. Authored in the wing's local 2D (x,y)
+// plane (same space as makeWingGeometry above) and laid just in front of
+// the membrane (z: 0.012) so they don't z-fight with it.
+const WING_STRUT_POINTS = [[0.15, 0.14, 0.55, 0.42], [0.15, 0.2, 1.1, 0.58], [0.15, 0.14, 1.85, 0.35]]
+function makeWingStrut(x0, y0, x1, y1, material) {
+  const dx = x1 - x0, dy = y1 - y0
+  const len = Math.hypot(dx, dy)
+  const strut = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.032, len, 5), material)
+  strut.position.set((x0 + x1) / 2, (y0 + y1) / 2, 0.012)
+  strut.rotation.z = Math.atan2(-dx, dy)
+  return strut
+}
+
 function smoothstep(a, b, x) { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t) }
 function gaussianBump(x, mu, sigma) { const d = (x - mu) / sigma; return Math.exp(-0.5 * d * d) }
+
+// Per-tribe horn silhouettes, shaped after reference art of each tribe's
+// canon head profile: IceWing's long backswept curling horns, SkyWing's
+// sharp swept spikes, MudWing's thick blunt stubs, SandWing's straighter
+// forward-angled pair, SeaWing's minimal fin-like nub, RainWing's small
+// nubs. Each horn is a base cone plus an optional angled tip cone (as a
+// child pivot, so the tip inherits the base's sweep) for tribes whose
+// horns visibly curl or kink partway up.
+const HORN_SPECS = {
+  skywing:  { baseAngle: -0.3, baseLen: 0.4,  baseRadius: 0.07, tipAngle: -0.5, tipLen: 0.22, tipRadius: 0.025, sweepOut: 0.32 },
+  icewing:  { baseAngle: -0.1, baseLen: 0.36, baseRadius: 0.06, tipAngle: -0.95, tipLen: 0.36, tipRadius: 0.02, sweepOut: 0.42 },
+  sandwing: { baseAngle: 0.4,  baseLen: 0.32, baseRadius: 0.07, tipAngle: 0, tipLen: 0, tipRadius: 0, sweepOut: 0.26 },
+  seawing:  { baseAngle: 0,    baseLen: 0.16, baseRadius: 0.09, tipAngle: 0, tipLen: 0, tipRadius: 0, sweepOut: 0.15 },
+  mudwing:  { baseAngle: 0.12, baseLen: 0.3,  baseRadius: 0.12, tipAngle: 0, tipLen: 0, tipRadius: 0, sweepOut: 0.3 },
+  rainwing: { baseAngle: 0,    baseLen: 0.16, baseRadius: 0.05, tipAngle: 0, tipLen: 0, tipRadius: 0, sweepOut: 0.2 },
+}
+
+function makeHorn(spec, material) {
+  const group = new THREE.Group()
+  group.rotation.x = spec.baseAngle
+  const base = new THREE.Mesh(new THREE.ConeGeometry(spec.baseRadius, spec.baseLen, 6), material)
+  base.position.y = spec.baseLen / 2
+  group.add(base)
+  if (spec.tipLen > 0) {
+    const tipPivot = new THREE.Group()
+    tipPivot.position.y = spec.baseLen
+    tipPivot.rotation.x = spec.tipAngle
+    const tip = new THREE.Mesh(new THREE.ConeGeometry(spec.tipRadius, spec.tipLen, 6), material)
+    tip.position.y = spec.tipLen / 2
+    tipPivot.add(tip)
+    group.add(tipPivot)
+  }
+  return group
+}
+
+// SeaWings glow along their sides in canon — a row of small bioluminescent
+// dots down each flank stands in for that without needing real textures.
+function addGlowStripes(g, accentColor) {
+  const glowMat = new THREE.MeshBasicMaterial({ color: accentColor })
+  const glowGeo = new THREE.SphereGeometry(0.05, 6, 4)
+  for (let i = 0; i < 5; i++) {
+    ;[-1, 1].forEach(side => {
+      const dot = new THREE.Mesh(glowGeo, glowMat)
+      dot.position.set(side * 0.52, -0.05, -0.6 + i * 0.5)
+      g.add(dot)
+    })
+  }
+}
+
+const _shimmerHsl = { h: 0, s: 0, l: 0 }
+// RainWings' scales shift color in canon; slowly cycling hue on the body
+// while out of camouflage approximates that without a shader.
+function rainwingShimmer(baseColorHex, t) {
+  const c = new THREE.Color(baseColorHex)
+  c.getHSL(_shimmerHsl)
+  c.setHSL((_shimmerHsl.h + t * 0.05) % 1, Math.min(1, _shimmerHsl.s + 0.15), _shimmerHsl.l)
+  return c.getHex()
+}
 
 // The body's cross-section radius varies along its length instead of being
 // one uniform stretched sphere: it narrows into the neck at the front
 // (zt near -1), bulges through the ribcage, pinches at the waist, bulges
 // again at the haunches, then narrows into the tail base (zt near +1).
 function bodyProfile(zt) {
-  const neckTaper = 0.5 + 0.5 * smoothstep(-1, -0.5, zt)
-  const chestBulge = 1 + 0.32 * gaussianBump(zt, -0.15, 0.22)
-  const waistPinch = 1 - 0.26 * gaussianBump(zt, 0.4, 0.13)
-  const haunchBulge = 1 + 0.36 * gaussianBump(zt, 0.7, 0.16)
+  const neckTaper = 0.4 + 0.6 * smoothstep(-1, -0.5, zt)
+  const chestBulge = 1 + 0.14 * gaussianBump(zt, -0.15, 0.22)
+  const waistPinch = 1 - 0.28 * gaussianBump(zt, 0.4, 0.13)
+  const haunchBulge = 1 + 0.18 * gaussianBump(zt, 0.7, 0.16)
   return neckTaper * chestBulge * waistPinch * haunchBulge
 }
 
@@ -90,6 +168,209 @@ function makeBodyGeometry() {
 }
 const sharedBodyGeo = makeBodyGeometry()
 
+// A two-segment articulated leg (thigh + shin, bent at a knee pivot) with
+// a small foot pad and three fanned clawed toes — replacing what used to
+// be a single rigid box "stub." Same nested-pivot technique as the horns:
+// each joint is a child Object3D so the whole chain bends correctly, and
+// only the thigh (the chunky part) gets the cartoon outline.
+function makeLeg(front, bulk, side, bodyMat, clawMat) {
+  const thighLen = (front ? 0.3 : 0.4) * bulk
+  const thighR = (front ? 0.072 : 0.098) * bulk
+  const shinLen = (front ? 0.26 : 0.32) * bulk
+  const shinR = (front ? 0.048 : 0.062) * bulk
+  const bend = front ? 0.95 : 1.15
+
+  const g = new THREE.Group()
+  const thigh = new THREE.Mesh(new THREE.CylinderGeometry(thighR * 0.75, thighR, thighLen, 8), bodyMat)
+  thigh.position.y = -thighLen / 2
+  thigh.rotation.z = side * 0.12
+  g.add(thigh)
+  addOutline(g, thigh, 1.1)
+
+  const knee = new THREE.Group()
+  knee.position.y = -thighLen
+  knee.rotation.x = bend
+  g.add(knee)
+
+  const shin = new THREE.Mesh(new THREE.CylinderGeometry(shinR * 0.6, shinR, shinLen, 8), bodyMat)
+  shin.position.y = -shinLen / 2
+  knee.add(shin)
+
+  const foot = new THREE.Group()
+  foot.position.y = -shinLen
+  foot.rotation.x = -bend * 0.7
+  knee.add(foot)
+
+  const pad = new THREE.Mesh(new THREE.SphereGeometry(shinR * 0.85, 7, 5), bodyMat)
+  pad.scale.set(1, 0.55, 1.3)
+  foot.add(pad)
+
+  for (let i = 0; i < 3; i++) {
+    const spread = (i - 1) * 0.15
+    const toe = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.2, 5), clawMat)
+    toe.rotation.x = Math.PI * 0.42
+    toe.position.set(spread, -0.03, -0.13)
+    foot.add(toe)
+  }
+
+  return g
+}
+
+// A curved, tapering multi-segment tail with small dorsal spikes running
+// down it, instead of one straight cone — built the same chained-cursor
+// way as the horns: each segment is a child of the previous one's end
+// pivot, so a small alternating rotation per segment produces a gentle
+// S-curve for free rather than needing per-vertex bending.
+function buildTail(parent, bodyMat, accentMat, bulk, tribeKey) {
+  const segCount = 6
+  const baseR = 0.14 * bulk, tipR = 0.02
+  const segLen = 0.4
+  let cursor = new THREE.Object3D()
+  cursor.position.set(0, -0.04, 1.0)
+  parent.add(cursor)
+  const bodyMeshes = []
+  for (let i = 0; i < segCount; i++) {
+    const t0 = i / segCount
+    const r0 = THREE.MathUtils.lerp(baseR, tipR, t0)
+    const r1 = THREE.MathUtils.lerp(baseR, tipR, (i + 1) / segCount)
+    const seg = new THREE.Mesh(new THREE.CylinderGeometry(r1, r0, segLen, 8), bodyMat)
+    seg.rotation.x = Math.PI / 2
+    seg.position.z = segLen / 2
+    cursor.add(seg)
+    bodyMeshes.push(seg)
+    if (i === 0) addOutline(cursor, seg, 1.08)
+
+    if (i < segCount - 1) {
+      const spike = new THREE.Mesh(new THREE.ConeGeometry(0.07 * (1 - t0 * 0.5), 0.24 * (1 - t0 * 0.4), 4), accentMat)
+      spike.position.set(0, r0 * 0.88, segLen * 0.55)
+      cursor.add(spike)
+    }
+
+    const next = new THREE.Object3D()
+    next.position.z = segLen
+    next.rotation.x = (i % 2 === 0 ? 1 : -1) * 0.1
+    next.rotation.y = (i % 2 === 0 ? -1 : 1) * 0.045
+    cursor.add(next)
+    cursor = next
+  }
+
+  if (tribeKey === 'sandwing') {
+    const barb = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.36, 6), accentMat)
+    barb.rotation.x = Math.PI / 2
+    barb.position.z = 0.18
+    cursor.add(barb)
+  } else {
+    const tip = new THREE.Mesh(new THREE.ConeGeometry(tipR * 1.4, 0.18, 6), accentMat)
+    tip.rotation.x = Math.PI / 2
+    tip.position.z = 0.09
+    cursor.add(tip)
+  }
+
+  return bodyMeshes
+}
+
+// A gently curved 2-segment neck (instead of one straight pipe) with the
+// entire head assembly — skull, snout, jaw, teeth, brow ridges, nostrils,
+// horns, eyes — hung off its far end as one local group, so the head
+// automatically inherits the neck's upward curve instead of needing its
+// own hand-tuned world-space offsets. Internal head-part offsets below
+// are all relative to the skull sphere's own center (headGroup's origin).
+function buildNeckAndHead(parent, tribeKey, bodyMat, accentMat, clawMat, eyeMat, bulk) {
+  const segCount = 3
+  const baseR = 0.21 * bulk, tipR = 0.11
+  const segLen = 0.4
+  let cursor = new THREE.Object3D()
+  cursor.position.set(0, 0.06, -0.85)
+  cursor.rotation.x = -0.08
+  parent.add(cursor)
+  const bodyMeshes = []
+  for (let i = 0; i < segCount; i++) {
+    const r0 = THREE.MathUtils.lerp(baseR, tipR, i / segCount)
+    const r1 = THREE.MathUtils.lerp(baseR, tipR, (i + 1) / segCount)
+    const seg = new THREE.Mesh(new THREE.CylinderGeometry(r1, r0, segLen, 10), bodyMat)
+    seg.rotation.x = -Math.PI / 2
+    seg.position.z = -segLen / 2
+    cursor.add(seg)
+    bodyMeshes.push(seg)
+    if (i === 0) addOutline(cursor, seg, 1.08)
+
+    const next = new THREE.Object3D()
+    next.position.z = -segLen
+    next.rotation.x = -0.13
+    cursor.add(next)
+    cursor = next
+  }
+
+  // The whole head assembly is authored below at its original, larger
+  // scale (so all the relative offsets among snout/jaw/teeth/horns/eyes
+  // stay easy to reason about) and then shrunk uniformly to fit the now
+  // much slimmer neck — much less error-prone than rescaling every
+  // child's position and size by hand.
+  const headGroup = new THREE.Group()
+  headGroup.position.set(0, 0.05, -0.14)
+  headGroup.scale.setScalar(0.72)
+  cursor.add(headGroup)
+
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.55, 14, 12), bodyMat)
+  head.scale.set(0.7, 0.56, 1.28)
+  headGroup.add(head)
+  addOutline(headGroup, head)
+  bodyMeshes.push(head)
+
+  const snout = new THREE.Mesh(new THREE.ConeGeometry(0.25, 0.68, 8), bodyMat)
+  snout.rotation.x = -Math.PI / 2
+  snout.position.set(0, -0.13, -0.5)
+  headGroup.add(snout)
+  bodyMeshes.push(snout)
+
+  // Lower jaw — a slightly smaller, offset-down snout half, giving the
+  // head an actual mouth line instead of one solid wedge.
+  const jaw = new THREE.Mesh(new THREE.ConeGeometry(0.19, 0.5, 8), bodyMat)
+  jaw.rotation.x = -Math.PI / 2
+  jaw.position.set(0, -0.27, -0.4)
+  headGroup.add(jaw)
+  bodyMeshes.push(jaw)
+
+  // Teeth peeking from the jawline.
+  const toothGeo = new THREE.ConeGeometry(0.025, 0.09, 4)
+  const toothMat = new THREE.MeshBasicMaterial({ color: 0xfff6dc })
+  ;[-0.09, -0.03, 0.03, 0.09].forEach(x => {
+    const tooth = new THREE.Mesh(toothGeo, toothMat)
+    tooth.rotation.x = Math.PI
+    tooth.position.set(x, -0.18, -0.6)
+    headGroup.add(tooth)
+  })
+
+  // Brow ridges above the eyes and small nostril bumps near the snout tip.
+  ;[-1, 1].forEach(side => {
+    const brow = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.05, 0.12), accentMat)
+    brow.position.set(side * 0.27, 0.19, -0.32)
+    brow.rotation.z = side * -0.15
+    headGroup.add(brow)
+
+    const nostril = new THREE.Mesh(new THREE.SphereGeometry(0.04, 6, 5), clawMat)
+    nostril.position.set(side * 0.09, -0.08, -0.82)
+    headGroup.add(nostril)
+  })
+
+  const hornSpec = HORN_SPECS[tribeKey] ?? HORN_SPECS.sandwing
+  ;[-1, 1].forEach(side => {
+    const horn = makeHorn(hornSpec, accentMat)
+    horn.position.set(side * 0.22, 0.37, 0.2)
+    horn.rotation.z = side * hornSpec.sweepOut
+    headGroup.add(horn)
+  })
+
+  const eyeGeo = new THREE.SphereGeometry(0.1, 8, 6)
+  ;[-1, 1].forEach(side => {
+    const eye = new THREE.Mesh(eyeGeo, eyeMat)
+    eye.position.set(side * 0.3, 0.1, -0.3)
+    headGroup.add(eye)
+  })
+
+  return { bodyMeshes }
+}
+
 function makeDragonModel(tribeKey) {
   const tribe = getTribe(tribeKey)
   const g = new THREE.Group()
@@ -97,72 +378,46 @@ function makeDragonModel(tribeKey) {
   const accentMat = new THREE.MeshToonMaterial({ color: tribe.accent, gradientMap: toonGradient })
   const bellyColor = new THREE.Color(tribe.color).lerp(new THREE.Color(0xffffff), 0.55)
   const bellyMat = new THREE.MeshToonMaterial({ color: bellyColor, gradientMap: toonGradient })
+  const clawMat = new THREE.MeshToonMaterial({ color: 0x262229, gradientMap: toonGradient })
+  const eyeMat = new THREE.MeshBasicMaterial({ color: 0xffe98a })
 
   const bulk = tribeKey === 'mudwing' ? 1.18 : 1
 
+  // A serpentine torso: much narrower relative to its length than a
+  // simple stretched sphere reads as (that "football" cross-section is
+  // what made earlier passes look fat) — long and lean, closer to a
+  // snake with limbs than a barrel with wings.
   const body = new THREE.Mesh(sharedBodyGeo, bodyMat)
-  body.scale.set(1 * bulk, 0.85 * bulk, 1.9)
+  body.scale.set(0.5 * bulk, 0.4 * bulk, 2.2)
   g.add(body)
   addOutline(g, body)
 
   const belly = new THREE.Mesh(new THREE.SphereGeometry(0.75, 10, 8), bellyMat)
-  belly.scale.set(0.85 * bulk, 0.55 * bulk, 1.55)
-  belly.position.set(0, -0.45, 0.1)
+  belly.scale.set(0.34 * bulk, 0.22 * bulk, 1.6)
+  belly.position.set(0, -0.23, 0.1)
   g.add(belly)
 
   // Belly scutes — small overlapping plates along the underside.
-  const scuteGeo = new THREE.BoxGeometry(0.5 * bulk, 0.08, 0.32)
+  const scuteGeo = new THREE.BoxGeometry(0.24 * bulk, 0.06, 0.3)
   for (let i = 0; i < 5; i++) {
     const scute = new THREE.Mesh(scuteGeo, bellyMat)
-    scute.position.set(0, -0.68 * bulk, -0.9 + i * 0.5)
+    scute.position.set(0, -0.36 * bulk, -0.9 + i * 0.5)
     g.add(scute)
   }
 
   // Shoulder bulges where the wings root into the body.
-  const shoulderGeo = new THREE.SphereGeometry(0.32, 8, 6)
+  const shoulderGeo = new THREE.SphereGeometry(0.18, 8, 6)
   const shoulders = [-1, 1].map(side => {
     const shoulder = new THREE.Mesh(shoulderGeo, bodyMat)
     shoulder.scale.set(1, 0.85, 1.2)
-    shoulder.position.set(side * 0.55 * bulk, 0.1, -0.15)
+    shoulder.position.set(side * 0.3 * bulk, 0.05, -0.15)
     g.add(shoulder)
     return shoulder
   })
 
-  // A distinct, visibly thinner neck bridges the tucked-in front of the
-  // body to the head — a real segment, not just a gentle blend.
-  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.46 * bulk, 1.05, 10), bodyMat)
-  neck.rotation.x = -Math.PI / 2
-  neck.position.set(0, 0.22, -1.55)
-  g.add(neck)
-  addOutline(g, neck)
+  const { bodyMeshes: neckHeadMeshes } = buildNeckAndHead(g, tribeKey, bodyMat, accentMat, clawMat, eyeMat, bulk)
 
-  // Head toward -Z (front).
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.56, 12, 10), bodyMat)
-  head.scale.set(0.85, 0.8, 1.05)
-  head.position.set(0, 0.38, -2.05)
-  g.add(head)
-  addOutline(g, head)
-
-  const snout = new THREE.Mesh(new THREE.ConeGeometry(0.26, 0.7, 8), bodyMat)
-  snout.rotation.x = -Math.PI / 2
-  snout.position.set(0, 0.25, -2.55)
-  g.add(snout)
-
-  const hornGeo = new THREE.ConeGeometry(0.08, 0.42, 6)
-  ;[-1, 1].forEach(side => {
-    const horn = new THREE.Mesh(hornGeo, accentMat)
-    horn.position.set(side * 0.22, 0.75, -1.85)
-    horn.rotation.z = side * 0.35
-    g.add(horn)
-  })
-
-  const eyeGeo = new THREE.SphereGeometry(0.1, 8, 6)
-  const eyeMat = new THREE.MeshBasicMaterial({ color: 0xffe98a })
-  ;[-1, 1].forEach(side => {
-    const eye = new THREE.Mesh(eyeGeo, eyeMat)
-    eye.position.set(side * 0.3, 0.48, -2.35)
-    g.add(eye)
-  })
+  if (tribeKey === 'seawing') addGlowStripes(g, tribe.accent)
 
   // Spine ridge — small spikes from behind the head to the base of the
   // tail. SeaWing gets a taller, more dramatic dorsal fin row.
@@ -173,44 +428,41 @@ function makeDragonModel(tribeKey) {
     const taper = 1 - Math.abs(i - 2.5) / 4
     const fin = new THREE.Mesh(ridgeGeo, accentMat)
     fin.scale.setScalar(ridgeScale * Math.max(0.5, taper))
-    fin.position.set(0, 0.7 * bulk, z)
+    fin.position.set(0, 0.36 * bulk, z)
     g.add(fin)
   }
 
-  // Tail toward +Z (back).
-  const tail = new THREE.Mesh(new THREE.ConeGeometry(0.35, 2.2, 8), bodyMat)
-  tail.rotation.x = Math.PI / 2
-  tail.position.set(0, -0.05, 2.0)
-  g.add(tail)
+  const tailMeshes = buildTail(g, bodyMat, accentMat, bulk, tribeKey)
 
-  if (tribeKey === 'sandwing') {
-    const barb = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.4, 6), accentMat)
-    barb.rotation.x = Math.PI / 2
-    barb.position.set(0, -0.05, 3.05)
-    g.add(barb)
-  }
-
-  const legGeo = new THREE.BoxGeometry(0.18, 0.5, 0.18)
-  ;[[-0.55, -0.7], [0.55, -0.7], [-0.5, 0.6], [0.5, 0.6]].forEach(([x, z]) => {
-    const leg = new THREE.Mesh(legGeo, accentMat)
-    leg.position.set(x, -0.5, z)
+  const legMounts = [
+    { x: -0.26, z: -0.62, front: true }, { x: 0.26, z: -0.62, front: true },
+    { x: -0.28, z: 0.6, front: false }, { x: 0.28, z: 0.6, front: false },
+  ]
+  legMounts.forEach(m => {
+    const side = m.x < 0 ? -1 : 1
+    const leg = makeLeg(m.front, bulk, side, bodyMat, clawMat)
+    leg.position.set(m.x, 0.02, m.z)
     g.add(leg)
   })
 
   const wingMat = new THREE.MeshToonMaterial({ color: tribe.accent, gradientMap: toonGradient, side: THREE.DoubleSide, transparent: true, opacity: 0.94 })
+  const strutMat = new THREE.MeshToonMaterial({ color: tribe.accent, gradientMap: toonGradient })
   const wingPivots = [-1, 1].map(side => {
     const pivot = new THREE.Group()
-    pivot.position.set(side * 0.3, 0.15, 0.05)
+    pivot.position.set(side * 0.19, 0.09, 0.05)
+    const wingAssembly = new THREE.Group()
+    wingAssembly.rotation.x = -Math.PI / 2
+    wingAssembly.scale.x = side
+    pivot.add(wingAssembly)
     const wing = new THREE.Mesh(sharedWingGeo, wingMat)
-    wing.rotation.x = -Math.PI / 2
-    wing.scale.x = side
-    pivot.add(wing)
-    addOutline(pivot, wing, 1.12)
+    wingAssembly.add(wing)
+    addOutline(wingAssembly, wing, 1.12)
+    WING_STRUT_POINTS.forEach(([x0, y0, x1, y1]) => wingAssembly.add(makeWingStrut(x0, y0, x1, y1, strutMat)))
     g.add(pivot)
     return pivot
   })
   g.userData.wingPivots = wingPivots
-  g.userData.bodyMeshes = [body, head, snout, neck, ...shoulders]
+  g.userData.bodyMeshes = [body, ...shoulders, ...neckHeadMeshes, ...tailMeshes]
   g.userData.baseColor = tribe.color
   return g
 }
@@ -457,7 +709,9 @@ function GameCanvas({ mode, tribeA, tribeB, onHud, onResult }) {
           const flap = Math.sin(t * 9 + i * Math.PI) * 0.5
           pivot.rotation.z = (i === 0 ? 1 : -1) * (0.25 + flap)
         })
-        const flashColor = d.hitFlash > 0 ? 0xffffff : mesh.userData.baseColor
+        const flashColor = d.hitFlash > 0 ? 0xffffff
+          : d.tribe === 'rainwing' ? rainwingShimmer(mesh.userData.baseColor, t)
+          : mesh.userData.baseColor
         mesh.userData.bodyMeshes.forEach(m => m.material.color.setHex(flashColor))
         mesh.visible = d.camoTimer > 0 ? (Math.sin(t * 20) > 0) : true
       })
@@ -508,7 +762,11 @@ function GameCanvas({ mode, tribeA, tribeB, onHud, onResult }) {
       } else {
         const p1 = state.dragons.find(d => d.id === 'p1')
         const fx = -Math.sin(p1.yaw), fz = -Math.cos(p1.yaw)
-        const camDist = 9, camHeight = 3.4
+        // Wide enough to actually see the dragon's elongated profile
+        // instead of staring straight down its cross-section — from very
+        // close directly behind, length doesn't help the silhouette at
+        // all, so a lean model still read as a round blob at camDist=9.
+        const camDist = 13, camHeight = 4.6
         camera.position.set(p1.x - fx * camDist, p1.y + camHeight, p1.z - fz * camDist)
         camera.lookAt(p1.x, p1.y + 0.6, p1.z)
       }
