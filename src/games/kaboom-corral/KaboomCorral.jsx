@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import styles from './KaboomCorral.module.css'
 import { CARD_TYPES, CRITTER_TYPES, AVATARS, createGame, applyAction, buildView, chooseCPUAction } from './engine.js'
 import { hostRoom, joinRoom } from './network.js'
+import { PACKS, getStats, getActivePackId, setActivePackId, getUnlockedPackIds, getCardDef, recordGameEnd, recordPairPlayed } from './packs.js'
 
 const CPU_NAMES = ['Rusty', 'Nibbles', 'Pip', 'Sable', 'Acorn', 'Marsh', 'Bramble', 'Puddle']
 function randomCpuName(taken) {
@@ -24,8 +25,8 @@ function AvatarPicker({ value, onChange }) {
 // Shared face content (corner indices + big center art + name banner) so a
 // playable Card button and a static display-only card (Peek results,
 // discard pile) render identically.
-function CardFace({ type }) {
-  const def = CARD_TYPES[type]
+function CardFace({ type, packId }) {
+  const def = getCardDef(type, packId)
   return (
     <>
       <span className={styles.cardCorner}>{def.emoji}</span>
@@ -36,36 +37,36 @@ function CardFace({ type }) {
     </>
   )
 }
-function cardVars(type) {
-  const def = CARD_TYPES[type]
+function cardVars(type, packId) {
+  const def = getCardDef(type, packId)
   return { '--card-bg': def.bg, '--card-edge': def.edge }
 }
 
-function Card({ card, selected, disabled, onClick }) {
-  const def = CARD_TYPES[card.type]
+function Card({ card, selected, disabled, onClick, packId }) {
+  const def = getCardDef(card.type, packId)
   return (
     <button
       className={`${styles.card} ${selected ? styles.cardSelected : ''}`}
       disabled={disabled}
       onClick={onClick}
       title={def.blurb}
-      style={cardVars(card.type)}
+      style={cardVars(card.type, packId)}
     >
-      <CardFace type={card.type} />
+      <CardFace type={card.type} packId={packId} />
     </button>
   )
 }
 
-function StaticCard({ type }) {
+function StaticCard({ type, packId }) {
   return (
-    <div className={styles.card} style={cardVars(type)}>
-      <CardFace type={type} />
+    <div className={styles.card} style={cardVars(type, packId)}>
+      <CardFace type={type} packId={packId} />
     </div>
   )
 }
 
 // ── Menu / setup screens ─────────────────────────────────────────────
-function MenuScreen({ onPick }) {
+function MenuScreen({ onPick, onPacks, unlockedCount }) {
   return (
     <div className={styles.center}>
       <h1 className={styles.title}>💥 Kaboom Corral</h1>
@@ -78,7 +79,47 @@ function MenuScreen({ onPick }) {
         <button className={styles.modeBtn} onClick={() => onPick('cpu')}>🤖 Vs CPU <span>you against 1–3 bots</span></button>
         <button className={styles.modeBtn} onClick={() => onPick('online')}>🌐 Online <span>play with a room code</span></button>
       </div>
+      <button className={styles.modeBtn} onClick={onPacks}>📦 Card Packs <span>{unlockedCount}/{PACKS.length} unlocked</span></button>
       <Link to="/" className={styles.backLink}>← Back to GameHub</Link>
+    </div>
+  )
+}
+
+function PacksScreen({ stats, activePackId, onSelect, onBack }) {
+  return (
+    <div className={styles.center}>
+      <h2 className={styles.h2}>📦 Card Packs</h2>
+      <p className={styles.blurb}>
+        Reskin the whole deck — all 12 cards, not just the critters — with a pack you've
+        unlocked. Purely cosmetic — the game plays exactly the same. Your progress and
+        picks are saved on this device.
+      </p>
+      <div className={styles.packGrid}>
+        {PACKS.map(pack => {
+          const unlocked = pack.isUnlocked(stats)
+          const active = pack.id === activePackId
+          return (
+            <div key={pack.id} className={`${styles.packEntry} ${unlocked ? '' : styles.packEntryLocked}`}>
+              <div className={styles.packHeader}>
+                <span>{pack.icon} {pack.name}</span>
+                {active && <span className={styles.packActiveBadge}>Active</span>}
+              </div>
+              <p className={styles.blurb}>{pack.description}</p>
+              <div className={styles.modeRow}>
+                {Object.keys(CARD_TYPES).map(type => <StaticCard key={type} type={type} packId={pack.id} />)}
+              </div>
+              {unlocked ? (
+                <button className={styles.bigBtn} disabled={active} onClick={() => onSelect(pack.id)}>
+                  {active ? 'In Use' : 'Use This Pack'}
+                </button>
+              ) : (
+                <span className={styles.packRequirement}>🔒 {pack.requirement}</span>
+              )}
+            </div>
+          )
+        })}
+      </div>
+      <button className={styles.backBtn} onClick={onBack}>← Back</button>
     </div>
   )
 }
@@ -252,13 +293,13 @@ function InsertKaboomModal({ drawCount, onConfirm }) {
   )
 }
 
-function PeekModal({ cards, onDismiss }) {
+function PeekModal({ cards, packId, onDismiss }) {
   return (
     <div className={styles.overlay}>
       <div className={styles.modal}>
         <h3 className={styles.h2}>🔮 Top of the deck</h3>
         <div className={styles.modeRow}>
-          {cards.map((type, i) => <StaticCard key={i} type={type} />)}
+          {cards.map((type, i) => <StaticCard key={i} type={type} packId={packId} />)}
         </div>
         <p className={styles.blurb}>Left = drawn next.</p>
         <button className={styles.bigBtn} onClick={onDismiss}>Got it</button>
@@ -267,7 +308,7 @@ function PeekModal({ cards, onDismiss }) {
   )
 }
 
-function GameBoard({ view, myId, onAction, peekReveal, onDismissPeek, error }) {
+function GameBoard({ view, myId, onAction, peekReveal, onDismissPeek, error, packId }) {
   const [selected, setSelected] = useState([])
   const [targeting, setTargeting] = useState(null) // 'swap' | 'pair'
 
@@ -320,7 +361,7 @@ function GameBoard({ view, myId, onAction, peekReveal, onDismissPeek, error }) {
           <span className={styles.pileLabel}>Draw</span>
         </div>
         <div className={styles.pileStack}>
-          {view.discardTop ? <StaticCard type={view.discardTop.type} /> : <div className={styles.emptyPile}>—</div>}
+          {view.discardTop ? <StaticCard type={view.discardTop.type} packId={packId} /> : <div className={styles.emptyPile}>—</div>}
           <span className={styles.pileLabel}>Discard</span>
         </div>
       </div>
@@ -335,7 +376,7 @@ function GameBoard({ view, myId, onAction, peekReveal, onDismissPeek, error }) {
 
       <div className={styles.hand}>
         {(me?.hand || []).map(c => (
-          <Card key={c.id} card={c} selected={selected.includes(c.id)} disabled={!canAct} onClick={() => toggleCard(c)} />
+          <Card key={c.id} card={c} selected={selected.includes(c.id)} disabled={!canAct} onClick={() => toggleCard(c)} packId={packId} />
         ))}
         {(!me?.hand || me.hand.length === 0) && <span className={styles.blurb}>Your hand is empty.</span>}
       </div>
@@ -349,7 +390,7 @@ function GameBoard({ view, myId, onAction, peekReveal, onDismissPeek, error }) {
 
       {targeting && <TargetPicker others={others} prompt="Target who?" onPick={confirmTarget} onCancel={() => setTargeting(null)} />}
       {pendingMine && <InsertKaboomModal drawCount={view.drawCount} onConfirm={(pos) => onAction({ type: 'INSERT_POSITION', position: pos })} />}
-      {peekReveal && <PeekModal cards={peekReveal} onDismiss={onDismissPeek} />}
+      {peekReveal && <PeekModal cards={peekReveal} packId={packId} onDismiss={onDismissPeek} />}
 
       <div className={styles.log}>
         {view.log.slice(-6).map((line, i) => <div key={i}>{line}</div>)}
@@ -368,13 +409,18 @@ function PassDeviceGate({ player, onReady }) {
   )
 }
 
-function GameOverScreen({ view, myId, onRestart, onMenu }) {
+function GameOverScreen({ view, myId, onRestart, onMenu, newlyUnlocked }) {
   const winner = view.players.find(p => p.id === view.winnerId)
   const won = winner?.id === myId
   return (
     <div className={styles.center}>
       <h1 className={styles.title}>{won ? '🏆 You Win!' : `🏆 ${winner?.name} Wins!`}</h1>
       <p className={styles.blurb}>{winner?.avatar} {winner?.name} was the last one standing in Kaboom Corral.</p>
+      {newlyUnlocked?.length > 0 && (
+        <div className={styles.unlockBanner}>
+          {newlyUnlocked.map(pack => <div key={pack.id}>🎉 New pack unlocked: {pack.icon} {pack.name}!</div>)}
+        </div>
+      )}
       <div className={styles.modeRow}>
         {onRestart && <button className={styles.bigBtn} onClick={onRestart}>🔁 Play Again</button>}
         <button className={styles.backBtn} onClick={onMenu}>🏠 Main Menu</button>
@@ -392,6 +438,16 @@ export default function KaboomCorral() {
   const [error, setError] = useState(null)
   const [peekReveal, setPeekReveal] = useState(null)
 
+  // Card packs: cosmetic-only, tracked per device (see packs.js).
+  const [activePackId, setActivePackIdState] = useState(() => getActivePackId())
+  const [newlyUnlocked, setNewlyUnlocked] = useState([])
+  const statsAppliedRef = useRef(null)
+
+  function selectPack(id) {
+    setActivePackId(id)
+    setActivePackIdState(id)
+  }
+
   // Local pass-and-play "who's currently allowed to look" gate.
   const [revealedTurnKey, setRevealedTurnKey] = useState(null)
   const lastTurnKeyRef = useRef(null)
@@ -407,7 +463,7 @@ export default function KaboomCorral() {
     hostRef.current?.destroy(); hostRef.current = null
     guestRef.current?.close(); guestRef.current = null
     setGameState(null); setOnlineView(null); setMyId(null); setError(null); setPeekReveal(null)
-    setRoomCode(null); setLobbyPlayers([]); setGuestLobby([]); setMode(null)
+    setRoomCode(null); setLobbyPlayers([]); setGuestLobby([]); setMode(null); setNewlyUnlocked([])
   }
 
   function goMenu() { resetAll(); setScreen('menu') }
@@ -429,6 +485,7 @@ export default function KaboomCorral() {
       const { state, private: priv, error: err } = applyAction(prev, { ...action, playerId: actingId })
       if (err) { setError(err); setTimeout(() => setError(null), 2000); return prev }
       if (priv?.kind === 'peek') setPeekReveal(priv.payload)
+      if (action.type === 'PLAY_PAIR') recordPairPlayed()
       return state
     })
   }
@@ -457,6 +514,21 @@ export default function KaboomCorral() {
       lastTurnKeyRef.current = key
       setRevealedTurnKey(null)
     }
+  }, [mode, gameState])
+
+  // Records a finished game's outcome once (per game object) toward this
+  // device's pack-unlock progress. Only local/cpu/online-host run the
+  // engine on this device, so only those modes can observe a real result.
+  useEffect(() => {
+    if (!gameState?.winnerId) return
+    if (!['local', 'cpu', 'online-host'].includes(mode)) return
+    if (statsAppliedRef.current === gameState) return
+    statsAppliedRef.current = gameState
+    const before = getUnlockedPackIds(getStats())
+    const won = mode === 'cpu' ? gameState.winnerId === 'you' : true
+    const after = getUnlockedPackIds(recordGameEnd({ won }))
+    const gained = after.filter(id => !before.includes(id))
+    setNewlyUnlocked(gained.map(id => PACKS.find(p => p.id === id)).filter(Boolean))
   }, [mode, gameState])
 
   // ── Online host ──────────────────────────────────────────────────
@@ -505,6 +577,7 @@ export default function KaboomCorral() {
         if (priv.forPlayerId === 'host') setPeekReveal(priv.payload)
         else hostRef.current?.sendTo(priv.forPlayerId, { type: 'private', kind: priv.kind, payload: priv.payload })
       }
+      if (action.type === 'PLAY_PAIR') recordPairPlayed()
       return state
     })
   }
@@ -549,6 +622,7 @@ export default function KaboomCorral() {
   }
 
   function restart() {
+    setNewlyUnlocked([])
     if (mode === 'local') setGameState(prev => createGame(prev.players.map(p => ({ id: p.id, name: p.name, avatar: p.avatar, isCPU: p.isCPU }))))
     else if (mode === 'cpu') setGameState(prev => createGame(prev.players.map(p => ({ id: p.id, name: p.name, avatar: p.avatar, isCPU: p.isCPU }))))
     else if (mode === 'online-host') hostStartGame()
@@ -559,7 +633,15 @@ export default function KaboomCorral() {
   return (
     <div className={styles.page}>
       {screen === 'menu' && (
-        <MenuScreen onPick={(m) => { setMode(m); setScreen(m === 'online' ? 'online-setup' : `${m}-setup`) }} />
+        <MenuScreen
+          onPick={(m) => { setMode(m); setScreen(m === 'online' ? 'online-setup' : `${m}-setup`) }}
+          onPacks={() => setScreen('packs')}
+          unlockedCount={getUnlockedPackIds(getStats()).length}
+        />
+      )}
+
+      {screen === 'packs' && (
+        <PacksScreen stats={getStats()} activePackId={activePackId} onSelect={selectPack} onBack={() => setScreen('menu')} />
       )}
 
       {screen === 'local-setup' && <LocalSetup onStart={startLocal} onBack={goMenu} />}
@@ -595,6 +677,7 @@ export default function KaboomCorral() {
             peekReveal={peekReveal}
             onDismissPeek={() => setPeekReveal(null)}
             error={error}
+            packId={activePackId}
           />
         )
       )}
@@ -605,6 +688,7 @@ export default function KaboomCorral() {
           myId={myId}
           onRestart={mode === 'local' || mode === 'cpu' || mode === 'online-host' ? restart : null}
           onMenu={goMenu}
+          newlyUnlocked={newlyUnlocked}
         />
       )}
     </div>
