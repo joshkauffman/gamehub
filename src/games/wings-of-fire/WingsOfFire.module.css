@@ -1,0 +1,216 @@
+.page {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #0a0f1a;
+  color: #fff;
+  font-family: 'Courier New', monospace;
+}
+
+.canvasWrap {
+  position: absolute;
+  inset: 0;
+}
+.canvasWrap canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.overlayScreen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  text-align: center;
+  padding: 24px;
+  background: radial-gradient(circle at 50% 20%, #1a2440 0%, #0a0f1a 70%);
+  z-index: 10;
+  overflow-y: auto;
+}
+
+.title {
+  font-size: clamp(26px, 5vw, 42px);
+  font-weight: bold;
+  color: #ff8a4a;
+  margin: 0;
+  letter-spacing: 1px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.subtitle { font-size: clamp(14px, 2.4vw, 20px); color: #8fe0ff; letter-spacing: 3px; }
+.title2 { font-size: clamp(20px, 4vw, 30px); color: #ffd700; margin: 0; }
+
+.blurb { color: #aaddff; font-size: 14px; max-width: 600px; line-height: 1.55; }
+
+.bigBtn {
+  font-family: 'Courier New', monospace;
+  font-size: 16px;
+  font-weight: bold;
+  padding: 14px 28px;
+  background: #ff8a4a;
+  border: none;
+  color: #2a1200;
+  cursor: pointer;
+  letter-spacing: 1px;
+  border-radius: 8px;
+}
+.bigBtn:hover { background: #ffa366; }
+
+.secondaryBtn {
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  font-weight: bold;
+  padding: 9px 18px;
+  background: rgba(255,255,255,0.08);
+  border: 2px solid rgba(255,215,0,0.5);
+  color: #ffd700;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  border-radius: 8px;
+}
+.secondaryBtn:hover { background: rgba(255,215,0,0.15); }
+
+.tutorialPanel {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 6;
+  background: rgba(10,10,20,0.82);
+  border: 2px solid rgba(255,215,0,0.5);
+  border-radius: 12px;
+  padding: 14px 18px;
+  width: min(92vw, 380px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.tutorialTitle { margin: 0; color: #ffd700; font-size: 15px; }
+.tutorialSteps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  font-size: 12px;
+  color: rgba(255,255,255,0.75);
+}
+.tutorialSteps li { text-align: left; }
+.stepDone { color: #7bff8a; text-decoration: line-through; opacity: 0.8; }
+
+.backLink {
+  color: rgba(255,255,255,0.6);
+  text-decoration: none;
+  font-size: 13px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: 'Courier New', monospace;
+}
+.backLink:hover { color: #fff; }
+.backLinkFloating {
+  position: absolute;
+  top: 12px;
+  left: 16px;
+  color: rgba(255,255,255,0.75);
+  text-decoration: none;
+  font-size: 13px;
+  z-index: 20;
+  background: rgba(0,0,0,0.4);
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+.backLinkFloating:hover { color: #fff; }
+
+.modeRow {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.modeCard {
+  width: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.06);
+  border: 2px solid rgba(255,255,255,0.15);
+  border-radius: 12px;
+  padding: 20px 16px;
+  cursor: pointer;
+  color: #fff;
+  font-family: 'Courier New', monospace;
+}
+.modeCard:hover { border-color: #ff8a4a; background: rgba(255,138,74,0.12); }
+.modeIcon { font-size: 34px; }
+.modeName { font-weight: bold; font-size: 15px; color: #ffd700; }
+.modeDesc { font-size: 12px; color: #aaddff; line-height: 1.4; }
+
+.tribeGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px;
+  width: 100%;
+  max-width: 900px;
+}
+.tribeCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.06);
+  border: 2px solid rgba(255,255,255,0.15);
+  border-radius: 12px;
+  padding: 16px 12px;
+  cursor: pointer;
+  color: #fff;
+  font-family: 'Courier New', monospace;
+}
+.tribeCard:hover { border-color: #8fe0ff; background: rgba(143,224,255,0.1); }
+.tribeCardSelected { border-color: #ffd700; }
+.tribeIcon { font-size: 30px; }
+.tribeName { font-weight: bold; font-size: 14px; color: #ffd700; }
+.tribeDesc { font-size: 11px; color: #aaddff; line-height: 1.4; }
+.tribeStats { font-size: 10px; color: #7bff8a; }
+
+.hud {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  z-index: 5;
+  pointer-events: none;
+  width: min(90vw, 420px);
+}
+.hudTop { display: flex; gap: 12px; }
+.waveInfo { font-size: 13px; font-weight: bold; color: #ffd700; background: rgba(0,0,0,0.4); padding: 4px 10px; border-radius: 6px; }
+
+.hpWrap { display: flex; align-items: center; gap: 8px; width: 100%; }
+.hpLabel { font-size: 11px; color: #fff; white-space: nowrap; min-width: 100px; text-align: right; }
+.hpTrack { flex: 1; height: 10px; border-radius: 4px; background: rgba(255,255,255,0.2); overflow: hidden; border: 1px solid rgba(255,255,255,0.3); }
+.hpFill { height: 100%; transition: width 0.15s linear; }
+
+.toast {
+  background: rgba(0,0,0,0.6);
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: bold;
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.3);
+}
+.toastGood { border-color: #7bff8a; color: #7bff8a; }
+.toastBad { border-color: #ff5d3d; color: #ff5d3d; }
