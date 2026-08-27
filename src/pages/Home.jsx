@@ -6,13 +6,6 @@ const CATEGORIES = [
     name: 'Platformers',
     games: [
       {
-        id: 'dog-man-dash',
-        title: 'Dog Man Dash',
-        description: 'Side-scrolling chaos with Dog Man and the gang.',
-        emoji: '🐾',
-        path: '/dog-man-dash',
-      },
-      {
         id: 'obvious-mario-knockoff',
         title: 'The Obvious Mario Knockoff',
         description: "A mustachioed plumber-guy runs, jumps on grumpy mushroom guys, and grabs a flagpole. It's a knockoff. It knows it's a knockoff. That's the whole bit.",
@@ -24,6 +17,13 @@ const CATEGORIES = [
   {
     name: 'Arcade',
     games: [
+      {
+        id: 'retro-arcade',
+        title: 'Retro Arcade',
+        description: 'A cabinet of 9 arcade classics reimagined: maze-chase, rock shooter, bug formation dive, speed run, platform brawler, brick-breaker, invasion, road-hopper, and a falling-block puzzle.',
+        emoji: '🕹️',
+        path: '/retro-arcade',
+      },
       {
         id: 'snake-clash',
         title: 'Snake Clash',
@@ -95,6 +95,13 @@ const CATEGORIES = [
         emoji: '🐲',
         path: '/lil-monster-battles',
       },
+      {
+        id: 'wings-of-fire',
+        title: 'Wings of Fire: Talon Clash',
+        description: 'Pick a dragon tribe — SkyWing, IceWing, SandWing, SeaWing, MudWing, or RainWing — and fight with claws and a signature breath attack in a free 3D sky arena. Solo vs CPU waves or 2-player duel.',
+        emoji: '🐉',
+        path: '/wings-of-fire',
+      },
     ],
   },
   {
@@ -106,6 +113,20 @@ const CATEGORIES = [
         description: 'A dusky first-person world. Gather light to fuel flight, then free the spirits you find to unlock new maps to explore.',
         emoji: '✨',
         path: '/world3d',
+      },
+      {
+        id: 'dog-man-dash',
+        title: 'Dog Man Dash',
+        description: 'An open-world 3D city! Walk (or mouse-look) freely across three districts, fighting villains and collecting coins with Dog Man and the gang.',
+        emoji: '🐾',
+        path: '/dog-man-dash',
+      },
+      {
+        id: 'loot-and-scoot',
+        title: 'Loot & Scoot',
+        description: 'An open-world 3D heist game. Take jobs from the Fence, sneak past guards to grab the loot, then spend your cash at the Shop on better gear.',
+        emoji: '🥷',
+        path: '/loot-and-scoot',
       },
     ],
   },

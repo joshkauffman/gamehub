@@ -15,6 +15,9 @@ import LilMonsterBattles from './games/lil-monster-battles/LilMonsterBattles.jsx
 import KaboomCorral from './games/kaboom-corral/KaboomCorral.jsx'
 import ChatLounge from './games/chat-lounge/ChatLounge.jsx'
 import ObviousMarioKnockoff from './games/obvious-mario-knockoff/ObviousMarioKnockoff.jsx'
+import RetroArcade from './games/retro-arcade/RetroArcade.jsx'
+import LootAndScoot from './games/loot-and-scoot/LootAndScoot.jsx'
+import WingsOfFire from './games/wings-of-fire/WingsOfFire.jsx'
 
 export default function App() {
   return (
@@ -35,6 +38,9 @@ export default function App() {
         <Route path="/kaboom-corral" element={<KaboomCorral />} />
         <Route path="/chat-lounge" element={<ChatLounge />} />
         <Route path="/obvious-mario-knockoff" element={<ObviousMarioKnockoff />} />
+        <Route path="/retro-arcade" element={<RetroArcade />} />
+        <Route path="/loot-and-scoot" element={<LootAndScoot />} />
+        <Route path="/wings-of-fire" element={<WingsOfFire />} />
       </Routes>
     </HorrorModeProvider>
   )
