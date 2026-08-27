@@ -1,0 +1,237 @@
+.page {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #0a0a1a;
+  color: #fff;
+  font-family: 'Courier New', monospace;
+}
+
+.canvasWrap {
+  position: absolute;
+  inset: 0;
+  cursor: pointer;
+}
+.canvasWrap canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.lockHint {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 6;
+  background: rgba(0,0,0,0.65);
+  color: #fff;
+  font-size: 15px;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  padding: 12px 22px;
+  border-radius: 10px;
+  border: 2px solid #ffd700;
+  pointer-events: none;
+  text-align: center;
+  max-width: 90vw;
+}
+
+.overlayScreen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  text-align: center;
+  padding: 24px;
+  background: radial-gradient(circle at 50% 20%, #1a1a3a 0%, #0a0a1a 70%);
+  z-index: 10;
+}
+
+.title { font-size: clamp(26px, 5vw, 42px); font-weight: bold; color: #FFD700; margin: 0; letter-spacing: 1px; }
+.and { color: #ff5d3d; }
+.blurb { color: #aaddff; font-size: 14px; max-width: 560px; line-height: 1.55; }
+
+.bigBtn {
+  font-family: 'Courier New', monospace;
+  font-size: 16px;
+  font-weight: bold;
+  padding: 14px 28px;
+  background: #ffd700;
+  border: none;
+  color: #241a00;
+  cursor: pointer;
+  letter-spacing: 1px;
+  border-radius: 8px;
+}
+.bigBtn:hover { background: #ffe454; }
+.bigBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.backLink { color: rgba(255,255,255,0.6); text-decoration: none; font-size: 13px; }
+.backLink:hover { color: #fff; }
+.backLinkFloating {
+  position: absolute;
+  top: 12px;
+  left: 16px;
+  color: rgba(255,255,255,0.75);
+  text-decoration: none;
+  font-size: 12px;
+  letter-spacing: 1px;
+  z-index: 10;
+  background: rgba(0,0,0,0.4);
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+.backLinkFloating:hover { color: #fff; }
+
+.hud {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  z-index: 5;
+  pointer-events: none;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+  width: 320px;
+}
+.hudTop { display: flex; gap: 18px; align-items: center; font-size: 14px; font-weight: bold; }
+.petRow { display: flex; gap: 4px; font-size: 15px; }
+.cash { color: #ffd700; }
+.missionInfo { color: #8fe3ff; font-size: 12px; }
+.alertTag { color: #ff5d3d; font-weight: 800; }
+
+.timeTrack { width: 220px; height: 7px; border-radius: 4px; background: rgba(255,255,255,0.2); overflow: hidden; }
+.timeFill { height: 100%; background: #8fe3ff; transition: width 0.1s linear; }
+
+.suspicionWrap { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.suspicionLabel { font-size: 10px; color: #ffb0a0; letter-spacing: 0.5px; }
+.suspicionTrack { width: 160px; height: 8px; border-radius: 4px; background: rgba(255,255,255,0.2); overflow: hidden; }
+.suspicionFill { height: 100%; background: #ff5d3d; transition: width 0.08s linear; }
+.bossTrack { width: 160px; height: 10px; border-radius: 4px; background: rgba(255,255,255,0.2); overflow: hidden; border: 1px solid rgba(255,59,59,0.5); }
+.bossFill { height: 100%; background: #ff3b3b; transition: width 0.15s linear; }
+
+.compass {
+  margin-top: 2px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid rgba(255,255,255,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.compassArrow { display: inline-block; color: #ffd700; font-size: 16px; transition: transform 0.1s linear; }
+
+.toast {
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: bold;
+  background: rgba(0,0,0,0.6);
+  padding: 6px 14px;
+  border-radius: 8px;
+  letter-spacing: 0.5px;
+}
+.toastGood { color: #7bff8a; border: 1px solid #7bff8a; }
+.toastBad { color: #ff8a7b; border: 1px solid #ff8a7b; }
+
+.prompt {
+  position: absolute;
+  bottom: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.6);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: bold;
+  color: #ffd700;
+  z-index: 5;
+  white-space: nowrap;
+}
+
+.modalOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+}
+.modal {
+  background: #161428;
+  border: 2px solid #ffd700;
+  border-radius: 14px;
+  padding: 24px 28px;
+  max-width: 560px;
+  width: 92%;
+  max-height: 88vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.modalTitle { font-size: 24px; color: #ffd700; margin: 0; }
+.modalSubtitle { font-size: 16px; color: #ffd700; margin: 8px 0 0; align-self: center; }
+.cashLine { color: #7bff8a; font-weight: bold; font-size: 15px; margin: 0 0 6px; }
+
+.gearGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; width: 100%; }
+.gearCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.04);
+  text-align: center;
+}
+.gearIcon { font-size: 26px; }
+.gearName { font-size: 12px; font-weight: bold; }
+.gearDesc { font-size: 10px; color: #aaddff; line-height: 1.3; min-height: 26px; }
+.tierDots { display: flex; gap: 4px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.2); }
+.dotFilled { background: #ffd700; }
+.maxedLabel { font-size: 11px; color: #7bff8a; font-weight: bold; letter-spacing: 1px; }
+.buyBtn {
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  font-weight: bold;
+  padding: 6px 12px;
+  background: #ffd700;
+  border: none;
+  border-radius: 6px;
+  color: #241a00;
+  cursor: pointer;
+}
+.buyBtn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.closeBtn {
+  margin-top: 6px;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  padding: 8px 20px;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.3);
+  color: #fff;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.closeBtn:hover { background: rgba(255,255,255,0.2); }
+
+@media (max-width: 480px) {
+  .title { font-size: 22px; }
+  .hud { width: 260px; }
+  .timeTrack, .suspicionTrack { width: 160px; }
+}
