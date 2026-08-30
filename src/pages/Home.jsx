@@ -1,5 +1,26 @@
 import { Link } from 'react-router-dom'
 import styles from './Home.module.css'
+import { useSecretUnlock } from './useSecretUnlock.js'
+
+// Hidden until "123secret" is typed anywhere on this page (see
+// useSecretUnlock.js) — not part of CATEGORIES so it never renders, isn't
+// searchable, and isn't in the normal grid until unlocked.
+const SECRET_GAMES = [
+  {
+    id: 'geometry-rush',
+    title: 'Geometry Rush',
+    description: 'A neon auto-runner. Tap to jump, hold to fly, tap to flip gravity — portals swap you between cube, ship, and ball modes as the course gets faster.',
+    emoji: '🔷',
+    path: '/geometry-rush',
+  },
+  {
+    id: 'satisfying-toybox',
+    title: 'Satisfying Toybox',
+    description: 'No score, no goal — just bubble wrap to pop, slime to stretch, a squishy to squeeze, a fidget spinner to flick, and a soap bar to carve.',
+    emoji: '🫧',
+    path: '/satisfying-toybox',
+  },
+]
 
 const CATEGORIES = [
   {
@@ -185,6 +206,8 @@ const CATEGORIES = [
 ]
 
 export default function Home() {
+  const { unlocked, justUnlocked } = useSecretUnlock()
+
   return (
     <div className={styles.page}>
       <header className={styles.header}>
@@ -209,7 +232,25 @@ export default function Home() {
             </div>
           </section>
         ))}
+
+        {unlocked && (
+          <section className={styles.section}>
+            <h2 className={`${styles.sectionTitle} ${styles.secretTitle}`}>🔓 Secret</h2>
+            <div className={styles.grid}>
+              {SECRET_GAMES.map(game => (
+                <Link key={game.id} to={game.path} className={`${styles.card} ${styles.secretCard}`}>
+                  <span className={styles.emoji}>{game.emoji}</span>
+                  <h3 className={styles.cardTitle}>{game.title}</h3>
+                  <p className={styles.cardDesc}>{game.description}</p>
+                  <span className={styles.play}>Play →</span>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
       </main>
+
+      {justUnlocked && <div className={styles.secretToast}>🔓 Secret code accepted! New games unlocked below.</div>}
     </div>
   )
 }

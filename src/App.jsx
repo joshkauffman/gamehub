@@ -22,6 +22,8 @@ import Avatar from './games/avatar/Avatar.jsx'
 import OrbitMaze from './games/orbit-maze/OrbitMaze.jsx'
 import GravityFalls from './games/gravity-falls/GravityFalls.jsx'
 import IntergalacticPoker from './games/intergalactic-poker/IntergalacticPoker.jsx'
+import GeometryRush from './games/geometry-rush/GeometryRush.jsx'
+import SatisfyingToybox from './games/satisfying-toybox/SatisfyingToybox.jsx'
 
 export default function App() {
   return (
@@ -49,6 +51,8 @@ export default function App() {
         <Route path="/orbit-maze" element={<OrbitMaze />} />
         <Route path="/gravity-falls" element={<GravityFalls />} />
         <Route path="/intergalactic-poker" element={<IntergalacticPoker />} />
+        <Route path="/geometry-rush" element={<GeometryRush />} />
+        <Route path="/satisfying-toybox" element={<SatisfyingToybox />} />
       </Routes>
     </HorrorModeProvider>
   )

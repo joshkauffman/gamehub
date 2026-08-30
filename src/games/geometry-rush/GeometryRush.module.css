@@ -1,0 +1,112 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.75rem 1rem 3rem;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Courier New', monospace;
+}
+
+.hudBar {
+  display: flex;
+  gap: 2rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  margin-bottom: 0.85rem;
+  font-size: 0.95rem;
+}
+.hudScore { color: #00e5ff; }
+.hudBest { color: #ffd700; }
+
+.stage {
+  position: relative;
+  width: 100%;
+  max-width: 900px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--border);
+}
+
+.canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.modeTag {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-weight: 800;
+  font-size: 0.7rem;
+  letter-spacing: 1.5px;
+  background: rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+}
+.modeTag[data-mode='cube'] { color: #00e5ff; border: 1px solid #00e5ff; }
+.modeTag[data-mode='ship'] { color: #ff9500; border: 1px solid #ff9500; }
+.modeTag[data-mode='ball'] { color: #ff2ec4; border: 1px solid #ff2ec4; }
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  text-align: center;
+  padding: 1.5rem;
+  background: rgba(5, 5, 15, 0.74);
+  pointer-events: none;
+}
+
+.title {
+  font-size: clamp(1.7rem, 5vw, 2.6rem);
+  font-weight: 900;
+  letter-spacing: 1px;
+  margin: 0;
+  color: #00e5ff;
+}
+.rush { color: #ff2ec4; }
+
+.blurb {
+  color: #cfd0ff;
+  max-width: 480px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.hint {
+  color: #ffd700;
+  font-weight: 800;
+  letter-spacing: 1px;
+  animation: geoRushPulse 1.4s ease-in-out infinite;
+}
+@keyframes geoRushPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+.controls {
+  margin-top: 1rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  letter-spacing: 0.3px;
+  text-align: center;
+}
+
+.backLink {
+  margin-top: 0.75rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+.backLink:hover { color: var(--text); }
