@@ -22,6 +22,13 @@ export const ENEMY_TYPES = [
 
 export const CHIEF_TEXTURE = `${ASSET_BASE}/chief.png`
 
+// The final boss — a giant robot dinosaur guarding the far end of the
+// Hideout. Spawns once TARGET_CAPTURES is reached (see worldEngine.js);
+// beating it down is what actually ends the run in a win.
+export const BOSS_NAME = 'ROBO-BRONTO'
+export const BOSS_TEXTURE = `${ASSET_BASE}/robo-bronto.jpeg`
+export const BOSS_ARENA = { x: 0, z: -66 }
+
 // Score thresholds, checked continuously (not tied to "finishing" anything
 // — there's no finish line in an open world), highest-ever single-run
 // score.
@@ -51,7 +58,22 @@ export function districtAt(z) {
   return DISTRICTS.city
 }
 
-export const CHIEF_QUOTES = [
+// A fixed home-base shop planted in the Hideout district (see the cabin
+// mesh in DogManDash.jsx and the building-free clearing kept around this
+// point in worldEngine.js's generateBuildings). Walk within SHOP_RADIUS
+// and press E to spend run coins on gear.
+export const HOME_BASE = { x: 0, z: -48 }
+export const SHOP_RADIUS = 3.5
+
+export const SHOP_ITEMS = [
+  { key: 'weapon', name: 'Trusty Weapon', icon: '🎯', cost: 3, desc: 'A ready throw, matched to your officer.' },
+  { key: 'star', name: 'Star Power', icon: '⭐', cost: 5, desc: '7 seconds of invincible smashing.' },
+  { key: 'life', name: 'Extra Life', icon: '❤️', cost: 8, desc: 'One more chance if you get caught.' },
+]
+
+// Shown on the victory screen once the case is closed (see TARGET_CAPTURES
+// in worldEngine.js).
+export const CHIEF_WIN_QUOTES = [
   'GREAT JUMPING BISCUITS! You actually won! I mean... I KNEW you could. Totally.',
   "Wow. Just WOW. Now please stop wagging your tail, you're knocking my mug over.",
   "I'm not crying. There's just something in BOTH of my eyes. Go away.",
@@ -63,6 +85,19 @@ export const CHIEF_QUOTES = [
   'You saved the city AGAIN! Do you ever take a day off? Also, sit. STAY.',
   'That was AMAZING! Now go bury the bad guys somewhere quiet.',
   "You're a GOOD BOY! I mean officer. OFFICER. ...same difference.",
+  'THAT WAS A GIANT ROBOT DINOSAUR! And you just walked up and decked it. Incredible. Slightly terrifying.',
+  "Robo-Bronto is scrap metal and you're a HERO! Somebody get this dog a trophy. And a bath.",
+]
+
+// Shown on the game-over screen when you run out of lives before closing
+// the case.
+export const CHIEF_LOSE_QUOTES = [
+  "Well, that didn't go so hot. Try not to trip over your own leash next time.",
+  'The bad guys got away! Good gravy, get back out there and try again!',
+  "Down but not out, officer. Go grab a snack and give it another go.",
+  "Oh for corn's sake! Back to obedience school with you. Kidding! Mostly.",
+  "You'll get 'em next time. Probably. Hopefully. Go try again.",
+  "That's alright, that's alright! Even good boys have off days.",
 ]
 
 const SAVE_KEY = 'dogman-dash-3d-v2'

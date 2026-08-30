@@ -76,6 +76,7 @@
   letter-spacing: 1px;
 }
 .bigBtn:hover { background: #FF5252; }
+.bigBtn:disabled { background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.4); cursor: not-allowed; }
 
 .backBtn {
   font-family: 'Courier New', monospace;
@@ -146,6 +147,16 @@
 }
 .hudRow { display: flex; gap: 20px; font-size: 14px; font-weight: bold; letter-spacing: 1px; }
 .districtName { font-size: 11px; color: #aaddff; letter-spacing: 1px; }
+.wantedBar {
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: bold;
+  color: #7bff8a;
+  background: rgba(0,0,0,0.5);
+  padding: 3px 10px;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+}
 .buffBadge {
   margin-top: 2px;
   font-size: 12px;
@@ -156,6 +167,57 @@
   border-radius: 6px;
   letter-spacing: 1px;
 }
+.bossBar {
+  margin-top: 2px;
+  font-size: 13px;
+  font-weight: bold;
+  color: #ff6666;
+  background: rgba(0,0,0,0.6);
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: 1px solid #ff3333;
+  letter-spacing: 0.5px;
+}
+.shopPrompt {
+  margin-top: 6px;
+  font-size: 13px;
+  font-weight: bold;
+  color: #FFD700;
+  background: rgba(0,0,0,0.6);
+  padding: 5px 12px;
+  border-radius: 8px;
+  border: 1px solid #FFD700;
+  letter-spacing: 0.5px;
+}
+
+.shopPanel {
+  position: absolute;
+  inset: 0;
+  z-index: 9;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  text-align: center;
+  padding: 24px;
+  background: radial-gradient(circle at 50% 20%, rgba(26,26,58,0.96) 0%, rgba(10,10,26,0.98) 70%);
+}
+.shopCoins { color: #FFD700; font-size: 16px; font-weight: bold; letter-spacing: 1px; }
+.shopGrid { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; max-width: 700px; }
+.shopItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 150px;
+  padding: 14px 10px;
+  border-radius: 10px;
+  border: 2px solid rgba(255,215,0,0.3);
+  background: rgba(255,255,255,0.05);
+  color: #fff;
+}
+.shopIcon { font-size: 32px; }
 
 .unlockToast {
   position: absolute;
@@ -171,6 +233,22 @@
   padding: 8px 16px;
   border-radius: 8px;
   border: 1px solid #7bff8a;
+  pointer-events: none;
+}
+.bossToast {
+  position: absolute;
+  top: 110px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 6;
+  background: rgba(60,0,0,0.8);
+  color: #ff6666;
+  font-weight: bold;
+  font-size: 13px;
+  letter-spacing: 1px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid #ff3333;
   pointer-events: none;
 }
 

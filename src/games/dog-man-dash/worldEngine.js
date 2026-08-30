@@ -6,7 +6,7 @@
 // responsible for turning mouse-look + WASD into a camera-relative
 // {moveX, moveZ} direction before calling stepWorld — this file doesn't
 // know about the camera at all.
-import { ENEMY_TYPES, MAP_HALF, DOCKS_START, HIDEOUT_START, DISTRICTS, districtAt } from './constants.js'
+import { ENEMY_TYPES, MAP_HALF, DOCKS_START, HIDEOUT_START, DISTRICTS, districtAt, HOME_BASE, SHOP_ITEMS, BOSS_ARENA } from './constants.js'
 
 export const GRAVITY = -34
 export const JUMP_V = 12
@@ -19,9 +19,10 @@ const TOUCH_RANGE = 1.5
 const PICKUP_RANGE = 1.6
 const PROJ_SPEED = 20
 const PROJ_RANGE = 22
-const BUFF_DURATION = 7
+export const BUFF_DURATION = 7
 const HIT_STUN = 0.6
 const LIVES_START = 3
+export const MAX_LIVES = 5
 
 const ENEMY_COUNT = 16
 const ENEMY_AGGRO_RADIUS = 9
@@ -37,6 +38,18 @@ const POWERUP_RESPAWN_DELAY = 14
 
 export const SCORE_ENEMY = 250
 export const SCORE_COIN = 50
+export const SCORE_BOSS = 2000
+
+// Nab this many bad guys and Robo-Bronto wakes up in its lair at
+// BOSS_ARENA (see constants.js) — beating it is the actual win condition.
+// Enemies respawn (see ENEMY_RESPAWN_DELAY) so this is always reachable.
+export const TARGET_CAPTURES = 12
+
+const BOSS_HP = 5
+const BOSS_TOUCH_RANGE = 2.4
+const BOSS_AGGRO_RADIUS = 20
+const BOSS_CHASE_SPEED = 2.0
+const BOSS_HIT_COOLDOWN = 0.5
 
 function rand(a, b) { return a + Math.random() * (b - a) }
 function dist(ax, az, bx, bz) { return Math.hypot(ax - bx, az - bz) }
@@ -76,17 +89,19 @@ const BUILDING_COUNTS = { hideout: 16, city: 20, docks: 14 }
 // so the two never drift apart — see DogManDash.jsx.
 export function generateBuildings() {
   const buildings = []
-  function scatter(zMin, zMax, colors, count, avoidCenter) {
+  function scatter(zMin, zMax, colors, count, avoidPoints) {
     for (let i = 0; i < count; i++) {
       const x = rand(-MAP_HALF + 5, MAP_HALF - 5)
       const z = rand(zMin + 5, zMax - 5)
-      if (avoidCenter && Math.hypot(x, z) < 11) continue
+      if (avoidPoints.some(p => Math.hypot(x - p.x, z - p.z) < p.r)) continue
       buildings.push({ x, z, w: rand(4, 8), d: rand(4, 8), h: rand(4, 13), color: colors[Math.floor(Math.random() * colors.length)] })
     }
   }
-  scatter(-MAP_HALF, HIDEOUT_START, DISTRICTS.hideout.buildings, BUILDING_COUNTS.hideout, false)
-  scatter(HIDEOUT_START, DOCKS_START, DISTRICTS.city.buildings, BUILDING_COUNTS.city, true)
-  scatter(DOCKS_START, MAP_HALF, DISTRICTS.docks.buildings, BUILDING_COUNTS.docks, false)
+  // Spawn (0,0) and the HOME_BASE shop each keep a building-free clearing
+  // so neither ever generates boxed in.
+  scatter(-MAP_HALF, HIDEOUT_START, DISTRICTS.hideout.buildings, BUILDING_COUNTS.hideout, [{ x: HOME_BASE.x, z: HOME_BASE.z, r: 11 }])
+  scatter(HIDEOUT_START, DOCKS_START, DISTRICTS.city.buildings, BUILDING_COUNTS.city, [{ x: 0, z: 0, r: 11 }])
+  scatter(DOCKS_START, MAP_HALF, DISTRICTS.docks.buildings, BUILDING_COUNTS.docks, [])
   return buildings
 }
 
@@ -96,12 +111,14 @@ function collidesBuilding(buildings, x, z, radius) {
 
 export function createWorldState(charProjType, carry, buildings) {
   return {
-    status: 'running', // running | hit | dead
+    status: 'running', // running | hit | dead | won
     x: 0, z: 0, y: 0, vy: 0, onGround: true,
     buildings: buildings || [],
     lives: carry?.lives ?? LIVES_START,
     score: carry?.score ?? 0,
     coins: carry?.coins ?? 0,
+    captures: carry?.captures ?? 0,
+    boss: carry?.boss ?? null,
     heldItem: null,
     buff: null, // { type, timer }
     laserTimer: 0, laserZap: null,
@@ -124,7 +141,7 @@ function edge(input, key, state, flag) {
 }
 
 export function stepWorld(state, input, dt) {
-  if (state.status === 'dead') return
+  if (state.status === 'dead' || state.status === 'won') return
 
   if (state.hitTimer > 0) {
     state.hitTimer -= dt
@@ -188,6 +205,9 @@ export function stepWorld(state, input, dt) {
       if (!e.alive || p.hit) continue
       if (dist(e.x, e.z, p.x, p.z) < TOUCH_RANGE) { defeatEnemy(state, e); p.hit = true }
     }
+    if (!p.hit && state.boss?.alive && dist(state.boss.x, state.boss.z, p.x, p.z) < TOUCH_RANGE) {
+      damageBoss(state); p.hit = true
+    }
   }
   state.projectiles = state.projectiles.filter(p => !p.hit)
 
@@ -199,11 +219,13 @@ export function stepWorld(state, input, dt) {
     state.laserTimer -= dt
     if (state.laserTimer <= 0) {
       state.laserTimer = 0.9
-      const target = state.enemies
-        .filter(e => e.alive && dist(e.x, e.z, state.x, state.z) < 20)
-        .sort((a, b) => dist(a.x, a.z, state.x, state.z) - dist(b.x, b.z, state.x, state.z))[0]
-      if (target) { state.laserZap = { x: target.x, z: target.z }; defeatEnemy(state, target) }
-      else state.laserZap = null
+      const candidates = state.enemies.filter(e => e.alive && dist(e.x, e.z, state.x, state.z) < 20)
+      if (state.boss?.alive && dist(state.boss.x, state.boss.z, state.x, state.z) < 24) candidates.push(state.boss)
+      const target = candidates.sort((a, b) => dist(a.x, a.z, state.x, state.z) - dist(b.x, b.z, state.x, state.z))[0]
+      if (target) {
+        state.laserZap = { x: target.x, z: target.z }
+        if (target === state.boss) damageBoss(state); else defeatEnemy(state, target)
+      } else state.laserZap = null
     }
   } else {
     state.laserZap = null
@@ -245,6 +267,24 @@ export function stepWorld(state, input, dt) {
     for (const e of state.enemies) {
       if (e.alive && dist(e.x, e.z, state.x, state.z) < MELEE_RANGE) defeatEnemy(state, e)
     }
+  }
+
+  // The boss (see defeatEnemy, which spawns it once TARGET_CAPTURES is
+  // hit) needs BOSS_HP separate hits rather than the one-hit kills that
+  // clear regular enemies — damageBoss's own hitCooldown stops a single
+  // melee swing (active for several frames) from registering more than
+  // one hit.
+  if (state.boss?.alive) {
+    const b = state.boss
+    if (b.hitCooldown > 0) b.hitCooldown -= dt
+    const dToBoss = dist(b.x, b.z, state.x, state.z)
+    if (dToBoss < BOSS_AGGRO_RADIUS) {
+      const dx = state.x - b.x, dz = state.z - b.z, len = Math.hypot(dx, dz) || 1
+      b.x += (dx / len) * BOSS_CHASE_SPEED * dt
+      b.z += (dz / len) * BOSS_CHASE_SPEED * dt
+    }
+    if (dToBoss < BOSS_TOUCH_RANGE && state.invuln <= 0) hitPlayer(state)
+    if ((starred || state.meleeActive > 0) && dToBoss < MELEE_RANGE) damageBoss(state)
   }
 
   for (const c of state.coinPool) {
@@ -293,6 +333,22 @@ function defeatEnemy(state, e) {
   e.alive = false
   e.respawnTimer = ENEMY_RESPAWN_DELAY
   state.score += SCORE_ENEMY
+  state.captures++
+  if (state.captures >= TARGET_CAPTURES && !state.boss) {
+    state.boss = { x: BOSS_ARENA.x, z: BOSS_ARENA.z, hp: BOSS_HP, maxHp: BOSS_HP, hitCooldown: 0, alive: true }
+  }
+}
+
+function damageBoss(state) {
+  const b = state.boss
+  if (!b || !b.alive || b.hitCooldown > 0) return
+  b.hp--
+  b.hitCooldown = BOSS_HIT_COOLDOWN
+  if (b.hp <= 0) {
+    b.alive = false
+    state.score += SCORE_BOSS
+    state.status = 'won'
+  }
 }
 
 function hitPlayer(state) {
@@ -307,4 +363,26 @@ function hitPlayer(state) {
 
 export function currentDistrictName(state) {
   return districtAt(state.z).name
+}
+
+// Spends run coins on a SHOP_ITEMS entry. Returns false (no-op, no coins
+// spent) if unaffordable or if the item wouldn't do anything right now
+// (already holding a weapon, already at max lives) — the component uses
+// this to grey out buttons.
+export function buyShopItem(state, key) {
+  const item = SHOP_ITEMS.find(i => i.key === key)
+  if (!item || state.coins < item.cost) return false
+  if (key === 'weapon') {
+    if (state.heldItem) return false
+    state.heldItem = state.projType
+  } else if (key === 'star') {
+    state.buff = { type: 'star', timer: BUFF_DURATION }
+  } else if (key === 'life') {
+    if (state.lives >= MAX_LIVES) return false
+    state.lives++
+  } else {
+    return false
+  }
+  state.coins -= item.cost
+  return true
 }

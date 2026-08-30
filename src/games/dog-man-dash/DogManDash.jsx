@@ -3,11 +3,12 @@ import { Link } from 'react-router-dom'
 import * as THREE from 'three'
 import styles from './DogManDash.module.css'
 import {
-  CHARACTERS, ENEMY_TYPES, CHIEF_QUOTES, CHIEF_TEXTURE,
-  MAP_HALF, DOCKS_START, HIDEOUT_START, DISTRICTS,
+  CHARACTERS, ENEMY_TYPES, CHIEF_WIN_QUOTES, CHIEF_LOSE_QUOTES, CHIEF_TEXTURE,
+  MAP_HALF, DOCKS_START, HIDEOUT_START, DISTRICTS, HOME_BASE, SHOP_RADIUS, SHOP_ITEMS,
+  BOSS_NAME, BOSS_TEXTURE,
   loadSave, isCharUnlocked, checkScoreUnlocks, recordRunScore,
 } from './constants.js'
-import { createWorldState, stepWorld, currentDistrictName, generateBuildings } from './worldEngine.js'
+import { createWorldState, stepWorld, currentDistrictName, generateBuildings, TARGET_CAPTURES, buyShopItem, MAX_LIVES } from './worldEngine.js'
 
 // ── Dog Man Dash 3D — open world ────────────────────────────────────────
 // A free-roam city (Three.js) instead of a forced-scroll lane. Click to
@@ -41,6 +42,30 @@ function makeBillboard(texResult, height) {
   const sprite = new THREE.Sprite(material)
   sprite.center.set(0.5, 0)
   sprite.scale.set(height * texResult.aspect, height, 1)
+  return sprite
+}
+
+// A small billboard sign drawn with canvas 2D text rather than a loaded
+// texture — used for the HQ shop sign, which has no piece of book art to
+// reuse the way characters/enemies do.
+function makeLabelSprite(text) {
+  const canvas = document.createElement('canvas')
+  canvas.width = 512
+  canvas.height = 128
+  const ctx = canvas.getContext('2d')
+  ctx.fillStyle = 'rgba(20,10,40,0.88)'
+  ctx.fillRect(0, 0, canvas.width, canvas.height)
+  ctx.strokeStyle = '#FFD700'
+  ctx.lineWidth = 8
+  ctx.strokeRect(4, 4, canvas.width - 8, canvas.height - 8)
+  ctx.fillStyle = '#FFD700'
+  ctx.font = 'bold 52px "Courier New", monospace'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(text, canvas.width / 2, canvas.height / 2)
+  const texture = new THREE.CanvasTexture(canvas)
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true }))
+  sprite.scale.set(4, 1, 1)
   return sprite
 }
 
@@ -101,17 +126,54 @@ function buildWorldScene(buildings) {
     scene.add(m)
   })
 
-  return { scene, buildingMeshes }
+  // The HQ shop — a cabin planted in the clearing generateBuildings()
+  // keeps free around HOME_BASE, facing the city (+z, where the player
+  // approaches from). See SHOP_ITEMS/SHOP_RADIUS in constants.js.
+  const cabin = new THREE.Mesh(new THREE.BoxGeometry(3, 2.2, 3), new THREE.MeshStandardMaterial({ color: 0x6a4a30, roughness: 1 }))
+  cabin.position.set(HOME_BASE.x, 1.1, HOME_BASE.z)
+  scene.add(cabin)
+
+  const roof = new THREE.Mesh(new THREE.ConeGeometry(2.4, 1.6, 4), new THREE.MeshStandardMaterial({ color: 0xE53935, roughness: 0.8 }))
+  roof.position.set(HOME_BASE.x, 3, HOME_BASE.z)
+  roof.rotation.y = Math.PI / 4
+  scene.add(roof)
+
+  const door = new THREE.Mesh(new THREE.PlaneGeometry(1, 1.6), new THREE.MeshStandardMaterial({ color: 0xFFD700, emissive: 0xFFD700, emissiveIntensity: 0.4 }))
+  door.position.set(HOME_BASE.x, 0.8, HOME_BASE.z + 1.51)
+  scene.add(door)
+
+  const label = makeLabelSprite('🏠 HQ SHOP')
+  label.position.set(HOME_BASE.x, 4.6, HOME_BASE.z)
+  scene.add(label)
+
+  const homeRing = new THREE.Mesh(
+    new THREE.RingGeometry(SHOP_RADIUS - 0.15, SHOP_RADIUS, 32),
+    new THREE.MeshBasicMaterial({ color: 0xFFD700, transparent: true, opacity: 0.3, side: THREE.DoubleSide }),
+  )
+  homeRing.rotation.x = -Math.PI / 2
+  homeRing.position.set(HOME_BASE.x, 0.05, HOME_BASE.z)
+  scene.add(homeRing)
+
+  return { scene, buildingMeshes, homeRing }
 }
 
-function GameCanvas({ character, carry, saveRef, onHud, onUnlock, onGameOver }) {
+function GameCanvas({ character, carry, saveRef, onHud, onUnlock, onGameOver, onWin, onBossSpawn }) {
   const mountRef = useRef(null)
   const keysRef = useRef(new Set())
   const [locked, setLocked] = useState(false)
 
+  const runRef = useRef(null)
+  const nearShopRef = useRef(false)
+  const shopOpenRef = useRef(false)
+  const shopActionsRef = useRef({ buy: () => {}, close: () => {} })
+  const [shopOpen, setShopOpenState] = useState(false)
+  const [shopTick, setShopTick] = useState(0)
+
   const onHudRef = useRef(onHud); onHudRef.current = onHud
   const onUnlockRef = useRef(onUnlock); onUnlockRef.current = onUnlock
   const onGameOverRef = useRef(onGameOver); onGameOverRef.current = onGameOver
+  const onWinRef = useRef(onWin); onWinRef.current = onWin
+  const onBossSpawnRef = useRef(onBossSpawn); onBossSpawnRef.current = onBossSpawn
 
   useEffect(() => {
     const mount = mountRef.current
@@ -120,6 +182,21 @@ function GameCanvas({ character, carry, saveRef, onHud, onUnlock, onGameOver }) 
 
     const buildings = generateBuildings()
     const run = createWorldState(character.proj, carry, buildings)
+    runRef.current = run
+
+    // Opening the shop releases the mouse (so you can click its buttons)
+    // and pauses the world (see the stepWorld gate in tick()) — enemies
+    // and the clock freeze while you browse.
+    function setShopOpen(v) {
+      shopOpenRef.current = v
+      setShopOpenState(v)
+      if (v && document.pointerLockElement === renderer.domElement) document.exitPointerLock()
+    }
+
+    function handleBuy(key) {
+      if (buyShopItem(run, key)) setShopTick(t => t + 1)
+    }
+    shopActionsRef.current = { buy: handleBuy, close: () => setShopOpen(false) }
 
     const camera = new THREE.PerspectiveCamera(64, mount.clientWidth / mount.clientHeight, 0.1, 300)
     const renderer = new THREE.WebGLRenderer({ antialias: true })
@@ -133,6 +210,8 @@ function GameCanvas({ character, carry, saveRef, onHud, onUnlock, onGameOver }) 
     function onKeyDown(e) {
       if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space', 'ShiftLeft', 'ShiftRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) e.preventDefault()
       keysRef.current.add(e.code)
+      if (e.code === 'KeyE' && (nearShopRef.current || shopOpenRef.current)) setShopOpen(!shopOpenRef.current)
+      else if (e.code === 'Escape' && shopOpenRef.current) setShopOpen(false)
     }
     function onKeyUp(e) { keysRef.current.delete(e.code) }
     window.addEventListener('keydown', onKeyDown)
@@ -163,13 +242,14 @@ function GameCanvas({ character, carry, saveRef, onHud, onUnlock, onGameOver }) 
 
     const enemyTexturePromises = Object.fromEntries(ENEMY_TYPES.map(t => [t.key, loadTextureAsync(t.texture)]))
     const charTexturePromise = loadTextureAsync(character.texture)
+    const bossTexturePromise = loadTextureAsync(BOSS_TEXTURE)
 
-    Promise.all([charTexturePromise, ...Object.values(enemyTexturePromises)]).then(([charTex, ...enemyTexList]) => {
+    Promise.all([charTexturePromise, bossTexturePromise, ...Object.values(enemyTexturePromises)]).then(([charTex, bossTex, ...enemyTexList]) => {
       if (disposed) return
       const enemyTex = {}
       ENEMY_TYPES.forEach((t, i) => { enemyTex[t.key] = enemyTexList[i] })
 
-      const { scene, buildingMeshes } = buildWorldScene(buildings)
+      const { scene, buildingMeshes, homeRing } = buildWorldScene(buildings)
       const camRaycaster = new THREE.Raycaster()
 
       const player = makeBillboard(charTex, 1.9)
@@ -183,6 +263,13 @@ function GameCanvas({ character, carry, saveRef, onHud, onUnlock, onGameOver }) 
 
       const enemyMesh = new Map()
       run.enemies.forEach(e => { const m = makeBillboard(enemyTex[e.type], 1.7); m.visible = false; scene.add(m); enemyMesh.set(e.id, m) })
+
+      // The final boss — created up front but hidden until defeatEnemy()
+      // spawns run.boss (see worldEngine.js), same lazy-reveal pattern as
+      // the regular enemy billboards above.
+      const bossMesh = makeBillboard(bossTex, 4.5)
+      bossMesh.visible = false
+      scene.add(bossMesh)
 
       const coinGeo = new THREE.TorusGeometry(0.32, 0.12, 8, 16)
       const coinMat = new THREE.MeshStandardMaterial({ color: 0xffd700, emissive: 0x996a00, emissiveIntensity: 0.4 })
@@ -204,6 +291,7 @@ function GameCanvas({ character, carry, saveRef, onHud, onUnlock, onGameOver }) 
       const projMesh = new Map()
 
       let finished = false
+      let bossAnnounced = false
       const clock = new THREE.Clock()
 
       const TURN_SPEED = 2.6
@@ -233,13 +321,26 @@ function GameCanvas({ character, carry, saveRef, onHud, onUnlock, onGameOver }) 
           attack: k.has('ShiftLeft') || k.has('ShiftRight'),
         }
 
-        if (!finished) stepWorld(run, input, dt)
+        const dHome = Math.hypot(run.x - HOME_BASE.x, run.z - HOME_BASE.z)
+        const isNear = dHome < SHOP_RADIUS
+        if (isNear !== nearShopRef.current) {
+          nearShopRef.current = isNear
+          if (!isNear && shopOpenRef.current) setShopOpen(false)
+        }
+        homeRing.material.opacity = 0.22 + Math.sin(clock.elapsedTime * 2) * 0.1
+
+        if (!finished && !shopOpenRef.current) stepWorld(run, input, dt)
 
         run.enemies.forEach(e => {
           const m = enemyMesh.get(e.id)
           m.visible = e.alive
           if (e.alive) m.position.set(e.x, 0, e.z)
         })
+        if (run.boss) {
+          bossMesh.visible = run.boss.alive
+          if (run.boss.alive) bossMesh.position.set(run.boss.x, 0, run.boss.z)
+          if (!bossAnnounced) { bossAnnounced = true; onBossSpawnRef.current() }
+        }
         run.coinPool.forEach(c => {
           const m = coinMesh.get(c.id)
           m.visible = c.alive
@@ -308,6 +409,8 @@ function GameCanvas({ character, carry, saveRef, onHud, onUnlock, onGameOver }) 
         onHudRef.current({
           score: run.score, coins: run.coins, lives: run.lives,
           district: currentDistrictName(run), buff: run.buff, heldItem: run.heldItem,
+          captures: run.captures, nearShop: isNear && !shopOpenRef.current,
+          boss: run.boss?.alive ? { hp: run.boss.hp, maxHp: run.boss.maxHp } : null,
         })
 
         const unlockResult = checkScoreUnlocks(run.score, saveRef.current)
@@ -316,6 +419,9 @@ function GameCanvas({ character, carry, saveRef, onHud, onUnlock, onGameOver }) 
         if (!finished && run.status === 'dead') {
           finished = true
           onGameOverRef.current(run.score)
+        } else if (!finished && run.status === 'won') {
+          finished = true
+          onWinRef.current(run.score)
         }
       }
       raf = requestAnimationFrame(tick)
@@ -336,9 +442,37 @@ function GameCanvas({ character, carry, saveRef, onHud, onUnlock, onGameOver }) 
     }
   }, [character, carry])
 
+  const run = runRef.current
   return (
     <div ref={mountRef} className={styles.canvasWrap}>
-      {!locked && <div className={styles.lockHint}>Click for mouse-look (optional) — WASD/arrows work either way</div>}
+      {!locked && !shopOpen && <div className={styles.lockHint}>Click for mouse-look (optional) — WASD/arrows work either way</div>}
+      {shopOpen && run && (
+        <div className={styles.shopPanel}>
+          <h2 className={styles.title}>🏠 HQ SHOP</h2>
+          <p className={styles.shopCoins}>🪙 {run.coins} coins to spend</p>
+          <div className={styles.shopGrid}>
+            {SHOP_ITEMS.map(item => {
+              const blocked = (item.key === 'weapon' && !!run.heldItem) || (item.key === 'life' && run.lives >= MAX_LIVES)
+              const afford = run.coins >= item.cost
+              return (
+                <div key={item.key} className={styles.shopItem}>
+                  <span className={styles.shopIcon}>{item.icon}</span>
+                  <span className={styles.charName}>{item.name}</span>
+                  <span className={styles.charDesc}>{item.desc}</span>
+                  <button
+                    className={styles.bigBtn}
+                    disabled={!afford || blocked}
+                    onClick={() => shopActionsRef.current.buy(item.key)}
+                  >
+                    {blocked ? (item.key === 'life' ? 'FULL' : 'HELD') : `${item.cost} 🪙 Buy`}
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+          <button className={styles.backBtn} onClick={() => shopActionsRef.current.close()}>Close (E)</button>
+        </div>
+      )}
     </div>
   )
 }
@@ -382,8 +516,16 @@ function Hud({ hud }) {
         <span>{'❤️'.repeat(Math.max(0, hud.lives))}</span>
       </div>
       <div className={styles.districtName}>📍 {hud.district}</div>
+      {hud.boss ? (
+        <div className={styles.bossBar}>🦖 {BOSS_NAME} HP {hud.boss.hp} / {hud.boss.maxHp}</div>
+      ) : (
+        <div className={styles.wantedBar}>
+          🐾 BAD GUYS NABBED {Math.min(hud.captures, TARGET_CAPTURES)} / {TARGET_CAPTURES}
+        </div>
+      )}
       {buffLabel && <div className={styles.buffBadge}>{buffLabel}</div>}
       {hud.heldItem && !buffLabel && <div className={styles.buffBadge}>🎯 {hud.heldItem.toUpperCase()} READY (Shift to throw)</div>}
+      {hud.nearShop && <div className={styles.shopPrompt}>🏠 Press E to open the HQ Shop</div>}
     </div>
   )
 }
@@ -397,6 +539,7 @@ export default function DogManDash() {
   const [chiefQuote, setChiefQuote] = useState('')
   const [save, setSave] = useState(() => loadSave())
   const [unlockToast, setUnlockToast] = useState(null)
+  const [bossToast, setBossToast] = useState(false)
   const saveRef = useRef(save)
   saveRef.current = save
 
@@ -405,6 +548,7 @@ export default function DogManDash() {
   function pickCharacter(i) {
     setCharIndex(i)
     setUnlockToast(null)
+    setBossToast(false)
     setRunKey(k => k + 1)
     setScreen('playing')
   }
@@ -417,12 +561,24 @@ export default function DogManDash() {
   function handleGameOver(score) {
     setSave(recordRunScore(score))
     setFinalScore(score)
-    setChiefQuote(CHIEF_QUOTES[Math.floor(Math.random() * CHIEF_QUOTES.length)])
+    setChiefQuote(CHIEF_LOSE_QUOTES[Math.floor(Math.random() * CHIEF_LOSE_QUOTES.length)])
     setScreen('gameover')
+  }
+
+  function handleWin(score) {
+    setSave(recordRunScore(score))
+    setFinalScore(score)
+    setChiefQuote(CHIEF_WIN_QUOTES[Math.floor(Math.random() * CHIEF_WIN_QUOTES.length)])
+    setScreen('win')
+  }
+
+  function handleBossSpawn() {
+    setBossToast(true)
   }
 
   function playAgain() {
     setUnlockToast(null)
+    setBossToast(false)
     setRunKey(k => k + 1)
     setScreen('playing')
   }
@@ -443,12 +599,29 @@ export default function DogManDash() {
             onHud={setHud}
             onUnlock={handleUnlock}
             onGameOver={handleGameOver}
+            onWin={handleWin}
+            onBossSpawn={handleBossSpawn}
           />
           <Hud hud={hud} />
           {unlockToast && <div className={styles.unlockToast}>🔓 {unlockToast} unlocked!</div>}
-          <div className={styles.controls}>W/S move · A/D turn · Space jump · Shift attack/throw · click for mouse-look</div>
+          {bossToast && <div className={styles.bossToast}>🦖 ROBO-BRONTO AWAKENS! Hunt it down deep in the Hideout!</div>}
+          <div className={styles.controls}>W/S move · A/D turn · Space jump · Shift attack/throw · E to shop at HQ · click for mouse-look</div>
           <Link to="/" className={styles.backLinkFloating}>← GameHub</Link>
         </>
+      )}
+
+      {screen === 'win' && (
+        <div className={styles.overlayScreen}>
+          <h1 className={styles.title}>🎉 CASE CLOSED!</h1>
+          <img src={CHIEF_TEXTURE} alt="The Chief" className={styles.chiefImg} />
+          <p className={styles.blurb}>"{chiefQuote}"</p>
+          <p className={styles.blurb}>You nabbed all {TARGET_CAPTURES} bad guys AND took down {BOSS_NAME}! Final score: {finalScore}. Best: {save.bestScore}</p>
+          <div className={styles.row}>
+            <button className={styles.bigBtn} onClick={playAgain}>🔁 Next Case</button>
+            <button className={styles.backBtn} onClick={backToSelect}>🧑 Pick A Different Officer</button>
+          </div>
+          <Link to="/" className={styles.backLink}>← Back to GameHub</Link>
+        </div>
       )}
 
       {screen === 'gameover' && (
