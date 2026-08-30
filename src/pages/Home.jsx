@@ -64,6 +64,13 @@ const CATEGORIES = [
         emoji: '🎃',
         path: '/treehouse-tcg',
       },
+      {
+        id: 'intergalactic-poker',
+        title: 'Intergalactic Poker',
+        description: "Locked in a strange cell after Weirdmageddon, Bill Cipher teaches you his own five-card-draw variant — dimension suits, one wild card, and a dealer who bluffs like it's a sport.",
+        emoji: '👁',
+        path: '/intergalactic-poker',
+      },
     ],
   },
   {
@@ -112,6 +119,18 @@ const CATEGORIES = [
     ],
   },
   {
+    name: 'Puzzles',
+    games: [
+      {
+        id: 'orbit-maze',
+        title: 'Orbit Maze',
+        description: "A 3D gravity-maze puzzle — tilt the whole transparent sphere and let gravity roll the ball through a twisting tube track, past forks and hidden trap holes, to the goal.",
+        emoji: '🔮',
+        path: '/orbit-maze',
+      },
+    ],
+  },
+  {
     name: 'Exploration',
     games: [
       {
@@ -134,6 +153,13 @@ const CATEGORIES = [
         description: 'An open-world 3D heist game. Take jobs from the Fence, sneak past guards to grab the loot, then spend your cash at the Shop on better gear.',
         emoji: '🥷',
         path: '/loot-and-scoot',
+      },
+      {
+        id: 'gravity-falls',
+        title: 'Gravity Falls: Journal Hunt',
+        description: "Pick Dipper, Mabel, Stan, Wendy, or Soos and roam the Mystery Shack, the forest, and downtown Gravity Falls hunting torn Journal 3 pages. Find them all and Bill Cipher is waiting.",
+        emoji: '🌲',
+        path: '/gravity-falls',
       },
     ],
   },

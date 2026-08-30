@@ -19,6 +19,9 @@ import RetroArcade from './games/retro-arcade/RetroArcade.jsx'
 import LootAndScoot from './games/loot-and-scoot/LootAndScoot.jsx'
 import WingsOfFire from './games/wings-of-fire/WingsOfFire.jsx'
 import Avatar from './games/avatar/Avatar.jsx'
+import OrbitMaze from './games/orbit-maze/OrbitMaze.jsx'
+import GravityFalls from './games/gravity-falls/GravityFalls.jsx'
+import IntergalacticPoker from './games/intergalactic-poker/IntergalacticPoker.jsx'
 
 export default function App() {
   return (
@@ -43,6 +46,9 @@ export default function App() {
         <Route path="/loot-and-scoot" element={<LootAndScoot />} />
         <Route path="/wings-of-fire" element={<WingsOfFire />} />
         <Route path="/avatar" element={<Avatar />} />
+        <Route path="/orbit-maze" element={<OrbitMaze />} />
+        <Route path="/gravity-falls" element={<GravityFalls />} />
+        <Route path="/intergalactic-poker" element={<IntergalacticPoker />} />
       </Routes>
     </HorrorModeProvider>
   )
