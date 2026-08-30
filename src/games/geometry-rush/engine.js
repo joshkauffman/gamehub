@@ -37,9 +37,37 @@ const ORB_JUMP_V = 720
 const PAD_JUMP_V = 920
 const ORB_RADIUS = 15
 
+// ── Jump physics ─────────────────────────────────────────────────────
+// A cube jump is a simple projectile under constant gravity: peak height
+// = v²/2g, full airtime (launch to landing at the same height) = 2v/g.
+// The cube pattern generators below size gaps/blocks/spikes as fractions
+// of what a jump can actually reach, instead of hand-picked numbers, so a
+// correctly-timed jump can always clear what's generated — and it stays
+// true even if gravity/jump-velocity/speed constants are retuned later.
+function jumpHeight(v) { return (v * v) / (2 * CUBE_GRAVITY) }
+function jumpAirTime(v) { return (2 * v) / CUBE_GRAVITY }
+function jumpDistance(v, speed) { return speed * jumpAirTime(v) }
+const CUBE_JUMP_HEIGHT = jumpHeight(CUBE_JUMP_V) // ~111 units at launch velocity 760
+
+// An orb mid-jump resets vertical velocity to ORB_JUMP_V from wherever the
+// player is — so an orb-assisted gap is really two arcs: a normal jump up
+// to the orb's height, then a fresh launch from there back down to 0.
+const ORB_TRIGGER_Y = 90
+function orbComboAirTime() {
+  const g = CUBE_GRAVITY
+  const toOrb = (CUBE_JUMP_V - Math.sqrt(CUBE_JUMP_V * CUBE_JUMP_V - 2 * g * ORB_TRIGGER_Y)) / g
+  const fromOrb = (ORB_JUMP_V + Math.sqrt(ORB_JUMP_V * ORB_JUMP_V + 2 * g * ORB_TRIGGER_Y)) / g
+  return toOrb + fromOrb
+}
+function orbComboDistance(speed) { return speed * orbComboAirTime() }
+
 const LOOKAHEAD = 1400
 const PORTAL_BUFFER = 160
 const SECTION_LENGTHS = { cube: [1800, 2800], ship: [1400, 2200], ball: [1200, 2000] }
+// Distance covered before the first obstacle is allowed to spawn. Speed
+// ramps up slightly with distance, so this is sized a bit past 5s worth
+// of BASE_SPEED travel to guarantee at least 5 clear seconds every run.
+const SAFE_START_DIST = 1900
 
 const STORAGE_KEY = 'geometry-rush-best'
 function loadBest() {
@@ -70,9 +98,9 @@ export function resetRun(state) {
   state.gravityDir = 1
   state.rotation = 0
   state.obstacles = []
-  state.genX = 0
+  state.genX = SAFE_START_DIST
   state.sectionMode = 'cube'
-  state.sectionEndAt = 2000
+  state.sectionEndAt = SAFE_START_DIST + 2000
   state.shipMidY = PLAYFIELD_H_SHIP / 2
   state.particles = []
   state.score = 0
@@ -287,34 +315,65 @@ function startNewSection(state) {
   state.sectionEndAt = state.genX + lo + Math.random() * (hi - lo)
 }
 
-function patternSpikeRow(startX, difficulty) {
-  const count = 1 + Math.floor(Math.random() * (1 + difficulty * 2))
+function patternSpikeRow(startX, difficulty, speed) {
+  // Cap how many spikes can be chained so the row never exceeds what a
+  // single jump can clear, even at the lowest speed the row can spawn at.
+  const maxClear = jumpDistance(CUBE_JUMP_V, speed) - PLAYER_HIT
+  const maxCount = Math.max(1, Math.floor((maxClear * 0.5) / 28))
+  const count = 1 + Math.floor(Math.random() * Math.min(1 + difficulty * 2, maxCount))
   const obstacles = []
   for (let i = 0; i < count; i++) obstacles.push({ type: 'spike', x: startX + i * 28, w: 26, bottom: 0, top: 26, dir: 'up' })
   return { obstacles, length: count * 28 }
 }
-function patternGapJump(startX, difficulty) {
-  const w = 70 + difficulty * 50 + Math.random() * 20
+function patternGapJump(startX, difficulty, speed) {
+  // Full jump distance minus the player's hitbox width on both ends — the
+  // actual span a well-timed jump can clear without clipping either lip.
+  // Scaling as a fraction of that (not a fixed number) keeps the gap
+  // always legal no matter how fast the player currently is.
+  const maxClear = jumpDistance(CUBE_JUMP_V, speed) - PLAYER_HIT
+  const w = maxClear * (0.35 + difficulty * 0.12 + rand(-0.03, 0.03))
   return { obstacles: [{ type: 'gap', x: startX, w }], length: w }
 }
-function patternBlockHop(startX, difficulty) {
-  const h = Math.random() < 0.3 + difficulty * 0.3 ? 80 : 40
+function patternBlockHop(startX, difficulty, speed) {
+  // Block heights as fractions of the jump's peak height — 0.72 leaves
+  // just enough margin below the peak for a well-timed jump to clear the
+  // "must already be this high" side-collision check; 0.36 is an easy hop.
+  const tall = Math.random() < 0.3 + difficulty * 0.3
+  const h = CUBE_JUMP_HEIGHT * (tall ? 0.72 : 0.36)
   const w = 44
   const obstacles = [{ type: 'block', x: startX, w, bottom: 0, top: h }]
-  if (Math.random() < difficulty) obstacles.push({ type: 'spike', x: startX + w + 10, w: 26, bottom: 0, top: 26, dir: 'up' })
-  return { obstacles, length: w + 40 }
+  let length = w + 40
+  if (Math.random() < difficulty) {
+    // Trailing spike must land within the horizontal distance the player
+    // covers while falling from the block's edge (vy=0) down to just above
+    // the spike's hazard threshold — otherwise it'd catch them mid-fall.
+    const dangerY = 26 - SPIKE_INSET
+    const fallTime = Math.sqrt(Math.max(0, (2 * (h - dangerY)) / CUBE_GRAVITY))
+    const safeRun = speed * fallTime
+    const gapAfter = Math.min(40, safeRun * 0.5)
+    obstacles.push({ type: 'spike', x: startX + w + gapAfter, w: 26, bottom: 0, top: 26, dir: 'up' })
+    length = w + gapAfter + 26 + 40
+  }
+  return { obstacles, length }
 }
-function patternOrbGap(startX, difficulty) {
-  const w = 110 + difficulty * 40
+function patternOrbGap(startX, difficulty, speed) {
+  // The orb-assisted arc (jump up to the orb, then a fresh launch from it)
+  // covers far more ground than a single jump — size the gap as a fraction
+  // of that combined reach so the orb boost is genuinely required.
+  const maxClear = orbComboDistance(speed) - PLAYER_HIT
+  const w = maxClear * (0.32 + difficulty * 0.05 + rand(-0.02, 0.02))
   return {
     obstacles: [
       { type: 'gap', x: startX, w },
-      { type: 'orb', x: startX + w / 2, y: 90, consumed: false },
+      { type: 'orb', x: startX + w / 2, y: ORB_TRIGGER_Y, consumed: false },
     ],
     length: w,
   }
 }
-function patternPadLaunch(startX, difficulty) {
+function patternPadLaunch(startX, difficulty, speed) {
+  // The pad boost (PAD_JUMP_V) clears far more than any spike run placed
+  // after it — verified via the same jump-distance math, so the fixed
+  // spacing here always has generous margin without needing to scale.
   const padW = 34
   const gapAfter = 60
   const spikeCount = 1 + Math.floor(difficulty * 2)
@@ -326,7 +385,7 @@ const CUBE_PATTERNS = [patternSpikeRow, patternGapJump, patternBlockHop, pattern
 
 function genCubeChunk(state, difficulty) {
   const pattern = CUBE_PATTERNS[Math.floor(Math.random() * CUBE_PATTERNS.length)]
-  const { obstacles, length } = pattern(state.genX, difficulty)
+  const { obstacles, length } = pattern(state.genX, difficulty, state.speed)
   for (const o of obstacles) state.obstacles.push(o)
   const flat = 90 - difficulty * 20 + Math.random() * 60
   state.genX += length + flat
