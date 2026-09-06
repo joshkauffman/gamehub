@@ -6,7 +6,7 @@ import styles from './OrbitMaze.module.css'
 import { LEVELS, SPHERE_RADIUS, BALL_RADIUS, TUBE_RADIUS, getStations, todaySeedString, loadBestTimes, saveBestTime } from './constants.js'
 import {
   createGameState, stepGame, getBallLocalPosition, sampleTangentAt, isGateOpen,
-  applyDragRotation, applyKeyRotation, applyRoll, generateProceduralLevel,
+  applyDragRotation, applyKeyRotation, applyRoll, tiltToRotation, generateProceduralLevel,
 } from './gameEngine.js'
 
 // A level "spec" is how the UI names which level to play — a fixed
@@ -343,12 +343,14 @@ function buildMazeGroup(level, runtime) {
   return { group, ball, goalMeshes, trapIcons, gateFlaps, trailPool, trapBurst, confetti }
 }
 
-function GameCanvas({ level, onHud, onWin, muted }) {
+function GameCanvas({ level, onHud, onWin, muted, tiltEnabled, recenterSignal }) {
   const mountRef = useRef(null)
   const keysRef = useRef(new Set())
   const onHudRef = useRef(onHud); onHudRef.current = onHud
   const onWinRef = useRef(onWin); onWinRef.current = onWin
   const mutedRef = useRef(muted); mutedRef.current = muted
+  const tiltEnabledRef = useRef(tiltEnabled); tiltEnabledRef.current = tiltEnabled
+  const recenterSignalRef = useRef(recenterSignal); recenterSignalRef.current = recenterSignal
 
   useEffect(() => {
     const mount = mountRef.current
@@ -429,6 +431,9 @@ function GameCanvas({ level, onHud, onWin, muted }) {
       if (!dragging) return
       const dx = e.clientX - lastX, dy = e.clientY - lastY
       lastX = e.clientX; lastY = e.clientY
+      // Tilt owns rotation outright while active — a stray drag shouldn't
+      // fight the sensor-driven orientation set in tick().
+      if (tiltEnabledRef.current) return
       state.rotation = applyDragRotation(state.rotation, dx, dy)
     }
     function onPointerUp(e) {
@@ -439,6 +444,23 @@ function GameCanvas({ level, onHud, onWin, muted }) {
     renderer.domElement.addEventListener('pointermove', onPointerMove)
     renderer.domElement.addEventListener('pointerup', onPointerUp)
     renderer.domElement.addEventListener('pointercancel', onPointerUp)
+
+    // Device-tilt control — mirrors the physical toy: the maze's orientation
+    // IS the phone's orientation, not something you steer with a rate (like
+    // drag/keys do). `tiltRaw` just mirrors the latest sensor reading;
+    // baseline calibration and smoothing happen once a frame in tick(), not
+    // per-event, so it stays independent of how often the sensor fires.
+    let tiltBaseline = null
+    const tiltRaw = { beta: 0, gamma: 0 }
+    const tiltSmooth = { beta: 0, gamma: 0 }
+    let tiltWasActive = false
+    let lastRecenterSignal = recenterSignalRef.current
+    function onDeviceOrientation(e) {
+      if (e.beta == null || e.gamma == null) return
+      tiltRaw.beta = e.beta
+      tiltRaw.gamma = e.gamma
+    }
+    window.addEventListener('deviceorientation', onDeviceOrientation)
 
     function onResize() {
       camera.aspect = mount.clientWidth / mount.clientHeight
@@ -458,11 +480,31 @@ function GameCanvas({ level, onHud, onWin, muted }) {
       const t = clock.elapsedTime
       const k = keysRef.current
 
-      const turnX = (k.has('ArrowRight') ? 1 : 0) - (k.has('ArrowLeft') ? 1 : 0)
-      const turnY = (k.has('ArrowDown') ? 1 : 0) - (k.has('ArrowUp') ? 1 : 0)
-      if (turnX || turnY) { state.rotation = applyKeyRotation(state.rotation, turnX, turnY, dt); audio.ensure() }
-      const rollDir = (k.has('KeyE') ? 1 : 0) - (k.has('KeyQ') ? 1 : 0)
-      if (rollDir) { state.rotation = applyRoll(state.rotation, rollDir, dt); audio.ensure() }
+      if (tiltEnabledRef.current) {
+        // Recalibrate "neutral" whenever tilt just turned on, or the player
+        // hit Recenter — both cases mean "treat however I'm holding the
+        // phone right now as flat."
+        if (!tiltWasActive || recenterSignalRef.current !== lastRecenterSignal) {
+          tiltBaseline = { beta: tiltRaw.beta, gamma: tiltRaw.gamma }
+          tiltSmooth.beta = tiltRaw.beta
+          tiltSmooth.gamma = tiltRaw.gamma
+        }
+        tiltWasActive = true
+        lastRecenterSignal = recenterSignalRef.current
+        // Smooth in tick (not in the event handler) so it's tied to render
+        // rate, not however fast the sensor happens to fire.
+        const smoothing = 0.25
+        tiltSmooth.beta += (tiltRaw.beta - tiltSmooth.beta) * smoothing
+        tiltSmooth.gamma += (tiltRaw.gamma - tiltSmooth.gamma) * smoothing
+        state.rotation = tiltToRotation(tiltSmooth.beta - tiltBaseline.beta, tiltSmooth.gamma - tiltBaseline.gamma)
+      } else {
+        tiltWasActive = false
+        const turnX = (k.has('ArrowRight') ? 1 : 0) - (k.has('ArrowLeft') ? 1 : 0)
+        const turnY = (k.has('ArrowDown') ? 1 : 0) - (k.has('ArrowUp') ? 1 : 0)
+        if (turnX || turnY) { state.rotation = applyKeyRotation(state.rotation, turnX, turnY, dt); audio.ensure() }
+        const rollDir = (k.has('KeyE') ? 1 : 0) - (k.has('KeyQ') ? 1 : 0)
+        if (rollDir) { state.rotation = applyRoll(state.rotation, rollDir, dt); audio.ensure() }
+      }
 
       if (mutedRef.current !== lastMuted) { lastMuted = mutedRef.current; audio.setMuted(lastMuted) }
 
@@ -555,6 +597,7 @@ function GameCanvas({ level, onHud, onWin, muted }) {
       cancelAnimationFrame(raf)
       window.removeEventListener('keydown', onKeyDown)
       window.removeEventListener('keyup', onKeyUp)
+      window.removeEventListener('deviceorientation', onDeviceOrientation)
       window.removeEventListener('resize', onResize)
       renderer.domElement.removeEventListener('pointerdown', onPointerDown)
       renderer.domElement.removeEventListener('pointermove', onPointerMove)
@@ -576,10 +619,11 @@ function LevelSelect({ onPlay, best }) {
     <div className={styles.overlayScreen}>
       <h1 className={styles.title}>🔮 Orbit Maze</h1>
       <p className={styles.blurb}>
-        Tilt the whole globe — drag with your mouse/finger, or use the arrow keys (Q/E to roll) —
-        and let gravity roll the ball through the tube maze. Watch for forks: the ball rolls into
-        whichever branch you tilt downhill, so tilt away from the dark trap holes. Checkpoints save
-        your spot if you fall in. Some levels add timed gates — red is shut, green is open.
+        Tilt the whole globe — drag with your mouse/finger, use the arrow keys (Q/E to roll), or on
+        a phone tap 📱 Tilt in the HUD and steer by physically tilting the phone — and let gravity
+        roll the ball through the tube maze. Watch for forks: the ball rolls into whichever branch
+        you tilt downhill, so tilt away from the dark trap holes. Checkpoints save your spot if you
+        fall in. Some levels add timed gates — red is shut, green is open.
       </p>
       <div className={styles.levelGrid}>
         {LEVELS.map((lvl, i) => (
@@ -611,7 +655,7 @@ function LevelSelect({ onPlay, best }) {
   )
 }
 
-function Hud({ hud, levelName, muted, onToggleMute, onReplay, onMenu }) {
+function Hud({ hud, levelName, muted, onToggleMute, onReplay, onMenu, tiltSupported, tiltEnabled, onToggleTilt, onRecenter }) {
   if (!hud) return null
   return (
     <div className={styles.hud}>
@@ -622,8 +666,13 @@ function Hud({ hud, levelName, muted, onToggleMute, onReplay, onMenu }) {
         {hud.drops > 0 && <span className={styles.drops}>🕳 {hud.drops}</span>}
       </div>
       {hud.trapped && <div className={styles.trapMsg}>Into the hole! Respawning at your last checkpoint…</div>}
+      {tiltEnabled && <div className={styles.tiltMsg}>📱 Tilt control on — hold flat where you want "neutral," then tilt to steer.</div>}
       <div className={styles.hudBottom}>
         <button className={styles.smallBtn} onClick={onToggleMute}>{muted ? '🔇' : '🔊'}</button>
+        {tiltSupported && (
+          <button className={styles.smallBtn} onClick={onToggleTilt}>{tiltEnabled ? '📱 Tilt: On' : '📱 Tilt: Off'}</button>
+        )}
+        {tiltEnabled && <button className={styles.smallBtn} onClick={onRecenter}>🎯 Recenter</button>}
         <button className={styles.smallBtn} onClick={onReplay}>↺ Replay</button>
         <button className={styles.smallBtn} onClick={onMenu}>☰ Levels</button>
       </div>
@@ -665,6 +714,9 @@ export default function OrbitMaze() {
   const [muted, setMuted] = useState(() => {
     try { return localStorage.getItem('orbit-maze-muted') === '1' } catch { return false }
   })
+  const [tiltSupported] = useState(() => typeof window !== 'undefined' && 'DeviceOrientationEvent' in window)
+  const [tiltEnabled, setTiltEnabled] = useState(false)
+  const [recenterSignal, setRecenterSignal] = useState(0)
 
   const currentLevel = useMemo(() => specToLevel(levelSpec), [levelSpec.kind, levelSpec.index, levelSpec.seed])
 
@@ -691,6 +743,22 @@ export default function OrbitMaze() {
     })
   }
 
+  // iOS 13+ gates motion sensors behind an explicit permission prompt that
+  // must be triggered directly by a user gesture (this click handler) —
+  // requesting it from anywhere else (e.g. on mount) silently fails.
+  // Android/desktop browsers have no such API and just start reporting.
+  async function toggleTilt() {
+    if (tiltEnabled) { setTiltEnabled(false); return }
+    try {
+      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        const result = await DeviceOrientationEvent.requestPermission()
+        if (result !== 'granted') return
+      }
+      setTiltEnabled(true)
+    } catch { /* sensor unavailable or permission denied — stay in drag mode */ }
+  }
+  function recenterTilt() { setRecenterSignal(s => s + 1) }
+
   function replay() { play(levelSpec) }
   function next() { if (levelSpec.kind === 'fixed') play({ kind: 'fixed', index: Math.min(levelSpec.index + 1, LEVELS.length - 1) }) }
   function newRandom() { play({ kind: 'random', seed: Date.now() + Math.floor(Math.random() * 1e6) }) }
@@ -701,8 +769,27 @@ export default function OrbitMaze() {
       {screen === 'select' && <LevelSelect onPlay={play} best={best} />}
       {screen === 'playing' && (
         <>
-          <GameCanvas key={canvasKey} level={currentLevel} onHud={setHud} onWin={handleWin} muted={muted} />
-          <Hud hud={hud} levelName={currentLevel.name} muted={muted} onToggleMute={toggleMute} onReplay={replay} onMenu={toMenu} />
+          <GameCanvas
+            key={canvasKey}
+            level={currentLevel}
+            onHud={setHud}
+            onWin={handleWin}
+            muted={muted}
+            tiltEnabled={tiltEnabled}
+            recenterSignal={recenterSignal}
+          />
+          <Hud
+            hud={hud}
+            levelName={currentLevel.name}
+            muted={muted}
+            onToggleMute={toggleMute}
+            onReplay={replay}
+            onMenu={toMenu}
+            tiltSupported={tiltSupported}
+            tiltEnabled={tiltEnabled}
+            onToggleTilt={toggleTilt}
+            onRecenter={recenterTilt}
+          />
           {winResult && (
             <WinOverlay result={winResult} levelSpec={levelSpec} best={best} onNext={next} onReplay={replay} onMenu={toMenu} onNewRandom={newRandom} />
           )}

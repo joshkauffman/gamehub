@@ -1,21 +1,23 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import styles from './GeometryRush.module.css'
-import { createGameState, resetRun, stepGame, PLAYER_SIZE } from './engine.js'
+import {
+  createGameState, resetRun, stepGame, PLAYER_SIZE, LEVELS,
+  loadCoins, spendCoins, loadCompletedLevels,
+} from './engine.js'
+import { SKINS, loadOwnedSkinIds, loadEquippedSkinId, ownSkin, equipSkin, getEquippedColors } from './skins.js'
 
 // ── Geometry Rush — a Geometry Dash-style auto-runner ───────────────────
 // Canvas 2D, fixed logical resolution (scaled to fit via CSS aspect-ratio
 // so there's no resize/DPR bookkeeping to get wrong). The player sits at
 // a fixed screen x; the world scrolls underneath by translating every
 // draw call by -(distance) + PLAYER_SCREEN_X. See engine.js for the pure
-// gameplay state machine (cube/ship/ball modes, procedural obstacles).
+// gameplay state machine (cube/ship/ball modes, procedural obstacles,
+// finite seeded levels vs endless Math.random play).
 
 const LW = 900, LH = 460
 const GROUND_Y = 400 // screen y of world-y=0 (the ground baseline)
 const PLAYER_SCREEN_X = 190
-
-const MODE_COLOR = { cube: '#00e5ff', ship: '#ff9500', ball: '#ff2ec4' }
-const PORTAL_COLOR = { cube: '#00e5ff', ship: '#ff9500', ball: '#ff2ec4' }
 
 function rand(a, b) { return a + Math.random() * (b - a) }
 function worldToScreenX(x, distance) { return PLAYER_SCREEN_X + (x - distance) }
@@ -79,7 +81,7 @@ function drawGround(ctx, obstacles, distance) {
   }
 }
 
-function drawObstacle(ctx, o, distance) {
+function drawObstacle(ctx, o, distance, colors) {
   const sx = worldToScreenX(o.x, distance)
   const w = o.w ?? 20
   if (sx + w < -20 || sx > LW + 20) return
@@ -143,7 +145,7 @@ function drawObstacle(ctx, o, distance) {
     ctx.restore()
   } else if (o.type === 'portal') {
     ctx.save()
-    const color = PORTAL_COLOR[o.mode] || '#ffffff'
+    const color = colors[o.mode] || '#ffffff'
     const grad = ctx.createLinearGradient(sx, 0, sx, LH)
     grad.addColorStop(0, 'rgba(255,255,255,0)')
     grad.addColorStop(0.5, color)
@@ -157,11 +159,11 @@ function drawObstacle(ctx, o, distance) {
   }
 }
 
-function drawPlayer(ctx, state, deathAnim) {
+function drawPlayer(ctx, state, deathAnim, colors) {
   if (deathAnim) return
   const cx = PLAYER_SCREEN_X + PLAYER_SIZE / 2
   const cy = GROUND_Y - state.y - PLAYER_SIZE / 2
-  const color = MODE_COLOR[state.mode]
+  const color = colors[state.mode]
 
   ctx.save()
   ctx.translate(cx, cy)
@@ -209,13 +211,13 @@ function drawPlayer(ctx, state, deathAnim) {
   ctx.restore()
 }
 
-function drawTrail(ctx, state) {
+function drawTrail(ctx, state, colors) {
   for (const p of state.particles) {
     const t = p.age / p.life
     const sx = worldToScreenX(p.x, state.distance)
     const sy = GROUND_Y - p.y
     ctx.globalAlpha = Math.max(0, 1 - t) * 0.5
-    ctx.fillStyle = MODE_COLOR[p.mode]
+    ctx.fillStyle = colors[p.mode]
     ctx.beginPath(); ctx.arc(sx, sy, 5 * (1 - t), 0, Math.PI * 2); ctx.fill()
   }
   ctx.globalAlpha = 1
@@ -249,7 +251,55 @@ function roundRect(ctx, x, y, w, h, r) {
 export default function GeometryRush() {
   const canvasRef = useRef(null)
   const jumpHeldRef = useRef(false)
-  const [hud, setHud] = useState({ status: 'ready', score: 0, best: 0, mode: 'cube' })
+  const stateRef = useRef(null)
+  if (!stateRef.current) stateRef.current = createGameState()
+  const screenRef = useRef('menu') // menu | shop | game
+  const configRef = useRef({}) // last-used resetRun() options, for retry/next-level
+  const colorsRef = useRef(getEquippedColors())
+
+  const [screen, setScreenState] = useState('menu')
+  const [hud, setHud] = useState({ status: 'ready', score: 0, best: 0, mode: 'cube', coins: loadCoins(), earnedCoins: 0 })
+
+  function setScreen(next) {
+    screenRef.current = next
+    setScreenState(next)
+  }
+
+  function startEndless() {
+    configRef.current = {}
+    resetRun(stateRef.current, {})
+    setScreen('game')
+  }
+
+  function startLevel(level) {
+    configRef.current = { seed: level.seed, length: level.length, difficultyCap: level.difficultyCap, levelId: level.id }
+    resetRun(stateRef.current, configRef.current)
+    setScreen('game')
+  }
+
+  function retry() {
+    resetRun(stateRef.current, configRef.current)
+  }
+
+  function nextLevel() {
+    const idx = LEVELS.findIndex(l => l.id === configRef.current.levelId)
+    const next = LEVELS[idx + 1]
+    if (next) startLevel(next); else setScreen('menu')
+  }
+
+  function goToMenu() {
+    stateRef.current.status = 'ready'
+    setScreen('menu')
+  }
+
+  function buySkin(skin) {
+    if (loadOwnedSkinIds().includes(skin.id)) { equipSkin(skin.id); colorsRef.current = getEquippedColors(); return }
+    if (!spendCoins(skin.price)) return
+    ownSkin(skin.id)
+    equipSkin(skin.id)
+    colorsRef.current = getEquippedColors()
+    stateRef.current.coins = loadCoins()
+  }
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -259,7 +309,7 @@ export default function GeometryRush() {
     canvas.height = LH * dpr
     ctx.scale(dpr, dpr)
 
-    const state = createGameState()
+    const state = stateRef.current
     let raf = null
     let wasHeld = false
     let prevStatus = state.status
@@ -290,20 +340,27 @@ export default function GeometryRush() {
       const pressedEdge = held && !wasHeld
       wasHeld = held
 
-      if (state.status !== 'running' && pressedEdge) resetRun(state)
-      if (state.status === 'running') stepGame(state, { jump: held }, dt)
+      if (screenRef.current === 'menu' && pressedEdge) {
+        startEndless()
+      } else if (screenRef.current === 'game') {
+        if (state.status !== 'running' && pressedEdge) resetRun(state, configRef.current)
+        if (state.status === 'running') stepGame(state, { jump: held }, dt)
 
-      if (prevStatus === 'running' && state.status === 'dead') {
-        const cx = PLAYER_SCREEN_X + PLAYER_SIZE / 2
-        const cy = GROUND_Y - state.y - PLAYER_SIZE / 2
-        const color = MODE_COLOR[state.mode]
-        shards = Array.from({ length: 18 }, () => ({
-          x: cx, y: cy, vx: rand(-260, 260), vy: rand(-380, -40),
-          age: 0, life: rand(0.5, 0.9), rot: rand(-8, 8), color,
-        }))
+        if (prevStatus === 'running' && state.status !== 'running') {
+          if (state.status === 'dead') {
+            const cx = PLAYER_SCREEN_X + PLAYER_SIZE / 2
+            const cy = GROUND_Y - state.y - PLAYER_SIZE / 2
+            const color = colorsRef.current[state.mode]
+            shards = Array.from({ length: 18 }, () => ({
+              x: cx, y: cy, vx: rand(-260, 260), vy: rand(-380, -40),
+              age: 0, life: rand(0.5, 0.9), rot: rand(-8, 8), color,
+            }))
+          }
+        }
+        prevStatus = state.status
       }
-      prevStatus = state.status
-      setHud({ status: state.status, score: state.score, best: state.best, mode: state.mode })
+
+      setHud({ status: state.status, score: state.score, best: state.best, mode: state.mode, coins: state.coins, earnedCoins: state.earnedCoins })
 
       for (const s of shards) { s.vy += 900 * dt; s.x += s.vx * dt; s.y += s.vy * dt; s.age += dt }
       shards = shards.filter(s => s.age < s.life)
@@ -318,9 +375,9 @@ export default function GeometryRush() {
       ctx.translate(shakeX, shakeY)
       drawBackground(ctx, state.distance)
       drawGround(ctx, state.obstacles, state.distance)
-      for (const o of state.obstacles) drawObstacle(ctx, o, state.distance)
-      drawTrail(ctx, state)
-      drawPlayer(ctx, state, state.status === 'dead' && shards.length > 0)
+      for (const o of state.obstacles) drawObstacle(ctx, o, state.distance, colorsRef.current)
+      drawTrail(ctx, state, colorsRef.current)
+      drawPlayer(ctx, state, state.status === 'dead' && shards.length > 0, colorsRef.current)
       drawDeathShards(ctx, shards)
       ctx.restore()
     }
@@ -335,35 +392,114 @@ export default function GeometryRush() {
       window.removeEventListener('pointerup', onPointerUp)
       window.removeEventListener('pointercancel', onPointerUp)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  const completed = loadCompletedLevels()
+  const ownedSkinIds = loadOwnedSkinIds()
+  const equippedSkinId = loadEquippedSkinId()
+  const equippedColors = getEquippedColors()
+  const currentLevel = LEVELS.find(l => l.id === configRef.current.levelId)
+  const hasNextLevel = currentLevel && LEVELS.indexOf(currentLevel) < LEVELS.length - 1
 
   return (
     <div className={styles.page}>
       <header className={styles.hudBar}>
         <span className={styles.hudScore}>DIST {hud.score}</span>
         <span className={styles.hudBest}>BEST {hud.best}</span>
+        <span className={styles.hudCoins}>🪙 {hud.coins}</span>
       </header>
       <div className={styles.stage}>
         <canvas ref={canvasRef} className={styles.canvas} style={{ aspectRatio: `${LW} / ${LH}` }} />
-        {hud.status === 'running' && (
-          <div className={styles.modeTag} data-mode={hud.mode}>{hud.mode.toUpperCase()}</div>
+
+        {screen === 'game' && hud.status === 'running' && (
+          <div className={styles.modeTag} style={{ color: equippedColors[hud.mode], borderColor: equippedColors[hud.mode] }}>{hud.mode.toUpperCase()}</div>
         )}
-        {hud.status !== 'running' && (
-          <div className={styles.overlay}>
-            {hud.status === 'ready' && (
-              <>
-                <h1 className={styles.title}>GEOMETRY <span className={styles.rush}>RUSH</span></h1>
-                <p className={styles.blurb}>Tap, click, or press SPACE to jump — hold it down. Fly through portals to switch modes.</p>
-                <p className={styles.hint}>SPACE / CLICK / TAP TO START</p>
-              </>
-            )}
+
+        {screen === 'game' && hud.status !== 'running' && (
+          <div className={`${styles.overlay} ${styles.overlayInteractive}`}>
             {hud.status === 'dead' && (
               <>
                 <h1 className={styles.title}>💥 CRASHED</h1>
                 <p className={styles.blurb}>Distance {hud.score} · Best {hud.best}</p>
-                <p className={styles.hint}>SPACE / CLICK / TAP TO RETRY</p>
+                <p className={styles.coinsEarned}>+{hud.earnedCoins} 🪙</p>
+                <div className={styles.overlayButtons}>
+                  <button className={styles.primaryBtn} onClick={retry}>↻ Retry</button>
+                  <button className={styles.secondaryBtn} onClick={goToMenu}>☰ Menu</button>
+                </div>
               </>
             )}
+            {hud.status === 'won' && (
+              <>
+                <h1 className={styles.title}>🏁 LEVEL COMPLETE</h1>
+                <p className={styles.blurb}>{currentLevel?.name ?? 'Run'} · Distance {hud.score}</p>
+                <p className={styles.coinsEarned}>+{hud.earnedCoins} 🪙</p>
+                <div className={styles.overlayButtons}>
+                  {hasNextLevel && <button className={styles.primaryBtn} onClick={nextLevel}>Next Level →</button>}
+                  <button className={styles.secondaryBtn} onClick={goToMenu}>☰ Menu</button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {screen === 'menu' && (
+          <div className={`${styles.overlay} ${styles.overlayInteractive} ${styles.menuOverlay}`}>
+            <h1 className={styles.title}>GEOMETRY <span className={styles.rush}>RUSH</span></h1>
+            <p className={styles.blurb}>Tap, click, or press SPACE to jump — hold it down. Fly through portals to switch modes.</p>
+            <button className={styles.primaryBtn} onClick={startEndless}>▶ Play Endless</button>
+            <div className={styles.levelGrid}>
+              {LEVELS.map((lvl, i) => {
+                const done = completed.includes(lvl.id)
+                const locked = i > 0 && !completed.includes(LEVELS[i - 1].id)
+                return (
+                  <button
+                    key={lvl.id}
+                    className={styles.levelBtn}
+                    disabled={locked}
+                    onClick={() => startLevel(lvl)}
+                    title={locked ? 'Complete the previous level to unlock' : lvl.name}
+                  >
+                    <span className={styles.levelIcon}>{done ? '✅' : locked ? '🔒' : i + 1}</span>
+                    <span className={styles.levelName}>{lvl.name}</span>
+                  </button>
+                )
+              })}
+            </div>
+            <button className={styles.shopBtn} onClick={() => setScreen('shop')}>🛍 Shop</button>
+            <p className={styles.hint}>SPACE / CLICK TO QUICK-START ENDLESS</p>
+          </div>
+        )}
+
+        {screen === 'shop' && (
+          <div className={`${styles.overlay} ${styles.overlayInteractive} ${styles.shopOverlay}`}>
+            <div className={styles.shopHeader}>
+              <h2 className={styles.shopTitle}>SHOP</h2>
+              <span className={styles.hudCoins}>🪙 {hud.coins}</span>
+            </div>
+            <div className={styles.skinGrid}>
+              {SKINS.map(skin => {
+                const owned = ownedSkinIds.includes(skin.id)
+                const equipped = equippedSkinId === skin.id
+                return (
+                  <button
+                    key={skin.id}
+                    className={`${styles.skinCard} ${equipped ? styles.skinEquipped : ''}`}
+                    onClick={() => buySkin(skin)}
+                    disabled={!owned && hud.coins < skin.price}
+                  >
+                    <div className={styles.skinSwatches}>
+                      <span style={{ background: skin.colors.cube }} />
+                      <span style={{ background: skin.colors.ship }} />
+                      <span style={{ background: skin.colors.ball }} />
+                    </div>
+                    <span className={styles.skinName}>{skin.name}</span>
+                    <span className={styles.skinStatus}>{equipped ? 'EQUIPPED' : owned ? 'TAP TO EQUIP' : `🪙 ${skin.price}`}</span>
+                  </button>
+                )
+              })}
+            </div>
+            <button className={styles.secondaryBtn} onClick={goToMenu}>← Back</button>
           </div>
         )}
       </div>

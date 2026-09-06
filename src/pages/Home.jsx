@@ -209,23 +209,26 @@ const CATEGORIES = [
         emoji: '💬',
         path: '/chat-lounge',
       },
-      {
-        id: 'suggestion-box',
-        title: 'Suggestion Box',
-        description: 'Found a bug or have an idea for a new game? Drop an anonymous note — no name required. Checked every Saturday.',
-        emoji: '📮',
-        path: 'https://claude.ai/code/artifact/5183c891-667a-40dd-be69-644253b10454',
-        external: true,
-      },
     ],
   },
 ]
+
+const SUGGESTION_BOX_URL = 'https://claude.ai/code/artifact/5183c891-667a-40dd-be69-644253b10454'
 
 export default function Home() {
   const { unlocked, justUnlocked } = useSecretUnlock()
 
   return (
     <div className={styles.page}>
+      <a
+        href={SUGGESTION_BOX_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={styles.suggestionBar}
+      >
+        <span className={styles.suggestionEmoji}>📮</span>
+        Found a bug or have an idea? Drop an anonymous suggestion →
+      </a>
       <header className={styles.header}>
         <h1>
           <Link to="/kaboom-corral" className={styles.logo}>GameHub</Link>

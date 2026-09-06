@@ -12,6 +12,15 @@
 //          anything is instant death).
 //   ball — a tight two-surface tunnel: tap flips which surface (floor or
 //          ceiling) you're stuck to; dodge hazards mounted on either side.
+//
+// Two ways to play: endless (infinite procedural generation, Math.random,
+// no finish line — the only way to "lose" is to die) and levels (a fixed
+// list below, each with a seeded RNG so the layout is identical every
+// attempt, and a finite length — reach it and you win). Levels reuse the
+// exact same pattern generators as endless, just with a capped difficulty
+// and a seeded RNG instead of Math.random, so they inherit the same
+// fairness guarantees (see the jump-physics comments below) instead of
+// needing separately hand-tuned layouts.
 
 export const PLAYER_SIZE = 34
 const PLAYER_HIT = 26          // slightly inset hitbox — fairer than the visual size
@@ -72,25 +81,91 @@ const SECTION_LENGTHS = { cube: [1800, 2800], ship: [1400, 2200], ball: [1200, 2
 // of BASE_SPEED travel to guarantee at least 5 clear seconds every run.
 const SAFE_START_DIST = 1900
 
-const STORAGE_KEY = 'geometry-rush-best'
+// ── Finite levels ────────────────────────────────────────────────────
+// Each level is just the endless generator run with a seeded RNG (so the
+// layout is identical every attempt) and a difficulty cap that never
+// reaches 1 until the last level — plus a finish line. Reaching `length`
+// is an instant win, no hazard check, so you can never "die at the
+// finish line."
+export const LEVELS = [
+  { id: 'warm-up', name: 'Warm-Up', length: 2800, difficultyCap: 0.15, seed: 1001 },
+  { id: 'pickup-speed', name: 'Pickup Speed', length: 3600, difficultyCap: 0.35, seed: 1002 },
+  { id: 'mixed-signals', name: 'Mixed Signals', length: 4600, difficultyCap: 0.55, seed: 1003 },
+  { id: 'overdrive', name: 'Overdrive', length: 5800, difficultyCap: 0.8, seed: 1004 },
+  { id: 'full-rush', name: 'Full Rush', length: 7200, difficultyCap: 1.0, seed: 1005 },
+]
+
+const DIST_COIN_RATE = 50 // 1 coin per 50 distance travelled
+const LEVEL_FIRST_CLEAR_BONUS = 150
+const LEVEL_REPLAY_BONUS = 30
+function computeRunCoins(distance) { return Math.floor(distance / DIST_COIN_RATE) }
+
+const BEST_KEY = 'geometry-rush-best'
+const COINS_KEY = 'geometry-rush-coins'
+const LEVELS_DONE_KEY = 'geometry-rush-levels-complete'
+
 function loadBest() {
-  try { return Number(localStorage.getItem(STORAGE_KEY)) || 0 } catch { return 0 }
+  try { return Number(localStorage.getItem(BEST_KEY)) || 0 } catch { return 0 }
 }
 function saveBest(v) {
-  try { localStorage.setItem(STORAGE_KEY, String(v)) } catch { /* storage unavailable */ }
+  try { localStorage.setItem(BEST_KEY, String(v)) } catch { /* storage unavailable */ }
 }
 
-function rand(a, b) { return a + Math.random() * (b - a) }
+export function loadCoins() {
+  try { return Number(localStorage.getItem(COINS_KEY)) || 0 } catch { return 0 }
+}
+function saveCoins(v) {
+  try { localStorage.setItem(COINS_KEY, String(v)) } catch { /* storage unavailable */ }
+}
+export function addCoins(n) {
+  const v = loadCoins() + n
+  saveCoins(v)
+  return v
+}
+export function spendCoins(n) {
+  const v = loadCoins()
+  if (v < n) return false
+  saveCoins(v - n)
+  return true
+}
+
+export function loadCompletedLevels() {
+  try { return JSON.parse(localStorage.getItem(LEVELS_DONE_KEY)) || [] } catch { return [] }
+}
+export function isLevelComplete(id) { return loadCompletedLevels().includes(id) }
+function markLevelComplete(id) {
+  const done = loadCompletedLevels()
+  if (!done.includes(id)) {
+    done.push(id)
+    try { localStorage.setItem(LEVELS_DONE_KEY, JSON.stringify(done)) } catch { /* storage unavailable */ }
+  }
+}
+
+// Deterministic PRNG (mulberry32) so a seeded level generates the exact
+// same layout every attempt. Endless mode passes no seed and falls back
+// to Math.random, which has the same 0-argument, 0..1-return shape.
+function mulberry32(seed) {
+  let a = seed >>> 0
+  return function rng() {
+    a |= 0; a = (a + 0x6d2b79f5) | 0
+    let t = Math.imul(a ^ (a >>> 15), 1 | a)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+function rand(rng, a, b) { return a + rng() * (b - a) }
 
 export function createGameState() {
   const state = {}
   resetRun(state)
-  state.status = 'ready' // ready | running | dead
+  state.status = 'ready' // ready | running | dead | won
   state.best = loadBest()
   return state
 }
 
-export function resetRun(state) {
+// options: { seed, length, difficultyCap, levelId } — omit all for endless.
+export function resetRun(state, options = {}) {
   state.status = 'running'
   state.mode = 'cube'
   state.distance = 0
@@ -110,6 +185,12 @@ export function resetRun(state) {
   state.best = state.best ?? loadBest()
   state.shake = 0
   state.lastJumpHeld = false
+  state.rng = options.seed != null ? mulberry32(options.seed) : Math.random
+  state.length = options.length ?? Infinity
+  state.difficultyCap = options.difficultyCap ?? 1
+  state.levelId = options.levelId ?? null
+  state.coins = loadCoins()
+  state.earnedCoins = 0
 }
 
 function edge(input, state) {
@@ -126,6 +207,15 @@ export function stepGame(state, input, dt) {
 
   state.distance += state.speed * dt
   state.speed = BASE_SPEED + (MAX_SPEED - BASE_SPEED) * Math.min(1, state.distance / SPEED_RAMP_DIST)
+
+  // Reaching the finish line is an unconditional win — no hazard check —
+  // so a level can never be lost to "died right on the finish line."
+  if (state.distance >= state.length) {
+    state.distance = state.length
+    state.score = Math.floor(state.distance / 10)
+    win(state)
+    return
+  }
   state.score = Math.floor(state.distance / 10)
 
   const jumpPressed = edge(input, state)
@@ -146,6 +236,21 @@ function die(state) {
   state.shake = 1
   state.best = Math.max(state.best, state.score)
   saveBest(state.best)
+  state.earnedCoins = computeRunCoins(state.distance)
+  state.coins = addCoins(state.earnedCoins)
+}
+
+function win(state) {
+  state.status = 'won'
+  state.best = Math.max(state.best, state.score)
+  saveBest(state.best)
+  let bonus = 0
+  if (state.levelId) {
+    bonus = isLevelComplete(state.levelId) ? LEVEL_REPLAY_BONUS : LEVEL_FIRST_CLEAR_BONUS
+    markLevelComplete(state.levelId)
+  }
+  state.earnedCoins = computeRunCoins(state.distance) + bonus
+  state.coins = addCoins(state.earnedCoins)
 }
 
 // ── Cube mode ────────────────────────────────────────────────────────
@@ -296,9 +401,9 @@ function cullObstacles(state) {
 // ── Procedural generation ───────────────────────────────────────────────
 function ensureGenerated(state) {
   let guard = 0
-  while (state.genX < state.distance + LOOKAHEAD && guard++ < 200) {
+  while (state.genX < state.distance + LOOKAHEAD && state.genX < state.length && guard++ < 200) {
     if (state.genX >= state.sectionEndAt) { startNewSection(state); continue }
-    const difficulty = Math.min(1, state.distance / DIFFICULTY_DIST)
+    const difficulty = Math.min(state.difficultyCap, state.distance / DIFFICULTY_DIST)
     if (state.sectionMode === 'cube') genCubeChunk(state, difficulty)
     else if (state.sectionMode === 'ship') genShipChunk(state, difficulty)
     else genBallChunk(state, difficulty)
@@ -307,7 +412,7 @@ function ensureGenerated(state) {
 
 function startNewSection(state) {
   const candidates = ['cube', 'ship', 'ball'].filter(m => m !== state.sectionMode)
-  const nextMode = candidates[Math.floor(Math.random() * candidates.length)]
+  const nextMode = candidates[Math.floor(state.rng() * candidates.length)]
   if (state.genX > 0) {
     state.obstacles.push({ type: 'portal', x: state.genX, w: 20, mode: nextMode, consumed: false })
   }
@@ -315,38 +420,38 @@ function startNewSection(state) {
   if (nextMode === 'ship') state.shipMidY = PLAYFIELD_H_SHIP / 2
   state.genX += PORTAL_BUFFER
   const [lo, hi] = SECTION_LENGTHS[nextMode]
-  state.sectionEndAt = state.genX + lo + Math.random() * (hi - lo)
+  state.sectionEndAt = state.genX + lo + state.rng() * (hi - lo)
 }
 
-function patternSpikeRow(startX, difficulty, speed) {
+function patternSpikeRow(startX, difficulty, speed, rng) {
   // Cap how many spikes can be chained so the row never exceeds what a
   // single jump can clear, even at the lowest speed the row can spawn at.
   const maxClear = jumpDistance(CUBE_JUMP_V, speed) - PLAYER_HIT
   const maxCount = Math.max(1, Math.floor((maxClear * 0.5) / 28))
-  const count = 1 + Math.floor(Math.random() * Math.min(1 + difficulty * 2, maxCount))
+  const count = 1 + Math.floor(rng() * Math.min(1 + difficulty * 2, maxCount))
   const obstacles = []
   for (let i = 0; i < count; i++) obstacles.push({ type: 'spike', x: startX + i * 28, w: 26, bottom: 0, top: 26, dir: 'up' })
   return { obstacles, length: count * 28 }
 }
-function patternGapJump(startX, difficulty, speed) {
+function patternGapJump(startX, difficulty, speed, rng) {
   // Full jump distance minus the player's hitbox width on both ends — the
   // actual span a well-timed jump can clear without clipping either lip.
   // Scaling as a fraction of that (not a fixed number) keeps the gap
   // always legal no matter how fast the player currently is.
   const maxClear = jumpDistance(CUBE_JUMP_V, speed) - PLAYER_HIT
-  const w = maxClear * (0.35 + difficulty * 0.12 + rand(-0.03, 0.03))
+  const w = maxClear * (0.35 + difficulty * 0.12 + rand(rng, -0.03, 0.03))
   return { obstacles: [{ type: 'gap', x: startX, w }], length: w }
 }
-function patternBlockHop(startX, difficulty, speed) {
+function patternBlockHop(startX, difficulty, speed, rng) {
   // Block heights as fractions of the jump's peak height — 0.72 leaves
   // just enough margin below the peak for a well-timed jump to clear the
   // "must already be this high" side-collision check; 0.36 is an easy hop.
-  const tall = Math.random() < 0.3 + difficulty * 0.3
+  const tall = rng() < 0.3 + difficulty * 0.3
   const h = CUBE_JUMP_HEIGHT * (tall ? 0.72 : 0.36)
   const w = 44
   const obstacles = [{ type: 'block', x: startX, w, bottom: 0, top: h }]
   let length = w + 40
-  if (Math.random() < difficulty) {
+  if (rng() < difficulty) {
     // Trailing spike must land within the horizontal distance the player
     // covers while falling from the block's edge (vy=0) down to just above
     // the spike's hazard threshold — otherwise it'd catch them mid-fall.
@@ -359,12 +464,12 @@ function patternBlockHop(startX, difficulty, speed) {
   }
   return { obstacles, length }
 }
-function patternOrbGap(startX, difficulty, speed) {
+function patternOrbGap(startX, difficulty, speed, rng) {
   // The orb-assisted arc (jump up to the orb, then a fresh launch from it)
   // covers far more ground than a single jump — size the gap as a fraction
   // of that combined reach so the orb boost is genuinely required.
   const maxClear = orbComboDistance(speed) - PLAYER_HIT
-  const w = maxClear * (0.32 + difficulty * 0.05 + rand(-0.02, 0.02))
+  const w = maxClear * (0.32 + difficulty * 0.05 + rand(rng, -0.02, 0.02))
   return {
     obstacles: [
       { type: 'gap', x: startX, w },
@@ -373,51 +478,64 @@ function patternOrbGap(startX, difficulty, speed) {
     length: w,
   }
 }
-function patternPadLaunch(startX, difficulty, speed) {
+function patternPadLaunch(startX, difficulty, speed, rng) {
   // The pad boost (PAD_JUMP_V) clears far more than any spike run placed
   // after it — verified via the same jump-distance math, so the fixed
-  // spacing here always has generous margin without needing to scale.
+  // spacing between the pad and its own spikes always has generous margin.
+  // But the boosted arc itself travels much farther than that: PAD_JUMP_V
+  // (920) vs. a normal jump's 620 means the player is still airborne, at
+  // height, well past this pattern's own spikes. If the *next* pattern
+  // started generating right after those spikes (as `length` used to
+  // report), the player could land straight into whatever it spawns —
+  // so `length` has to cover the full pad-launch distance, not just the
+  // trailing spikes.
   const padW = 34
   const gapAfter = 60
   const spikeCount = 1 + Math.floor(difficulty * 2)
   const obstacles = [{ type: 'pad', x: startX, w: padW, bottom: 0, top: 14, consumed: false }]
   for (let i = 0; i < spikeCount; i++) obstacles.push({ type: 'spike', x: startX + padW + gapAfter + i * 28, w: 26, bottom: 0, top: 26, dir: 'up' })
-  return { obstacles, length: padW + gapAfter + spikeCount * 28 }
+  const spikesEnd = padW + gapAfter + spikeCount * 28
+  // Use MAX_SPEED here, not the current `speed` — this chunk is generated
+  // up to LOOKAHEAD units before the player actually reaches it, and speed
+  // keeps ramping in the meantime, so the real landing distance by arrival
+  // time is always >= what gen-time speed would predict.
+  const padLandDistance = jumpDistance(PAD_JUMP_V, MAX_SPEED)
+  return { obstacles, length: Math.max(spikesEnd, padLandDistance) }
 }
 const CUBE_PATTERNS = [patternSpikeRow, patternGapJump, patternBlockHop, patternOrbGap, patternPadLaunch]
 
 function genCubeChunk(state, difficulty) {
-  const pattern = CUBE_PATTERNS[Math.floor(Math.random() * CUBE_PATTERNS.length)]
-  const { obstacles, length } = pattern(state.genX, difficulty, state.speed)
+  const pattern = CUBE_PATTERNS[Math.floor(state.rng() * CUBE_PATTERNS.length)]
+  const { obstacles, length } = pattern(state.genX, difficulty, state.speed, state.rng)
   for (const o of obstacles) state.obstacles.push(o)
-  const flat = 90 - difficulty * 20 + Math.random() * 60
+  const flat = (90 - difficulty * 20 + state.rng() * 60) * 1.15
   state.genX += length + flat
 }
 
 function genShipChunk(state, difficulty) {
   const segW = 90
   const halfH = 150 - difficulty * 55
-  state.shipMidY += rand(-45, 45)
+  state.shipMidY += rand(state.rng, -45, 45)
   const margin = halfH + 30
   state.shipMidY = Math.max(margin, Math.min(PLAYFIELD_H_SHIP - margin, state.shipMidY))
   const mid = state.shipMidY
 
   state.obstacles.push({ type: 'block', x: state.genX, w: segW, bottom: 0, top: Math.max(0, mid - halfH) })
   state.obstacles.push({ type: 'block', x: state.genX, w: segW, bottom: Math.min(PLAYFIELD_H_SHIP, mid + halfH), top: PLAYFIELD_H_SHIP })
-  if (difficulty > 0.35 && Math.random() < 0.18) {
+  if (difficulty > 0.35 && state.rng() < 0.18) {
     state.obstacles.push({ type: 'spike', x: state.genX + segW / 2, w: 22, bottom: mid - 11, top: mid + 11, dir: 'diamond' })
   }
   state.genX += segW
 }
 
 function genBallChunk(state, difficulty) {
-  const onFloor = Math.random() < 0.5
-  const isBlock = Math.random() < 0.25 + difficulty * 0.2
+  const onFloor = state.rng() < 0.5
+  const isBlock = state.rng() < 0.25 + difficulty * 0.2
   const w = isBlock ? 40 : 26
   const h = isBlock ? 46 : 26
   const bottom = onFloor ? 0 : BALL_CEIL_H - h
   const top = bottom + h
   state.obstacles.push({ type: isBlock ? 'block' : 'spike', x: state.genX, w, bottom, top, dir: onFloor ? 'up' : 'down' })
-  const flat = 100 - difficulty * 30 + Math.random() * 50
+  const flat = (100 - difficulty * 30 + state.rng() * 50) * 1.15
   state.genX += w + flat
 }

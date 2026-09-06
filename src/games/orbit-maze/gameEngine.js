@@ -93,6 +93,22 @@ export function applyRoll(q, dir, dt) {
   return qNormalize(qMultiply(qFromAxisAngle({ x: 0, y: 0, z: 1 }, dir * 2.0 * dt), q))
 }
 
+// Device-tilt control: unlike drag/keys (which accumulate a delta onto
+// whatever orientation the maze already has), tilt maps the phone's pose
+// directly onto the maze's orientation — matching the physical toy, where
+// the maze's tilt *is* your hand's tilt, not a rate you steer with. Callers
+// pass tilt already expressed as a delta from a calibrated "neutral" pose
+// (see OrbitMaze.jsx's baseline/recenter handling), clamped to a range a
+// phone can comfortably reach without needing to tip past vertical.
+const TILT_MAX_DEG = 45
+export function tiltToRotation(betaDeg, gammaDeg) {
+  const b = Math.max(-TILT_MAX_DEG, Math.min(TILT_MAX_DEG, betaDeg))
+  const g = Math.max(-TILT_MAX_DEG, Math.min(TILT_MAX_DEG, gammaDeg))
+  const pitch = qFromAxisAngle({ x: 1, y: 0, z: 0 }, (b * Math.PI) / 180)
+  const yaw = qFromAxisAngle({ x: 0, y: 1, z: 0 }, (g * Math.PI) / 180)
+  return qNormalize(qMultiply(pitch, yaw))
+}
+
 const GRAVITY_WORLD = { x: 0, y: -1, z: 0 }
 
 // ── Track runtime (polylines + adjacency) built once per level ─────────

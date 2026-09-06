@@ -113,7 +113,17 @@
   color: #ffb0a0;
 }
 
-.hudBottom { display: flex; gap: 8px; pointer-events: auto; }
+.tiltMsg {
+  background: rgba(111, 184, 255, 0.16);
+  border: 1px solid rgba(111, 184, 255, 0.45);
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: bold;
+  color: #bfe3ff;
+}
+
+.hudBottom { display: flex; gap: 8px; flex-wrap: wrap; pointer-events: auto; }
 .smallBtn {
   font-family: 'Courier New', monospace;
   font-size: 11px;

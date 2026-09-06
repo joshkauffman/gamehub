@@ -6,6 +6,30 @@
   padding: 2rem 1rem 4rem;
 }
 
+.suggestionBar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  align-self: stretch;
+  margin: -2rem -1rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1rem;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-align: center;
+  text-decoration: none;
+  transition: filter 0.15s;
+}
+
+.suggestionBar:hover { filter: brightness(1.08); }
+
+.suggestionEmoji { font-size: 1.05rem; }
+
 .header {
   text-align: center;
   margin-bottom: 3rem;
