@@ -38,3 +38,14 @@ export const KNOCKOUT_INVULN = 1.6
 
 export const OVERWORLD_MOB_COUNT = 22
 export const CAMERA_DIST = 9.5
+
+export const MAX_MANA = 40
+export const MANA_REGEN = 5 // per second
+export const SPELL_COST = 14
+export const SPELL_COOLDOWN = 0.5
+export const SPELL_SPEED = 20
+export const SPELL_RADIUS = 0.45
+export const SPELL_LIFE = 1.4 // seconds before a bolt fizzles out
+
+export const SAFE_ZONE_HOME_RADIUS = 24
+export const SAFE_ZONE_REST_RADIUS = 13

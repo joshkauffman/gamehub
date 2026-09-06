@@ -15,6 +15,8 @@ import {
   ATTACK_REACH, ATTACK_ARC_R, ATTACK_DURATION, ATTACK_COOLDOWN,
   POTION_COOLDOWN, INVULN_TIME, KNOCKOUT_INVULN, OVERWORLD_MOB_COUNT,
   BUILDING_RADIUS, DOOR_TRIGGER_R, EXIT_TRIGGER_R, TELEPORT_FLASH_TIME,
+  MAX_MANA, MANA_REGEN, SPELL_COST, SPELL_COOLDOWN, SPELL_SPEED, SPELL_RADIUS, SPELL_LIFE,
+  SAFE_ZONE_HOME_RADIUS, SAFE_ZONE_REST_RADIUS,
 } from './constants.js'
 
 const EMPTY_RECTS = []
@@ -75,6 +77,7 @@ export const ACHIEVEMENTS = [
   { id: 'snackbreak', name: 'Snack Break', desc: 'Drink a potion.' },
   { id: 'bossbeat1', name: 'Big Boss Energy', desc: 'Defeat a dungeon boss.' },
   { id: 'geared', name: 'Fashionably Equipped', desc: 'Equip a weapon and armor.' },
+  { id: 'spellcaster', name: 'Wand Enthusiast', desc: 'Cast your first spell.' },
   { id: 'oof', name: 'Free Respawn', desc: 'Get knocked out (it happens to everyone).' },
   { id: 'richkid', name: 'Pocket Full of Gold', desc: 'Collect 200 gold.' },
   { id: 'champion', name: 'Dungeon Champion', desc: 'Clear every dungeon in the world!' },
@@ -275,7 +278,33 @@ function generateWorld() {
 function pointInsideAnySite(x, z, sites, margin) {
   return sites.some(s => Math.hypot(x - s.centerX, z - s.centerZ) < BUILDING_RADIUS + margin)
 }
-function generateOverworldMobs(sites) {
+
+// Safe zones are always at the same fixed spots relative to the (also
+// fixed) ring of dungeon sites — one big "Home Base" at the world's spawn
+// point, plus a couple of smaller "Rest Stop" waypoints tucked into two of
+// the gaps between sites, so a long trek across the field has somewhere to
+// pause. No monster can stand inside one, and the player can't be hit
+// while inside one either — see isInSafeZone() and its call sites below.
+function buildSafeZones(sites) {
+  const zones = [{ x: 0, z: 0, r: SAFE_ZONE_HOME_RADIUS, name: 'Home Base' }]
+  const restGapIndices = [0, 2]
+  for (const i of restGapIndices) {
+    const a = (i / sites.length) * Math.PI * 2 - Math.PI / 2
+    const b = ((i + 1) / sites.length) * Math.PI * 2 - Math.PI / 2
+    const mid = (a + b) / 2
+    const r = SITE_RADIUS * 0.55
+    zones.push({ x: Math.cos(mid) * r, z: Math.sin(mid) * r, r: SAFE_ZONE_REST_RADIUS, name: 'Rest Stop' })
+  }
+  return zones
+}
+export function isInSafeZone(x, z, safeZones) {
+  return safeZones.some(s => Math.hypot(x - s.x, z - s.z) < s.r)
+}
+function pointInsideAnySafeZone(x, z, safeZones, margin) {
+  return safeZones.some(s => Math.hypot(x - s.x, z - s.z) < s.r + margin)
+}
+
+function generateOverworldMobs(sites, safeZones) {
   const mobs = []
   const pool = ['slime', 'rat', 'bunny', 'fly']
   for (let i = 0; i < OVERWORLD_MOB_COUNT; i++) {
@@ -284,7 +313,7 @@ function generateOverworldMobs(sites) {
       x = rand(-WORLD_HALF + 30, WORLD_HALF - 30)
       z = rand(-WORLD_HALF + 30, WORLD_HALF - 30)
       tries++
-    } while (pointInsideAnySite(x, z, sites, 14) && tries < 30)
+    } while ((pointInsideAnySite(x, z, sites, 14) || pointInsideAnySafeZone(x, z, safeZones, 4)) && tries < 30)
     const m = createMonster(pick(pool), x, z, 0.7, 0)
     m.leash = 24; m.aggro = 10
     mobs.push(m)
@@ -300,8 +329,9 @@ function mkPlayer() {
     baseAtk: 4, baseDef: 0, weaponAtk: 0, armorDef: 0,
     atk: 4, def: 0,
     maxHp: 40, hp: 40,
+    maxMana: MAX_MANA, mana: MAX_MANA, spellCooldown: 0,
     gold: 0, potions: 1,
-    weaponName: null, armorName: null,
+    weaponName: null, armorName: null, weapons: [], armors: [],
     attackCooldown: 0, attackTimer: 0, hitIds: new Set(),
     potionCooldown: 0, invuln: 0,
   }
@@ -311,12 +341,14 @@ export function mkInitialState() {
   const sites = generateWorld()
   let nextId = 0
   for (const s of sites) for (const m of s.monsters) m.id = nextId++
-  const overworldMobs = generateOverworldMobs(sites)
+  const safeZones = buildSafeZones(sites)
+  const overworldMobs = generateOverworldMobs(sites, safeZones)
   for (const m of overworldMobs) m.id = nextId++
 
   return {
-    sites, overworldMobs, player: mkPlayer(),
+    sites, overworldMobs, player: mkPlayer(), safeZones, inSafeZone: false,
     mode: 'overworld', activeSite: null, justTeleported: null, teleportFlash: 0,
+    projectiles: [],
     yaw: 0, pitch: 0.28, nextId,
     particles: [], bannerQueue: [], banner: null, bannerTimer: 0,
     petText: pick(PET_LINES.intro), petTimer: 9, petIdleCD: 14,
@@ -456,32 +488,55 @@ function openChest(state, c, site) {
     p.potions = Math.min(5, p.potions + 1)
     pushBanner(state, '🧃', 'Found a snack potion!', '#7CFF6B')
   } else {
+    // Found gear goes to the player's inventory rather than auto-equipping
+    // — equipping is a deliberate choice made from the Gear panel (see
+    // equipWeapon/equipArmor below), so the player picks their own loadout
+    // instead of the chest silently swapping it for them. A duplicate of
+    // something already owned is just sold on the spot.
     const tier = Math.min(WEAPONS.length - 1, site.themeIndex + 1 + Math.floor(Math.random() * 2))
     if (Math.random() < 0.5) {
       const w = WEAPONS[tier]
-      if (w.atk > p.weaponAtk) {
-        p.weaponAtk = w.atk; p.weaponName = w.name
-        p.atk = p.baseAtk + p.weaponAtk
-        pushBanner(state, w.emoji, `Equipped ${w.name}! (+${w.atk} ATK)`, '#8FD3FF')
-        if (p.weaponName && p.armorName) grantAchievement(state, 'geared')
-      } else {
+      if (p.weapons.some(x => x.name === w.name)) {
         const gold = w.atk * 3; p.gold += gold
-        pushBanner(state, '💰', `Found ${w.name}, sold for ${gold} gold`, '#FFD34D')
+        pushBanner(state, '💰', `Already own ${w.name} — sold the spare for ${gold} gold`, '#FFD34D')
+      } else {
+        p.weapons.push(w)
+        pushBanner(state, w.emoji, `Found ${w.name}! Open Gear (I) to equip it.`, '#8FD3FF')
       }
     } else {
       const a = ARMORS[tier]
-      if (a.def > p.armorDef) {
-        p.armorDef = a.def; p.armorName = a.name
-        p.def = p.baseDef + p.armorDef
-        pushBanner(state, a.emoji, `Equipped ${a.name}! (+${a.def} DEF)`, '#8FD3FF')
-        if (p.weaponName && p.armorName) grantAchievement(state, 'geared')
-      } else {
+      if (p.armors.some(x => x.name === a.name)) {
         const gold = a.def * 3; p.gold += gold
-        pushBanner(state, '💰', `Found ${a.name}, sold for ${gold} gold`, '#FFD34D')
+        pushBanner(state, '💰', `Already own ${a.name} — sold the spare for ${gold} gold`, '#FFD34D')
+      } else {
+        p.armors.push(a)
+        pushBanner(state, a.emoji, `Found ${a.name}! Open Gear (I) to equip it.`, '#8FD3FF')
       }
     }
   }
   if (p.gold >= 200) grantAchievement(state, 'richkid')
+}
+
+// Called from the UI when the player picks an owned item from the Gear
+// panel — deliberate, player-driven equipping instead of chests
+// auto-swapping gear for them.
+export function equipWeapon(state, item) {
+  const p = state.player
+  if (p.weaponName === item.name) return
+  p.weaponAtk = item.atk
+  p.weaponName = item.name
+  p.atk = p.baseAtk + p.weaponAtk
+  pushBanner(state, item.emoji, `Equipped ${item.name}! (+${item.atk} ATK)`, '#8FD3FF')
+  if (p.weaponName && p.armorName) grantAchievement(state, 'geared')
+}
+export function equipArmor(state, item) {
+  const p = state.player
+  if (p.armorName === item.name) return
+  p.armorDef = item.def
+  p.armorName = item.name
+  p.def = p.baseDef + p.armorDef
+  pushBanner(state, item.emoji, `Equipped ${item.name}! (+${item.def} DEF)`, '#8FD3FF')
+  if (p.weaponName && p.armorName) grantAchievement(state, 'geared')
 }
 
 function spawnBoss(state, site) {
@@ -506,9 +561,10 @@ function updateMonsterAI(state, m, dt) {
     m.knockTimer -= dt
     return
   }
+  const playerSafe = state.mode === 'overworld' && isInSafeZone(state.player.x, state.player.z, state.safeZones)
   const dx0 = state.player.x - m.x, dz0 = state.player.z - m.z
   const d = Math.hypot(dx0, dz0)
-  if (d < m.aggro && d > 0.001) {
+  if (d < m.aggro && d > 0.001 && !playerSafe) {
     tryMoveEntity(m.walls, m, (dx0 / d) * m.speed * dt, (dz0 / d) * m.speed * dt)
     if (d < m.r + PLAYER_RADIUS + 0.6 && m.atkCooldown <= 0 && state.player.invuln <= 0) {
       state.player.hp -= m.atk
@@ -528,6 +584,21 @@ function updateMonsterAI(state, m, dt) {
         m.wanderTimer = 1 + Math.random() * 1.6
       }
       tryMoveEntity(m.walls, m, m.wanderDir.x * m.speed * 0.35 * dt, m.wanderDir.z * m.speed * 0.35 * dt)
+    }
+  }
+
+  // No monster may stand inside a safe zone — push it back out to the
+  // rim, same idea as a wall it can't cross.
+  if (state.mode === 'overworld') {
+    for (const zone of state.safeZones) {
+      const zx = m.x - zone.x, zz = m.z - zone.z
+      const zd = Math.hypot(zx, zz)
+      const minD = zone.r + m.r + 0.3
+      if (zd < minD) {
+        const push = zd > 0.001 ? minD / zd : 1
+        m.x = zone.x + zx * push
+        m.z = zone.z + zz * push
+      }
     }
   }
 }
@@ -658,6 +729,23 @@ export function update(state, input, dt, helpers) {
     }
   }
 
+  if (player.spellCooldown > 0) player.spellCooldown -= dt
+  player.mana = Math.min(player.maxMana, player.mana + MANA_REGEN * dt)
+  if (input.spellPressed) {
+    input.spellPressed = false
+    if (player.spellCooldown <= 0 && player.mana >= SPELL_COST) {
+      player.spellCooldown = SPELL_COOLDOWN
+      player.mana -= SPELL_COST
+      grantAchievement(state, 'spellcaster')
+      state.projectiles.push({
+        x: player.x + fx * 1.0, z: player.z + fz * 1.0,
+        vx: fx * SPELL_SPEED, vz: fz * SPELL_SPEED,
+        life: SPELL_LIFE, dmg: Math.max(2, Math.round(player.atk * 0.85)),
+        hitIds: new Set(), dead: false,
+      })
+    }
+  }
+
   if (player.potionCooldown > 0) player.potionCooldown -= dt
   if (input.potionPressed) {
     input.potionPressed = false
@@ -676,6 +764,27 @@ export function update(state, input, dt, helpers) {
 
   if (state.mode === 'overworld') updateOverworld(state, dt)
   else updateDungeon(state, dt, helpers)
+
+  state.inSafeZone = state.mode === 'overworld' && isInSafeZone(player.x, player.z, state.safeZones)
+
+  const activeWalls = state.mode === 'dungeon' ? state.sites[state.activeSite].wallRects : EMPTY_RECTS
+  for (const pr of state.projectiles) {
+    if (pr.dead) continue
+    pr.x += pr.vx * dt; pr.z += pr.vz * dt; pr.life -= dt
+    if (pr.life <= 0 || rectBlocked(activeWalls, pr.x, pr.z, SPELL_RADIUS)) { pr.dead = true; continue }
+    for (const m of allMonsters(state)) {
+      if (m.dead || pr.hitIds.has(m.id)) continue
+      const dd = (pr.x - m.x) ** 2 + (pr.z - m.z) ** 2
+      if (dd < (SPELL_RADIUS + m.r) ** 2) {
+        pr.hitIds.add(m.id)
+        damageMonster(state, m, pr.dmg, helpers)
+        spawnBurst(state, m.x, m.z, 6, ['#c9a6ff', '#8fd3ff', '#ffffff'])
+        pr.dead = true
+        break
+      }
+    }
+  }
+  state.projectiles = state.projectiles.filter(pr => !pr.dead)
 
   for (const pt of state.particles) {
     pt.x += pt.vx * dt; pt.z += pt.vz * dt; pt.y += pt.vy * dt

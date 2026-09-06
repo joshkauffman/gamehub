@@ -3,11 +3,11 @@ import { Link } from 'react-router-dom'
 import * as THREE from 'three'
 import styles from './DungeonCrawlerFreeRoam.module.css'
 import {
-  mkInitialState, update, markContestant, boundsCenterXZ,
+  mkInitialState, update, markContestant, boundsCenterXZ, equipWeapon, equipArmor,
 } from './gameEngine.js'
 import {
   WORLD_HALF, TILE, WALL_HEIGHT, MOUSE_SENSITIVITY, CAMERA_DIST,
-  BUILDING_RADIUS, BUILDING_W, BUILDING_D, BUILDING_H,
+  BUILDING_RADIUS, BUILDING_W, BUILDING_D, BUILDING_H, SPELL_RADIUS,
 } from './constants.js'
 
 // ── Dungeon Crawler Max: Free Roam ──────────────────────────────────────
@@ -24,6 +24,7 @@ import {
 // the 2D game's visual language instead of needing 3D character models.
 
 const MAX_PARTICLES = 300
+const MAX_PROJECTILES = 24
 
 // ── Emoji sprite factory (texture cached by emoji, material per-instance
 // so effects like the player's invuln flicker never leak across movers) ─
@@ -113,6 +114,27 @@ function darkenHex(hex, factor) {
   return new THREE.Color(r * factor, g * factor, b * factor)
 }
 
+// Shared glow texture for magic-bolt projectiles — one radial-gradient
+// sprite material reused across the whole pool, only positions differ.
+let spellBoltMaterial = null
+function getSpellBoltMaterial() {
+  if (spellBoltMaterial) return spellBoltMaterial
+  const size = 64
+  const canvas = document.createElement('canvas')
+  canvas.width = size; canvas.height = size
+  const ctx = canvas.getContext('2d')
+  const c = size / 2
+  const grad = ctx.createRadialGradient(c, c, 0, c, c, c)
+  grad.addColorStop(0, 'rgba(255,255,255,1)')
+  grad.addColorStop(0.35, 'rgba(201,166,255,0.95)')
+  grad.addColorStop(1, 'rgba(143,211,255,0)')
+  ctx.fillStyle = grad
+  ctx.fillRect(0, 0, size, size)
+  const tex = new THREE.CanvasTexture(canvas)
+  spellBoltMaterial = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })
+  return spellBoltMaterial
+}
+
 function makeDecoration() {
   const kind = Math.random() < 0.5 ? 'rock' : 'tree'
   const group = new THREE.Group()
@@ -174,9 +196,15 @@ export default function DungeonCrawlerFreeRoam() {
   const stateRef = useRef(null)
   const rafRef = useRef(null)
 
+  const [gearOpen, setGearOpenState] = useState(false)
+  const gearOpenRef = useRef(false)
+  const [gearSnapshot, setGearSnapshot] = useState(null)
+
   const hpFillRef = useRef(null)
   const hpTextRef = useRef(null)
   const xpFillRef = useRef(null)
+  const manaFillRef = useRef(null)
+  const manaTextRef = useRef(null)
   const levelTextRef = useRef(null)
   const goldTextRef = useRef(null)
   const potionTextRef = useRef(null)
@@ -188,10 +216,33 @@ export default function DungeonCrawlerFreeRoam() {
   const bossNameRef = useRef(null)
   const compassRef = useRef(null)
   const compassArrowRef = useRef(null)
+  const safeZoneBadgeRef = useRef(null)
   const controlsHintRef = useRef(null)
   const teleportFlashRef = useRef(null)
 
   function setPhase(p) { phaseRef.current = p; setPhaseState(p) }
+
+  function refreshGearSnapshot() {
+    const p = stateRef.current?.player
+    if (!p) return
+    setGearSnapshot({ weapons: [...p.weapons], armors: [...p.armors], weaponName: p.weaponName, armorName: p.armorName })
+  }
+  function setGearOpen(open) {
+    gearOpenRef.current = open
+    setGearOpenState(open)
+    if (open) {
+      refreshGearSnapshot()
+      try { document.exitPointerLock?.() } catch { /* not locked */ }
+    }
+  }
+  function handleEquipWeapon(item) {
+    equipWeapon(stateRef.current, item)
+    refreshGearSnapshot()
+  }
+  function handleEquipArmor(item) {
+    equipArmor(stateRef.current, item)
+    refreshGearSnapshot()
+  }
 
   useEffect(() => {
     const mount = mountRef.current
@@ -253,6 +304,28 @@ export default function DungeonCrawlerFreeRoam() {
     const particlePoints = new THREE.Points(particleGeo, new THREE.PointsMaterial({ size: 0.4, vertexColors: true, transparent: true, sizeAttenuation: true }))
     scene.add(particlePoints)
 
+    // Fixed-size pool of magic-bolt sprites — reused every cast instead of
+    // allocated, same pooling trick as the particle buffer above.
+    const projectilePool = Array.from({ length: MAX_PROJECTILES }, () => {
+      const sprite = new THREE.Sprite(getSpellBoltMaterial())
+      sprite.scale.set(SPELL_RADIUS * 2.6, SPELL_RADIUS * 2.6, 1)
+      sprite.visible = false
+      scene.add(sprite)
+      return sprite
+    })
+    function syncProjectiles(state) {
+      const list = state.projectiles
+      for (let i = 0; i < MAX_PROJECTILES; i++) {
+        const sprite = projectilePool[i]
+        if (i < list.length) {
+          sprite.visible = true
+          sprite.position.set(list[i].x, 1.3, list[i].z)
+        } else {
+          sprite.visible = false
+        }
+      }
+    }
+
     function teardownAll() {
       while (overworldGroup.children.length > permanentOverworldChildren) {
         overworldGroup.remove(overworldGroup.children[overworldGroup.children.length - 1])
@@ -273,6 +346,25 @@ export default function DungeonCrawlerFreeRoam() {
         const { group, clipMesh } = buildBuildingExterior(site)
         overworldGroup.add(group)
         buildingClipMeshes.push(clipMesh)
+      }
+      for (const zone of state.safeZones) {
+        const ring = new THREE.Mesh(
+          new THREE.RingGeometry(zone.r - 0.4, zone.r, 48),
+          new THREE.MeshBasicMaterial({ color: 0x7cff9e, transparent: true, opacity: 0.55, side: THREE.DoubleSide }),
+        )
+        ring.rotation.x = -Math.PI / 2
+        ring.position.set(zone.x, 0.05, zone.z)
+        overworldGroup.add(ring)
+        const glow = new THREE.Mesh(
+          new THREE.CircleGeometry(zone.r, 48),
+          new THREE.MeshBasicMaterial({ color: 0x7cff9e, transparent: true, opacity: 0.08, side: THREE.DoubleSide }),
+        )
+        glow.rotation.x = -Math.PI / 2
+        glow.position.set(zone.x, 0.03, zone.z)
+        overworldGroup.add(glow)
+        const label = makeLabelSprite(`🛡️ ${zone.name}`, '#7CFF9E')
+        label.position.set(zone.x, 2.4, zone.z)
+        overworldGroup.add(label)
       }
       playerGroup = makeMover('🧒', 1.6)
       scene.add(playerGroup)
@@ -430,9 +522,13 @@ export default function DungeonCrawlerFreeRoam() {
     }
 
     // ── Input ──
-    const input = { forward: false, back: false, left: false, right: false, attackPressed: false, potionPressed: false, yawDelta: 0, pitchDelta: 0 }
+    const input = { forward: false, back: false, left: false, right: false, attackPressed: false, potionPressed: false, spellPressed: false, yawDelta: 0, pitchDelta: 0 }
     function onKeyDown(e) {
-      if (phaseRef.current !== 'playing') return
+      if (e.code === 'KeyI' && phaseRef.current === 'playing') {
+        setGearOpen(!gearOpenRef.current)
+        return
+      }
+      if (phaseRef.current !== 'playing' || gearOpenRef.current) return
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault()
       if (e.code === 'KeyW' || e.code === 'ArrowUp') input.forward = true
       if (e.code === 'KeyS' || e.code === 'ArrowDown') input.back = true
@@ -440,6 +536,7 @@ export default function DungeonCrawlerFreeRoam() {
       if (e.code === 'KeyD' || e.code === 'ArrowRight') input.right = true
       if (e.code === 'Space') input.attackPressed = true
       if (e.code === 'KeyE') input.potionPressed = true
+      if (e.code === 'KeyF') input.spellPressed = true
     }
     function onKeyUp(e) {
       if (e.code === 'KeyW' || e.code === 'ArrowUp') input.forward = false
@@ -454,7 +551,7 @@ export default function DungeonCrawlerFreeRoam() {
       }
     }
     function onClick() {
-      if (phaseRef.current === 'playing') renderer.domElement.requestPointerLock?.()
+      if (phaseRef.current === 'playing' && !gearOpenRef.current) renderer.domElement.requestPointerLock?.()
     }
     window.addEventListener('keydown', onKeyDown)
     window.addEventListener('keyup', onKeyUp)
@@ -474,6 +571,8 @@ export default function DungeonCrawlerFreeRoam() {
       if (hpFillRef.current) hpFillRef.current.style.width = `${Math.max(0, (p.hp / p.maxHp) * 100)}%`
       if (hpTextRef.current) hpTextRef.current.textContent = `❤️ ${Math.max(0, Math.ceil(p.hp))}/${p.maxHp}`
       if (xpFillRef.current) xpFillRef.current.style.width = `${Math.max(0, Math.min(1, p.xp / p.xpNext)) * 100}%`
+      if (manaFillRef.current) manaFillRef.current.style.width = `${Math.max(0, (p.mana / p.maxMana) * 100)}%`
+      if (manaTextRef.current) manaTextRef.current.textContent = `🔮 ${Math.floor(p.mana)}/${p.maxMana}`
       if (levelTextRef.current) levelTextRef.current.textContent = `Lv.${p.level}`
       if (goldTextRef.current) goldTextRef.current.textContent = `🪙 ${p.gold}`
       if (potionTextRef.current) potionTextRef.current.textContent = `🧃 x${p.potions}`
@@ -528,6 +627,10 @@ export default function DungeonCrawlerFreeRoam() {
       if (teleportFlashRef.current) {
         teleportFlashRef.current.style.opacity = state.teleportFlash > 0 ? state.teleportFlash / 0.4 : 0
       }
+
+      if (safeZoneBadgeRef.current) {
+        safeZoneBadgeRef.current.style.visibility = state.inSafeZone ? 'visible' : 'hidden'
+      }
     }
 
     let lastTime = performance.now()
@@ -537,7 +640,7 @@ export default function DungeonCrawlerFreeRoam() {
       lastTime = now
       const state = stateRef.current
 
-      if (phaseRef.current === 'playing' && state) {
+      if (phaseRef.current === 'playing' && !gearOpenRef.current && state) {
         update(state, input, dt, { setPhase, setWinStats })
         if (state.justTeleported) handleTeleport(state, state.justTeleported)
 
@@ -556,6 +659,7 @@ export default function DungeonCrawlerFreeRoam() {
         syncMovers(state)
         syncChests()
         syncParticles(state)
+        syncProjectiles(state)
         updateCamera(state)
         writeHud(state)
       }
@@ -588,6 +692,7 @@ export default function DungeonCrawlerFreeRoam() {
     const mount = mountRef.current
     mount._teardownAll?.()
     mount._buildWorld?.(state)
+    setGearOpen(false)
     setPhase('playing')
   }
 
@@ -595,6 +700,10 @@ export default function DungeonCrawlerFreeRoam() {
     <div className={styles.wrapper}>
       <div ref={mountRef} className={styles.mount} />
       <Link to="/" className={styles.homeLink}>← GameHub</Link>
+
+      {phase === 'playing' && !gearOpen && (
+        <button className={styles.gearButton} onClick={() => setGearOpen(true)}>🎒 Gear (I)</button>
+      )}
 
       {phase === 'playing' && (
         <div className={styles.hud}>
@@ -604,6 +713,8 @@ export default function DungeonCrawlerFreeRoam() {
             <div className={styles.hpBar}><div ref={hpFillRef} className={styles.hpFill} /></div>
             <div ref={hpTextRef} className={styles.hpText}>❤️ 40/40</div>
             <div className={styles.xpBar}><div ref={xpFillRef} className={styles.xpFill} /></div>
+            <div className={styles.manaBar}><div ref={manaFillRef} className={styles.manaFill} /></div>
+            <div ref={manaTextRef} className={styles.manaText}>🔮 40/40</div>
             <div ref={levelTextRef} className={styles.levelText}>Lv.1</div>
             <div className={styles.row}>
               <span ref={goldTextRef}>🪙 0</span>
@@ -616,6 +727,8 @@ export default function DungeonCrawlerFreeRoam() {
             <span>—</span>
           </div>
 
+          <div ref={safeZoneBadgeRef} className={styles.safeZoneBadge}>🛡️ Safe Zone — no monsters can reach you here</div>
+
           <div ref={bossBarRef} className={styles.bossBar}>
             <div ref={bossNameRef} className={styles.bossName} />
             <div className={styles.bossTrack}><div ref={bossFillRef} className={styles.bossFill} /></div>
@@ -625,7 +738,54 @@ export default function DungeonCrawlerFreeRoam() {
           <div ref={announcerRef} className={styles.announcer} />
           <div ref={petRef} className={styles.petBubble} />
           <div ref={controlsHintRef} className={styles.controlsHint}>
-            W/S move · A/D turn · click to mouse-look · Space attack · E potion
+            W/S move · A/D turn · click to mouse-look · Space attack · F magic · E potion · I gear
+          </div>
+        </div>
+      )}
+
+      {gearOpen && gearSnapshot && (
+        <div className={styles.overlay} onClick={() => setGearOpen(false)}>
+          <div className={styles.card} onClick={e => e.stopPropagation()}>
+            <h1 className={styles.title}>🎒 Gear</h1>
+            <p className={styles.tagline}>Pick your own weapon and armor — press I or click outside to close.</p>
+
+            <div className={styles.gearSection}>
+              <h2 className={styles.gearHeading}>Weapons</h2>
+              {gearSnapshot.weapons.length === 0 && <p className={styles.gearEmpty}>No weapons found yet — open chests in a dungeon!</p>}
+              <div className={styles.gearList}>
+                {gearSnapshot.weapons.map(w => {
+                  const equipped = gearSnapshot.weaponName === w.name
+                  return (
+                    <button key={w.name} className={`${styles.gearItem} ${equipped ? styles.gearItemActive : ''}`} onClick={() => handleEquipWeapon(w)} disabled={equipped}>
+                      <span className={styles.gearItemEmoji}>{w.emoji}</span>
+                      <span className={styles.gearItemName}>{w.name}</span>
+                      <span className={styles.gearItemStat}>+{w.atk} ATK</span>
+                      {equipped && <span className={styles.equippedTag}>Equipped</span>}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            <div className={styles.gearSection}>
+              <h2 className={styles.gearHeading}>Armor</h2>
+              {gearSnapshot.armors.length === 0 && <p className={styles.gearEmpty}>No armor found yet — open chests in a dungeon!</p>}
+              <div className={styles.gearList}>
+                {gearSnapshot.armors.map(a => {
+                  const equipped = gearSnapshot.armorName === a.name
+                  return (
+                    <button key={a.name} className={`${styles.gearItem} ${equipped ? styles.gearItemActive : ''}`} onClick={() => handleEquipArmor(a)} disabled={equipped}>
+                      <span className={styles.gearItemEmoji}>{a.emoji}</span>
+                      <span className={styles.gearItemName}>{a.name}</span>
+                      <span className={styles.gearItemStat}>+{a.def} DEF</span>
+                      {equipped && <span className={styles.equippedTag}>Equipped</span>}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            <button className={styles.startButton} onClick={() => setGearOpen(false)}>Back To The Fight →</button>
           </div>
         </div>
       )}
@@ -641,7 +801,11 @@ export default function DungeonCrawlerFreeRoam() {
               wide-open world this time — five dungeon buildings are scattered around the map, each
               guarded by its own boss. Walk up to a door and you'll be teleported straight inside;
               find the exit to teleport back out. Floating host MC Marv is narrating from somewhere
-              overhead. Explore, fight, loot, and clear every dungeon to win the show. Getting knocked
+              overhead. Fighting isn't just fists anymore — swing whatever's in your hands or fling
+              magic bolts from a distance, and open chests to build up a stash of weapons and armor
+              you pick from and equip yourself in the Gear menu. Feeling outmatched? Home Base and a
+              couple of Rest Stops scattered across the field are safe zones — no monster can follow
+              you in. Explore, fight, loot, and clear every dungeon to win the show. Getting knocked
               out is still just a free respawn — this game show has excellent insurance.
             </p>
             <div className={styles.controls}>
@@ -649,7 +813,9 @@ export default function DungeonCrawlerFreeRoam() {
               <span><b>Turn</b> — A / D</span>
               <span><b>Look</b> — click + mouse</span>
               <span><b>Attack</b> — Space</span>
+              <span><b>Magic</b> — F</span>
               <span><b>Potion</b> — E</span>
+              <span><b>Gear</b> — I</span>
             </div>
             <button className={styles.startButton} onClick={startGame}>Step Into The World →</button>
           </div>
