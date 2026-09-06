@@ -118,7 +118,7 @@ const CATEGORIES = [
       {
         id: 'orbit-maze',
         title: 'Orbit Maze',
-        description: "A 3D gravity-maze puzzle — tilt the whole transparent sphere and let gravity roll the ball through a twisting tube track, past forks and hidden trap holes, to the goal.",
+        description: "A top-down gravity-maze puzzle — tilt the whole board and let gravity roll the ball through the corridors, past holes both hidden and right on your route, to the goal.",
         emoji: '🔮',
         path: '/orbit-maze',
       },

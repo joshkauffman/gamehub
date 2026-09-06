@@ -3,18 +3,21 @@ import { Link } from 'react-router-dom'
 import * as THREE from 'three'
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
 import styles from './OrbitMaze.module.css'
-import { LEVELS, SPHERE_RADIUS, BALL_RADIUS, TUBE_RADIUS, getStations, todaySeedString, loadBestTimes, saveBestTime } from './constants.js'
 import {
-  createGameState, stepGame, getBallLocalPosition, sampleTangentAt, isGateOpen,
-  applyDragRotation, applyKeyRotation, applyRoll, tiltToRotation, generateProceduralLevel,
+  BALL_RADIUS, HOLE_VISUAL_RADIUS, GOAL_VISUAL_RADIUS, WALL_HEIGHT,
+  RANDOM_CFG, todaySeedString, loadBestTimes, saveBestTime,
+} from './constants.js'
+import {
+  LEVELS, createGameState, stepGame, isGateOpen,
+  applyKeyTilt, decayTilt, tiltFromDrag, tiltFromDeviceAngles, generateProceduralLevel,
 } from './gameEngine.js'
 
 // A level "spec" is how the UI names which level to play — a fixed
 // hand-authored index, or a seed for a procedurally generated one (daily
 // = same seed for everyone today; random = a fresh seed each time). Both
 // procedural levels are built via gameEngine.js's validated generator, so
-// they arrive already guaranteed fair, in the exact same node/edge shape
-// as the hand-authored LEVELS — no special-casing needed anywhere else.
+// they arrive already guaranteed fair, in the exact same shape as the
+// hand-picked LEVELS — no special-casing needed anywhere else.
 function specKey(spec) {
   if (spec.kind === 'fixed') return String(spec.index)
   if (spec.kind === 'daily') return `daily-${spec.seed}`
@@ -23,30 +26,19 @@ function specKey(spec) {
 function specToLevel(spec) {
   if (spec.kind === 'fixed') return LEVELS[spec.index]
   if (spec.kind === 'daily') {
-    return generateProceduralLevel(spec.seed, 'Daily Challenge', 'One shared maze for today — everyone gets the same layout. A new one tomorrow.')
+    return generateProceduralLevel(spec.seed, 'Daily Challenge', 'One shared board for today — everyone gets the same layout. A new one tomorrow.', RANDOM_CFG)
   }
-  return generateProceduralLevel(spec.seed, 'Random Maze', 'A freshly generated maze — different every time you spin one up.')
+  return generateProceduralLevel(spec.seed, 'Random Maze', 'A freshly generated board — different every time you spin one up.', RANDOM_CFG)
 }
 
 // ── Orbit Maze ────────────────────────────────────────────────────────
-// A gravity-maze puzzle styled after the physical hand-held toy it's
-// inspired by: a faceted, geodesic-paneled transparent globe with a chrome
-// ball rolling through a twisting tube track. You never touch the ball
-// directly — you rotate the whole sphere (drag, or arrow keys + Q/E to
-// roll) and fixed world gravity does the rolling. Camera never moves;
-// "down" on screen is always down in the world, so the only feedback loop
-// is watching which way the track tilts. Timed gates (level 4) add a
-// rotating-obstacle mechanic on top of the fork-and-trap puzzle from
-// earlier levels: a gate is a hard wall at its point on the tube while
-// shut, so you have to watch its cycle and time your tilt to slip through.
-
-const NODE_COLORS = {
-  start: 0x6fb8ff,
-  checkpoint: 0x7bff8a,
-  trap: 0x2a1018,
-  goal: 0xffd166,
-  normal: 0x8a8aa0,
-}
+// A top-down tilting-board labyrinth, styled after the classic wooden
+// gravity-maze toy: a marble rolls across a flat wood board seen from
+// above, and you never touch it directly — you tilt the whole board (drag,
+// arrow keys, or on a phone, physically tilt it) and gravity does the
+// rolling. Holes are cut into the board; rolling into one drops the ball
+// back to its last checkpoint. Some boards add a timed gate: a section of
+// wall that's only passable while its light is green.
 
 // ── Lightweight synthesized SFX (no external assets) — every call is
 // defensive, so a browser blocking/lacking Web Audio just goes silent
@@ -118,8 +110,8 @@ function createAudio() {
 }
 
 // ── Small canvas-sprite badge (station numbers, "S", finish flag) —
-// billboards toward the camera automatically even as a child of the
-// rotating maze group, same trick as this hub's other label sprites.
+// billboards toward the camera automatically even though the board itself
+// tilts, same trick as this hub's other label sprites.
 function makeBadge(text, bg) {
   const canvas = document.createElement('canvas')
   canvas.width = 64; canvas.height = 64
@@ -133,36 +125,30 @@ function makeBadge(text, bg) {
   ctx.fillText(text, 32, 35)
   const tex = new THREE.CanvasTexture(canvas)
   const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false }))
-  sprite.scale.set(0.85, 0.85, 1)
+  sprite.scale.set(0.7, 0.7, 1)
   sprite.renderOrder = 8
   return sprite
 }
 
-// A trap's danger marker has to read from any angle even though the maze
-// tumbles freely under a fixed camera — a 3D ring oriented radially looks
-// like a full halo only from some rotations and a near-invisible sliver
-// edge-on from most others. A billboard sprite (like the station badges)
-// sidesteps that entirely by always facing the camera.
-function makeTrapIcon() {
+// A radial-gradient disc texture standing in for a hole cut into the
+// board: dark center, fading out through a red warning rim.
+function makeHoleTexture() {
+  const size = 128
   const canvas = document.createElement('canvas')
-  canvas.width = 64; canvas.height = 64
+  canvas.width = size; canvas.height = size
   const ctx = canvas.getContext('2d')
-  ctx.fillStyle = '#1a0508'
-  ctx.beginPath(); ctx.arc(32, 32, 25, 0, Math.PI * 2); ctx.fill()
-  ctx.strokeStyle = '#ff3b3b'; ctx.lineWidth = 6
-  ctx.beginPath(); ctx.arc(32, 32, 25, 0, Math.PI * 2); ctx.stroke()
-  ctx.fillStyle = '#ff5a5a'
-  ctx.font = 'bold 30px "Courier New", monospace'
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
-  ctx.fillText('!', 32, 35)
-  const tex = new THREE.CanvasTexture(canvas)
-  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false }))
-  sprite.scale.set(1.0, 1.0, 1)
-  sprite.renderOrder = 9
-  return sprite
+  const c = size / 2
+  const grad = ctx.createRadialGradient(c, c, size * 0.04, c, c, size * 0.5)
+  grad.addColorStop(0, 'rgba(4,2,2,1)')
+  grad.addColorStop(0.72, 'rgba(12,6,5,1)')
+  grad.addColorStop(0.85, 'rgba(255,80,55,0.95)')
+  grad.addColorStop(1, 'rgba(255,80,55,0)')
+  ctx.fillStyle = grad
+  ctx.beginPath(); ctx.arc(c, c, size / 2, 0, Math.PI * 2); ctx.fill()
+  return new THREE.CanvasTexture(canvas)
 }
 
-// ── Reusable burst particle system (trap sparks / goal confetti) — a
+// ── Reusable burst particle system (hole drops / goal confetti) — a
 // fixed-size pool of points so spawning never allocates. Dead particles
 // park off-screen instead of being removed, keeping the buffer sizes
 // (and therefore the draw call) constant. ───────────────────────────────
@@ -217,130 +203,127 @@ function createBurstSystem(count, size, colors) {
   return { points, spawn, update }
 }
 
-function buildMazeGroup(level, runtime) {
+// Physics runs in board-plane {x,y} coordinates with (0,0) at a corner —
+// the render layer maps that to world (X,Z) centered on the origin, with
+// world Y as "up" (board height). Everything (walls, holes, ball, goal)
+// lives inside `tiltGroup`, which is the piece that actually rotates for
+// the visual tilt feedback — one rigid board, exactly like the real toy.
+function toWorld(level, p, y = 0) {
+  return { x: p.x - level.width / 2, y, z: p.y - level.height / 2 }
+}
+
+function buildBoardGroup(level) {
   const group = new THREE.Group()
 
-  // Faceted geodesic shell — the toy's signature look — via a low-detail
-  // icosahedron with flat shading plus an edge-line overlay for the
-  // seamed-panel appearance, instead of a smooth sphere.
-  const shellGeo = new THREE.IcosahedronGeometry(SPHERE_RADIUS, 2)
-  const shell = new THREE.Mesh(
-    shellGeo,
-    new THREE.MeshPhysicalMaterial({
-      color: 0xbfe3ff, transparent: true, opacity: 0.16, roughness: 0.25, metalness: 0,
-      flatShading: true, side: THREE.DoubleSide, clearcoat: 0.6,
-    }),
+  const boardGeo = new THREE.BoxGeometry(level.width + 0.6, 0.2, level.height + 0.6)
+  const board = new THREE.Mesh(boardGeo, new THREE.MeshStandardMaterial({ color: 0x8a5a34, roughness: 0.85, metalness: 0.05 }))
+  board.position.y = -0.1
+  board.receiveShadow = true
+  group.add(board)
+
+  const rim = new THREE.Mesh(
+    new THREE.BoxGeometry(level.width + 0.7, 0.42, level.height + 0.7),
+    new THREE.MeshStandardMaterial({ color: 0x5c3a20, roughness: 0.9 }),
   )
-  group.add(shell)
-  const shellEdges = new THREE.LineSegments(
-    new THREE.EdgesGeometry(shellGeo, 1),
-    new THREE.LineBasicMaterial({ color: 0x9fd6ff, transparent: true, opacity: 0.35 }),
-  )
-  group.add(shellEdges)
+  rim.position.y = -0.31
+  group.add(rim)
 
-  const tubeMat = new THREE.MeshPhysicalMaterial({
-    color: 0x7fc8ff, transparent: true, opacity: 0.55, roughness: 0.2, metalness: 0.05, clearcoat: 0.8, clearcoatRoughness: 0.2,
-  })
-  Object.values(runtime.edgesById).forEach(edge => {
-    const pts = edge.points.map(p => new THREE.Vector3(p.x, p.y, p.z))
-    const curve = new THREE.CatmullRomCurve3(pts, false, 'catmullrom', 0.4)
-    const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, Math.max(8, pts.length * 3), TUBE_RADIUS, 8, false), tubeMat)
-    group.add(tube)
-  })
-
-  const stations = getStations(level)
-  const stationLabel = n => {
-    const i = stations.indexOf(n)
-    if (n.type === 'start') return 'S'
-    if (n.type === 'goal') return '⚑'
-    return String(i)
-  }
-
-  const goalMeshes = []
-  const trapIcons = []
-  const gateFlaps = [] // { mesh, edge }
-  level.nodes.forEach(n => {
-    const isGoal = n.type === 'goal'
-    const isTrap = n.type === 'trap'
-    let mesh
-    if (isGoal) {
-      mesh = new THREE.Mesh(
-        new THREE.OctahedronGeometry(TUBE_RADIUS * 2.1, 0),
-        new THREE.MeshStandardMaterial({ color: NODE_COLORS.goal, emissive: NODE_COLORS.goal, emissiveIntensity: 1.0, roughness: 0.2, metalness: 0.4 }),
-      )
-      goalMeshes.push(mesh)
-    } else if (isTrap) {
-      mesh = new THREE.Mesh(new THREE.SphereGeometry(TUBE_RADIUS * 1.4, 14, 12), new THREE.MeshBasicMaterial({ color: NODE_COLORS.trap }))
-      const icon = makeTrapIcon()
-      const nodeDist = Math.hypot(n.pos.x, n.pos.y, n.pos.z) || 1
-      const dir = new THREE.Vector3(n.pos.x, n.pos.y, n.pos.z).divideScalar(nodeDist)
-      icon.position.copy(dir.multiplyScalar(nodeDist + 0.55))
-      group.add(icon)
-      trapIcons.push(icon)
-    } else {
-      const size = n.type === 'checkpoint' ? TUBE_RADIUS * 1.15 : TUBE_RADIUS * 0.85
-      mesh = new THREE.Mesh(
-        new THREE.SphereGeometry(size, 14, 12),
-        new THREE.MeshStandardMaterial({ color: NODE_COLORS[n.type] || NODE_COLORS.normal, emissive: NODE_COLORS[n.type] || 0, emissiveIntensity: 0.55, roughness: 0.4, metalness: 0.2 }),
-      )
+  const wallMat = new THREE.MeshStandardMaterial({ color: 0xe8dcc0, roughness: 0.6, metalness: 0.05 })
+  const wallMeshes = []
+  const gateMeshes = [] // { mesh, wall }
+  level.walls.forEach(wall => {
+    const cx = wall.x + wall.w / 2 - level.width / 2
+    const cz = wall.y + wall.h / 2 - level.height / 2
+    if (wall.gate) {
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(wall.w, WALL_HEIGHT, wall.h), new THREE.MeshStandardMaterial({ color: 0xff3b3b, emissive: 0xff3b3b, emissiveIntensity: 0.5, roughness: 0.4 }))
+      mesh.position.set(cx, WALL_HEIGHT / 2, cz)
+      mesh.castShadow = true
+      group.add(mesh)
+      gateMeshes.push({ mesh, wall })
+      return
     }
-    mesh.position.set(n.pos.x, n.pos.y, n.pos.z)
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(wall.w, WALL_HEIGHT, wall.h), wallMat)
+    mesh.position.set(cx, WALL_HEIGHT / 2, cz)
+    mesh.castShadow = true
+    mesh.receiveShadow = true
     group.add(mesh)
-
-    if (n.type === 'start' || n.type === 'checkpoint' || n.type === 'goal') {
-      const badge = makeBadge(stationLabel(n), isGoal ? '#ffd166' : n.type === 'start' ? '#6fb8ff' : '#7bff8a')
-      const nodeDist = Math.hypot(n.pos.x, n.pos.y, n.pos.z) || 1
-      const dir = new THREE.Vector3(n.pos.x, n.pos.y, n.pos.z).divideScalar(nodeDist)
-      badge.position.copy(dir.multiplyScalar(nodeDist + 0.75))
-      group.add(badge)
-    }
+    wallMeshes.push(mesh)
   })
 
-  Object.values(runtime.edgesById).forEach(edge => {
-    if (!edge.gate) return
-    const gatePos = (() => {
-      const { points, cum, length } = edge
-      const s = edge.gate.s
-      let i = 0
-      while (i < cum.length - 2 && cum[i + 1] < s) i++
-      const segLen = cum[i + 1] - cum[i] || 1
-      const t = (s - cum[i]) / segLen
-      const p0 = points[i], p1 = points[i + 1]
-      return { x: p0.x + (p1.x - p0.x) * t, y: p0.y + (p1.y - p0.y) * t, z: p0.z + (p1.z - p0.z) * t, len: length }
-    })()
-    const tangent = sampleTangentAt(edge, edge.gate.s)
-    const flap = new THREE.Mesh(
-      new THREE.BoxGeometry(TUBE_RADIUS * 1.9, TUBE_RADIUS * 1.9, 0.08),
-      new THREE.MeshStandardMaterial({ color: 0xff3b3b, emissive: 0xff3b3b, emissiveIntensity: 0.6, roughness: 0.4 }),
+  // A "pit" is drawn as a flat disc with a radial-gradient texture (dark
+  // center fading through a red warning rim) rather than actual recessed
+  // geometry — the board is a single solid box, so real depth would need a
+  // hole cut into that mesh (CSG); a flush textured disc reads just as
+  // clearly as a hole from this near-top-down angle without the z-fighting
+  // a buried cylinder gets from the solid board surface sitting above it.
+  const holeTex = makeHoleTexture()
+  const holeMeshes = []
+  level.holes.forEach(hole => {
+    const w = toWorld(level, hole.pos)
+    const disc = new THREE.Mesh(
+      new THREE.CircleGeometry(HOLE_VISUAL_RADIUS * 1.25, 28),
+      new THREE.MeshBasicMaterial({ map: holeTex, transparent: true, depthWrite: false }),
     )
-    flap.position.set(gatePos.x, gatePos.y, gatePos.z)
-    flap.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), new THREE.Vector3(tangent.x, tangent.y, tangent.z))
-    group.add(flap)
-    gateFlaps.push({ mesh: flap, edge })
+    disc.rotation.x = -Math.PI / 2
+    disc.position.set(w.x, 0.008, w.z)
+    disc.renderOrder = 2
+    group.add(disc)
+    holeMeshes.push(disc)
   })
+
+  level.checkpoints.forEach((cp, i) => {
+    const w = toWorld(level, cp.pos)
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(0.32, 0.035, 8, 24),
+      new THREE.MeshStandardMaterial({ color: 0x7bff8a, emissive: 0x2a7a35, emissiveIntensity: 0.6, roughness: 0.4 }),
+    )
+    ring.rotation.x = Math.PI / 2
+    ring.position.set(w.x, 0.02, w.z)
+    group.add(ring)
+    const badge = makeBadge(String(i + 1), '#7bff8a')
+    badge.position.set(w.x, 0.35, w.z)
+    group.add(badge)
+  })
+
+  const startW = toWorld(level, level.start)
+  const startBadge = makeBadge('S', '#6fb8ff')
+  startBadge.position.set(startW.x, 0.35, startW.z)
+  group.add(startBadge)
+
+  const goalW = toWorld(level, level.goal)
+  const goalRing = new THREE.Mesh(
+    new THREE.TorusGeometry(GOAL_VISUAL_RADIUS, 0.05, 10, 28),
+    new THREE.MeshStandardMaterial({ color: 0xffd166, emissive: 0xffb300, emissiveIntensity: 0.8, roughness: 0.3, metalness: 0.3 }),
+  )
+  goalRing.rotation.x = Math.PI / 2
+  goalRing.position.set(goalW.x, 0.03, goalW.z)
+  group.add(goalRing)
+  const goalBadge = makeBadge('⚑', '#ffd166')
+  goalBadge.position.set(goalW.x, 0.35, goalW.z)
+  group.add(goalBadge)
 
   const ball = new THREE.Mesh(
     new THREE.SphereGeometry(BALL_RADIUS, 24, 18),
     new THREE.MeshStandardMaterial({ color: 0xff2a44, emissive: 0x4a0010, emissiveIntensity: 0.25, roughness: 0.15, metalness: 0.85 }),
   )
-  ball.renderOrder = 5
+  ball.castShadow = true
   group.add(ball)
 
   const trailPool = Array.from({ length: 14 }, () => {
     const dot = new THREE.Mesh(
-      new THREE.SphereGeometry(BALL_RADIUS * 0.6, 8, 6),
+      new THREE.SphereGeometry(BALL_RADIUS * 0.55, 8, 6),
       new THREE.MeshBasicMaterial({ color: 0xff2a44, transparent: true, opacity: 0 }),
     )
     group.add(dot)
     return dot
   })
 
-  const trapBurst = createBurstSystem(40, 0.35, [{ r: 1, g: 0.3, b: 0.15 }, { r: 1, g: 0.55, b: 0.1 }, { r: 0.6, g: 0.1, b: 0.1 }])
-  const confetti = createBurstSystem(90, 0.3, [{ r: 1, g: 0.82, b: 0.4 }, { r: 0.5, g: 0.85, b: 1 }, { r: 1, g: 1, b: 1 }, { r: 0.55, g: 1, b: 0.6 }])
-  group.add(trapBurst.points)
+  const dropBurst = createBurstSystem(40, 0.3, [{ r: 1, g: 0.3, b: 0.15 }, { r: 1, g: 0.55, b: 0.1 }, { r: 0.6, g: 0.1, b: 0.1 }])
+  const confetti = createBurstSystem(90, 0.26, [{ r: 1, g: 0.82, b: 0.4 }, { r: 0.5, g: 0.85, b: 1 }, { r: 1, g: 1, b: 1 }, { r: 0.55, g: 1, b: 0.6 }])
+  group.add(dropBurst.points)
   group.add(confetti.points)
 
-  return { group, ball, goalMeshes, trapIcons, gateFlaps, trailPool, trapBurst, confetti }
+  return { group, ball, holeMeshes, goalRing, gateMeshes, trailPool, dropBurst, confetti }
 }
 
 function GameCanvas({ level, onHud, onWin, muted, tiltEnabled, recenterSignal }) {
@@ -355,8 +338,6 @@ function GameCanvas({ level, onHud, onWin, muted, tiltEnabled, recenterSignal })
   useEffect(() => {
     const mount = mountRef.current
     let raf = null
-    let dragging = false
-    let lastX = 0, lastY = 0
 
     const state = createGameState(level)
     const audio = createAudio()
@@ -364,80 +345,72 @@ function GameCanvas({ level, onHud, onWin, muted, tiltEnabled, recenterSignal })
     let lastSeenSeq = state.eventSeq
     let lastMuted = mutedRef.current
 
-    const camera = new THREE.PerspectiveCamera(50, mount.clientWidth / mount.clientHeight, 0.1, 200)
-    camera.position.set(0, 0, 16.5)
+    const boardMax = Math.max(level.width, level.height)
+    const camDist = boardMax * 1.55 + 3
+    const camera = new THREE.PerspectiveCamera(36, mount.clientWidth / mount.clientHeight, 0.1, 300)
+    camera.position.set(0, camDist, camDist * 0.18)
     camera.lookAt(0, 0, 0)
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false })
     renderer.setSize(mount.clientWidth, mount.clientHeight)
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    renderer.shadowMap.enabled = true
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap
     mount.appendChild(renderer.domElement)
 
     const pmrem = new THREE.PMREMGenerator(renderer)
     const envRT = pmrem.fromScene(new RoomEnvironment(), 0.04)
 
     const scene = new THREE.Scene()
-    scene.background = new THREE.Color(0x0a0a18)
+    scene.background = new THREE.Color(0x14101c)
     scene.environment = envRT.texture
-    scene.add(new THREE.AmbientLight(0x8fa0ff, 0.5))
-    const key = new THREE.DirectionalLight(0xffffff, 1.05)
-    key.position.set(4, 8, 6)
+    scene.add(new THREE.AmbientLight(0x8fa0ff, 0.55))
+    const key = new THREE.DirectionalLight(0xfff2d8, 1.15)
+    key.position.set(boardMax * 0.4, boardMax * 1.3, boardMax * 0.25)
+    key.castShadow = true
+    key.shadow.mapSize.set(1024, 1024)
+    const sh = boardMax * 0.85
+    key.shadow.camera.left = -sh; key.shadow.camera.right = sh
+    key.shadow.camera.top = sh; key.shadow.camera.bottom = -sh
+    key.shadow.camera.near = 0.5; key.shadow.camera.far = boardMax * 3
     scene.add(key)
-    const fill = new THREE.DirectionalLight(0x6a7fff, 0.4)
-    fill.position.set(-6, -3, -4)
-    scene.add(fill)
+    scene.add(new THREE.DirectionalLight(0x6a7fff, 0.3))
 
-    // Faint starfield for depth — static, not part of the rotating group.
-    const starGeo = new THREE.BufferGeometry()
-    const starCount = 300
-    const starPos = new Float32Array(starCount * 3)
-    for (let i = 0; i < starCount; i++) {
-      const r = 60 + Math.random() * 60
-      const theta = Math.random() * Math.PI * 2, phi = Math.acos(Math.random() * 2 - 1)
-      starPos[i * 3] = r * Math.sin(phi) * Math.cos(theta)
-      starPos[i * 3 + 1] = r * Math.cos(phi)
-      starPos[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta)
-    }
-    starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3))
-    scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xaac4ff, size: 0.35, transparent: true, opacity: 0.5, sizeAttenuation: true })))
-
-    // Decorative stand ring, like the toy's base — static in camera space.
-    const stand = new THREE.Mesh(
-      new THREE.TorusGeometry(SPHERE_RADIUS * 0.55, 0.18, 10, 32),
-      new THREE.MeshStandardMaterial({ color: 0x2a2a3a, roughness: 0.5, metalness: 0.6 }),
-    )
-    stand.position.y = -(SPHERE_RADIUS + 1.6)
-    stand.rotation.x = Math.PI / 2 - 0.35
-    scene.add(stand)
-
-    const { group, ball, goalMeshes, trapIcons, gateFlaps, trailPool, trapBurst, confetti } = buildMazeGroup(state.level, state.runtime)
-    scene.add(group)
+    const tiltGroup = new THREE.Group()
+    const { group: boardGroup, ball, holeMeshes, goalRing, gateMeshes, trailPool, dropBurst, confetti } = buildBoardGroup(level)
+    tiltGroup.add(boardGroup)
+    scene.add(tiltGroup)
 
     function onKeyDown(e) {
-      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'KeyQ', 'KeyE'].includes(e.code)) e.preventDefault()
+      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.code)) e.preventDefault()
       keysRef.current.add(e.code)
     }
     function onKeyUp(e) { keysRef.current.delete(e.code) }
     window.addEventListener('keydown', onKeyDown)
     window.addEventListener('keyup', onKeyUp)
 
+    // Drag-to-tilt: think of it as a virtual joystick standing in for the
+    // toy's two knobs — drag away from the press point tilts the board
+    // that way, harder the farther you drag; letting go eases it flat.
+    const DRAG_MAX_PX = 90
+    let dragging = false
+    let originX = 0, originY = 0
+    const dragVec = { x: 0, y: 0 }
     function onPointerDown(e) {
       dragging = true
-      lastX = e.clientX; lastY = e.clientY
+      originX = e.clientX; originY = e.clientY
+      dragVec.x = 0; dragVec.y = 0
       renderer.domElement.setPointerCapture(e.pointerId)
       audio.ensure(); audio.resume()
     }
     function onPointerMove(e) {
       if (!dragging) return
-      const dx = e.clientX - lastX, dy = e.clientY - lastY
-      lastX = e.clientX; lastY = e.clientY
-      // Tilt owns rotation outright while active — a stray drag shouldn't
-      // fight the sensor-driven orientation set in tick().
-      if (tiltEnabledRef.current) return
-      state.rotation = applyDragRotation(state.rotation, dx, dy)
+      dragVec.x = e.clientX - originX
+      dragVec.y = e.clientY - originY
     }
     function onPointerUp(e) {
       dragging = false
+      dragVec.x = 0; dragVec.y = 0
       try { renderer.domElement.releasePointerCapture(e.pointerId) } catch { /* already released */ }
     }
     renderer.domElement.addEventListener('pointerdown', onPointerDown)
@@ -445,11 +418,11 @@ function GameCanvas({ level, onHud, onWin, muted, tiltEnabled, recenterSignal })
     renderer.domElement.addEventListener('pointerup', onPointerUp)
     renderer.domElement.addEventListener('pointercancel', onPointerUp)
 
-    // Device-tilt control — mirrors the physical toy: the maze's orientation
-    // IS the phone's orientation, not something you steer with a rate (like
-    // drag/keys do). `tiltRaw` just mirrors the latest sensor reading;
-    // baseline calibration and smoothing happen once a frame in tick(), not
-    // per-event, so it stays independent of how often the sensor fires.
+    // Device-tilt control — the most literal match for this game: the
+    // board's tilt IS the phone's tilt, not a rate you steer with.
+    // `tiltRaw` just mirrors the latest sensor reading; baseline
+    // calibration and smoothing happen once a frame in tick(), not per
+    // event, so it stays independent of how often the sensor fires.
     let tiltBaseline = null
     const tiltRaw = { beta: 0, gamma: 0 }
     const tiltSmooth = { beta: 0, gamma: 0 }
@@ -469,6 +442,7 @@ function GameCanvas({ level, onHud, onWin, muted, tiltEnabled, recenterSignal })
     }
     window.addEventListener('resize', onResize)
 
+    const MAX_VISUAL_TILT = 0.26 // radians the board visibly leans, cosmetic only
     const clock = new THREE.Clock()
     let wonFired = false
     let trailCursor = 0
@@ -481,9 +455,6 @@ function GameCanvas({ level, onHud, onWin, muted, tiltEnabled, recenterSignal })
       const k = keysRef.current
 
       if (tiltEnabledRef.current) {
-        // Recalibrate "neutral" whenever tilt just turned on, or the player
-        // hit Recenter — both cases mean "treat however I'm holding the
-        // phone right now as flat."
         if (!tiltWasActive || recenterSignalRef.current !== lastRecenterSignal) {
           tiltBaseline = { beta: tiltRaw.beta, gamma: tiltRaw.gamma }
           tiltSmooth.beta = tiltRaw.beta
@@ -491,100 +462,99 @@ function GameCanvas({ level, onHud, onWin, muted, tiltEnabled, recenterSignal })
         }
         tiltWasActive = true
         lastRecenterSignal = recenterSignalRef.current
-        // Smooth in tick (not in the event handler) so it's tied to render
-        // rate, not however fast the sensor happens to fire.
         const smoothing = 0.25
         tiltSmooth.beta += (tiltRaw.beta - tiltSmooth.beta) * smoothing
         tiltSmooth.gamma += (tiltRaw.gamma - tiltSmooth.gamma) * smoothing
-        state.rotation = tiltToRotation(tiltSmooth.beta - tiltBaseline.beta, tiltSmooth.gamma - tiltBaseline.gamma)
+        state.tilt = tiltFromDeviceAngles(tiltSmooth.beta - tiltBaseline.beta, tiltSmooth.gamma - tiltBaseline.gamma)
       } else {
         tiltWasActive = false
-        const turnX = (k.has('ArrowRight') ? 1 : 0) - (k.has('ArrowLeft') ? 1 : 0)
-        const turnY = (k.has('ArrowDown') ? 1 : 0) - (k.has('ArrowUp') ? 1 : 0)
-        if (turnX || turnY) { state.rotation = applyKeyRotation(state.rotation, turnX, turnY, dt); audio.ensure() }
-        const rollDir = (k.has('KeyE') ? 1 : 0) - (k.has('KeyQ') ? 1 : 0)
-        if (rollDir) { state.rotation = applyRoll(state.rotation, rollDir, dt); audio.ensure() }
+        if (dragging) {
+          state.tilt = tiltFromDrag(dragVec.x, dragVec.y, DRAG_MAX_PX)
+        } else {
+          const turnX = (k.has('ArrowRight') ? 1 : 0) - (k.has('ArrowLeft') ? 1 : 0)
+          const turnY = (k.has('ArrowDown') ? 1 : 0) - (k.has('ArrowUp') ? 1 : 0)
+          if (turnX || turnY) { state.tilt = applyKeyTilt(state.tilt, turnX, turnY, dt); audio.ensure() }
+          else state.tilt = decayTilt(state.tilt, dt)
+        }
       }
 
       if (mutedRef.current !== lastMuted) { lastMuted = mutedRef.current; audio.setMuted(lastMuted) }
 
       stepGame(state, dt)
-      group.quaternion.set(state.rotation.x, state.rotation.y, state.rotation.z, state.rotation.w)
+      tiltGroup.rotation.z = -state.tilt.x * MAX_VISUAL_TILT
+      tiltGroup.rotation.x = state.tilt.y * MAX_VISUAL_TILT
 
-      // Fire any new one-shot event (checkpoint/trap/goal) exactly once.
       if (state.eventSeq !== lastSeenSeq) {
         lastSeenSeq = state.eventSeq
         const ev = state.lastEvent
-        const node = ev && state.runtime.nodesById[ev.nodeId]
-        const worldPos = node ? new THREE.Vector3(node.pos.x, node.pos.y, node.pos.z) : null
         if (ev?.type === 'checkpoint') { audio.playCheckpoint() }
-        else if (ev?.type === 'trap') { audio.playTrap(); if (worldPos) trapBurst.spawn(worldPos, 26, [2, 5], [0.4, 0.8]) }
-        else if (ev?.type === 'goal') { audio.playWin(); if (worldPos) confetti.spawn(worldPos, 80, [1.5, 4.5], [0.8, 1.6]) }
+        else if (ev?.type === 'trap') {
+          audio.playTrap()
+          if (ev.pos) dropBurst.spawn(toWorld(level, ev.pos, 0.1), 26, [1.8, 4.5], [0.4, 0.8])
+        } else if (ev?.type === 'goal') {
+          audio.playWin()
+          confetti.spawn(toWorld(level, state.level.goal, 0.4), 80, [1.5, 4.2], [0.8, 1.6])
+        }
       }
 
       const trapped = state.ball.status === 'trapped'
       const scale = trapped ? Math.max(0.05, state.ball.trapTimer) : 1
       ball.scale.setScalar(scale)
       if (!trapped) {
-        const edge = state.runtime.edgesById[state.ball.edgeId]
-        const p = getBallLocalPosition(state)
-        ball.position.set(p.x, p.y, p.z)
-        const tangent = sampleTangentAt(edge, state.ball.sFromA)
-        const spinAxis = new THREE.Vector3(tangent.z, 0, -tangent.x)
-        if (spinAxis.lengthSq() > 1e-6) {
-          spinAxis.normalize()
-          ball.rotateOnWorldAxis(spinAxis, (state.ball.speed * dt) / BALL_RADIUS)
+        const w = toWorld(level, state.ball.pos, BALL_RADIUS)
+        ball.position.set(w.x, w.y, w.z)
+        const speed = Math.hypot(state.ball.vel.x, state.ball.vel.y)
+        if (speed > 0.05) {
+          const axis = new THREE.Vector3(state.ball.vel.y, 0, -state.ball.vel.x)
+          axis.normalize()
+          ball.rotateOnWorldAxis(axis, (speed * dt) / BALL_RADIUS)
         }
-
-        // Lay a fading trail dot every ~60ms while actually rolling.
         trailAccum += dt
-        if (trailAccum > 0.06 && Math.abs(state.ball.speed) > 0.3) {
+        if (trailAccum > 0.06 && speed > 0.4) {
           trailAccum = 0
           const dot = trailPool[trailCursor]
           trailCursor = (trailCursor + 1) % trailPool.length
           dot.position.copy(ball.position)
           dot.userData.life = 0.5
-          dot.material.opacity = 0.5
+          dot.material.opacity = 0.45
         }
       }
       trailPool.forEach(dot => {
         if (dot.userData.life > 0) {
           dot.userData.life -= dt
-          dot.material.opacity = Math.max(0, dot.userData.life / 0.5) * 0.5
+          dot.material.opacity = Math.max(0, dot.userData.life / 0.5) * 0.45
         }
       })
 
-      goalMeshes.forEach(m => {
-        m.scale.setScalar(1 + Math.sin(t * 4) * 0.08)
-        m.rotation.y += dt * 0.8
-        m.rotation.x += dt * 0.5
-      })
-      trapIcons.forEach((icon, i) => { icon.scale.setScalar(1.0 + Math.sin(t * 5 + i) * 0.12) })
+      goalRing.rotation.z += dt * 0.6
+      goalRing.position.y = 0.03 + Math.sin(t * 3) * 0.02
+      holeMeshes.forEach((ring, i) => { ring.scale.setScalar(1 + Math.sin(t * 4 + i) * 0.05) })
 
-      gateFlaps.forEach(({ mesh, edge }) => {
-        const open = isGateOpen(edge, state.ball.elapsed)
+      gateMeshes.forEach(({ mesh, wall }) => {
+        const open = isGateOpen(wall.gate, state.ball.elapsed)
         mesh.material.color.setHex(open ? 0x3dff8f : 0xff3b3b)
         mesh.material.emissive.setHex(open ? 0x3dff8f : 0xff3b3b)
-        const panelScale = open ? 0.15 : 1
-        mesh.scale.set(panelScale, panelScale, 1)
+        const s2 = open ? 0.08 : 1
+        mesh.scale.y = s2
+        mesh.position.y = (WALL_HEIGHT * s2) / 2
       })
 
-      trapBurst.update(dt, -1.5)
-      confetti.update(dt, -2.2)
+      dropBurst.update(dt, -2.4)
+      confetti.update(dt, -2.0)
 
-      audio.updateRoll(Math.abs(state.ball.speed), state.ball.status === 'playing')
+      audio.updateRoll(Math.hypot(state.ball.vel.x, state.ball.vel.y), state.ball.status === 'playing')
 
       renderer.render(scene, camera)
 
-      const stations = getStations(state.level)
-      const stationIndex = Math.max(0, stations.findIndex(n => n.id === state.ball.checkpointNodeId))
+      const totalStations = level.checkpoints.length + 1
+      const station = state.result === 'won' ? totalStations : state.reached.size
       onHudRef.current({
         elapsed: state.ball.elapsed,
         drops: state.ball.drops,
         trapped,
         won: state.result === 'won',
-        station: stationIndex,
-        totalStations: stations.length - 1,
+        station,
+        totalStations,
       })
       if (state.result === 'won' && !wonFired) {
         wonFired = true
@@ -619,11 +589,12 @@ function LevelSelect({ onPlay, best }) {
     <div className={styles.overlayScreen}>
       <h1 className={styles.title}>🔮 Orbit Maze</h1>
       <p className={styles.blurb}>
-        Tilt the whole globe — drag with your mouse/finger, use the arrow keys (Q/E to roll), or on
-        a phone tap 📱 Tilt in the HUD and steer by physically tilting the phone — and let gravity
-        roll the ball through the tube maze. Watch for forks: the ball rolls into whichever branch
-        you tilt downhill, so tilt away from the dark trap holes. Checkpoints save your spot if you
-        fall in. Some levels add timed gates — red is shut, green is open.
+        Tilt the whole board — drag with your mouse/finger, use the arrow keys, or on a phone tap
+        📱 Tilt in the HUD and steer by physically tilting the phone — and let gravity roll the
+        ball through the corridors, top-down, just like the wooden marble-labyrinth toy. Watch for
+        holes: some lurk down dead-end branches, others sit right on your route, so tilt carefully
+        to ease around them. Checkpoints save your spot if you fall in. Some boards add a timed
+        gate — red is shut, green is open.
       </p>
       <div className={styles.levelGrid}>
         {LEVELS.map((lvl, i) => (
@@ -637,7 +608,7 @@ function LevelSelect({ onPlay, best }) {
         <button className={`${styles.levelCard} ${styles.specialCard}`} onClick={() => onPlay({ kind: 'daily', seed: dailySeed })}>
           <span className={styles.levelNum}>🎲</span>
           <span className={styles.levelName}>Daily Challenge</span>
-          <span className={styles.levelBlurb}>One shared maze for {dailySeed} — everyone gets the same layout today.</span>
+          <span className={styles.levelBlurb}>One shared board for {dailySeed} — everyone gets the same layout today.</span>
           <span className={styles.levelBest}>{best[dailyKey] !== undefined ? `Best: ${best[dailyKey].toFixed(1)}s` : 'Not played yet'}</span>
         </button>
         <button
@@ -646,7 +617,7 @@ function LevelSelect({ onPlay, best }) {
         >
           <span className={styles.levelNum}>🔀</span>
           <span className={styles.levelName}>Random Maze</span>
-          <span className={styles.levelBlurb}>A freshly generated maze — different every time, always fair.</span>
+          <span className={styles.levelBlurb}>A freshly generated board — different every time, always fair.</span>
           <span className={styles.levelBest}>Endless variety</span>
         </button>
       </div>
@@ -690,11 +661,11 @@ function WinOverlay({ result, levelSpec, best, onNext, onReplay, onMenu, onNewRa
   return (
     <div className={styles.modalOverlay}>
       <div className={styles.modal}>
-        <h2 className={styles.modalTitle}>🏆 Level Complete!</h2>
+        <h2 className={styles.modalTitle}>🏆 Board Complete!</h2>
         <p className={styles.resultLine}>Time: {result.time.toFixed(1)}s{isNewBest && <span className={styles.newBest}> — New Best!</span>}</p>
-        <p className={styles.resultLine}>Drops into traps: {result.drops}</p>
+        <p className={styles.resultLine}>Drops into holes: {result.drops}</p>
         <div className={styles.modalBtnRow}>
-          {showNext && <button className={styles.bigBtn} onClick={onNext}>▶ Next Level</button>}
+          {showNext && <button className={styles.bigBtn} onClick={onNext}>▶ Next Board</button>}
           {showNewRandom && <button className={styles.bigBtn} onClick={onNewRandom}>🔀 New Random Maze</button>}
           <button className={styles.ghostBtn} onClick={onReplay}>↺ Replay</button>
           <button className={styles.ghostBtn} onClick={onMenu}>☰ Level Select</button>
