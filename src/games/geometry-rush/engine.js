@@ -23,7 +23,7 @@ const SPEED_RAMP_DIST = 9000
 const DIFFICULTY_DIST = 7000
 
 const CUBE_GRAVITY = 2600
-const CUBE_JUMP_V = 760
+const CUBE_JUMP_V = 620
 
 const SHIP_GRAVITY = 1500
 const SHIP_THRUST = 3000
@@ -47,12 +47,15 @@ const ORB_RADIUS = 15
 function jumpHeight(v) { return (v * v) / (2 * CUBE_GRAVITY) }
 function jumpAirTime(v) { return (2 * v) / CUBE_GRAVITY }
 function jumpDistance(v, speed) { return speed * jumpAirTime(v) }
-const CUBE_JUMP_HEIGHT = jumpHeight(CUBE_JUMP_V) // ~111 units at launch velocity 760
+const CUBE_JUMP_HEIGHT = jumpHeight(CUBE_JUMP_V) // ~74 units at launch velocity 620
 
 // An orb mid-jump resets vertical velocity to ORB_JUMP_V from wherever the
 // player is — so an orb-assisted gap is really two arcs: a normal jump up
 // to the orb's height, then a fresh launch from there back down to 0.
-const ORB_TRIGGER_Y = 90
+// Sized as a fraction of the jump's own peak height (not a fixed number) so
+// it's always reachable — a fixed value above the peak makes the "toOrb"
+// sqrt below go negative (NaN), which silently halts all level generation.
+const ORB_TRIGGER_Y = CUBE_JUMP_HEIGHT * 0.8
 function orbComboAirTime() {
   const g = CUBE_GRAVITY
   const toOrb = (CUBE_JUMP_V - Math.sqrt(CUBE_JUMP_V * CUBE_JUMP_V - 2 * g * ORB_TRIGGER_Y)) / g
