@@ -24,6 +24,10 @@ import GravityFalls from './games/gravity-falls/GravityFalls.jsx'
 import IntergalacticPoker from './games/intergalactic-poker/IntergalacticPoker.jsx'
 import GeometryRush from './games/geometry-rush/GeometryRush.jsx'
 import SatisfyingToybox from './games/satisfying-toybox/SatisfyingToybox.jsx'
+import DungeonCrawlerMax from './games/dungeon-crawler-max/DungeonCrawlerMax.jsx'
+import DungeonCrawlerFreeRoam from './games/dungeon-crawler-free-roam/DungeonCrawlerFreeRoam.jsx'
+import XMarksTheSpot from './games/x-marks-the-spot/XMarksTheSpot.jsx'
+import SnackSquad from './games/snack-squad/SnackSquad.jsx'
 
 export default function App() {
   return (
@@ -53,6 +57,10 @@ export default function App() {
         <Route path="/intergalactic-poker" element={<IntergalacticPoker />} />
         <Route path="/geometry-rush" element={<GeometryRush />} />
         <Route path="/satisfying-toybox" element={<SatisfyingToybox />} />
+        <Route path="/dungeon-crawler-max" element={<DungeonCrawlerMax />} />
+        <Route path="/dungeon-crawler-free-roam" element={<DungeonCrawlerFreeRoam />} />
+        <Route path="/x-marks-the-spot" element={<XMarksTheSpot />} />
+        <Route path="/snack-squad" element={<SnackSquad />} />
       </Routes>
     </HorrorModeProvider>
   )

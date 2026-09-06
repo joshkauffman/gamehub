@@ -16,15 +16,22 @@ const SECRET_GAMES = [
   {
     id: 'satisfying-toybox',
     title: 'Satisfying Toybox',
-    description: 'No score, no goal — just bubble wrap to pop, slime to stretch, a squishy to squeeze, a fidget spinner to flick, and a soap bar to carve.',
+    description: 'No score, no goal — 17 fidget toys including bubble wrap, slime, a turnable 3D Rubik’s Cube, kinetic sand, a lava lamp, an Etch A Sketch, a gear train, a spinning top, and a marble labyrinth.',
     emoji: '🫧',
     path: '/satisfying-toybox',
+  },
+  {
+    id: 'snack-squad',
+    title: 'Snack Squad',
+    description: "Buy packs of snack-food trading cards, flip through the pull, and stash new finds in your binder. Sell duplicates for coins, or meet a real friend online at the Trading Post to trade cards or fight a turn-based card battle.",
+    emoji: '🍪',
+    path: '/snack-squad',
   },
 ]
 
 const CATEGORIES = [
   {
-    name: 'Platformers',
+    name: 'Action & Arcade',
     games: [
       {
         id: 'obvious-mario-knockoff',
@@ -33,11 +40,6 @@ const CATEGORIES = [
         emoji: '🍄',
         path: '/obvious-mario-knockoff',
       },
-    ],
-  },
-  {
-    name: 'Arcade',
-    games: [
       {
         id: 'retro-arcade',
         title: 'Retro Arcade',
@@ -59,10 +61,31 @@ const CATEGORIES = [
         emoji: '🪿',
         path: '/flappy-goose',
       },
+      {
+        id: 'lil-monster-battles',
+        title: "Lil' Monster Battles",
+        description: 'Mix-and-match animal monsters throw down in themed arenas. Solo vs the computer or 2 players on one keyboard.',
+        emoji: '🐲',
+        path: '/lil-monster-battles',
+      },
+      {
+        id: 'wings-of-fire',
+        title: 'Wings of Fire: Talon Clash',
+        description: 'Pick a dragon tribe — SkyWing, IceWing, SandWing, SeaWing, MudWing, or RainWing — and fight with claws and a signature breath attack in a free 3D sky arena. Solo vs CPU waves or 2-player duel.',
+        emoji: '🐉',
+        path: '/wings-of-fire',
+      },
+      {
+        id: 'avatar',
+        title: 'Avatar: Elemental Grounds',
+        description: 'Pick a bending style — Air, Water, Earth, Fire, or the rarer Lava, Metal, Sand, and Lightning — and roam an open-world proving grounds until you find your opponent, then fight. Solo vs CPU waves or 2-player duel.',
+        emoji: '🌏',
+        path: '/avatar',
+      },
     ],
   },
   {
-    name: 'Cards & Strategy',
+    name: 'Cards, Puzzles & Party Games',
     games: [
       {
         id: 'ultimate-ttt',
@@ -92,11 +115,13 @@ const CATEGORIES = [
         emoji: '👁',
         path: '/intergalactic-poker',
       },
-    ],
-  },
-  {
-    name: 'Party & Word Games',
-    games: [
+      {
+        id: 'orbit-maze',
+        title: 'Orbit Maze',
+        description: "A 3D gravity-maze puzzle — tilt the whole transparent sphere and let gravity roll the ball through a twisting tube track, past forks and hidden trap holes, to the goal.",
+        emoji: '🔮',
+        path: '/orbit-maze',
+      },
       {
         id: 'poetry-for-neanderthals',
         title: 'Poetry for Neanderthals',
@@ -110,44 +135,6 @@ const CATEGORIES = [
         description: 'One player sets the word, the other guesses. Classic.',
         emoji: '🪢',
         path: '/hangman',
-      },
-    ],
-  },
-  {
-    name: 'Battle Arenas',
-    games: [
-      {
-        id: 'lil-monster-battles',
-        title: "Lil' Monster Battles",
-        description: 'Mix-and-match animal monsters throw down in themed arenas. Solo vs the computer or 2 players on one keyboard.',
-        emoji: '🐲',
-        path: '/lil-monster-battles',
-      },
-      {
-        id: 'wings-of-fire',
-        title: 'Wings of Fire: Talon Clash',
-        description: 'Pick a dragon tribe — SkyWing, IceWing, SandWing, SeaWing, MudWing, or RainWing — and fight with claws and a signature breath attack in a free 3D sky arena. Solo vs CPU waves or 2-player duel.',
-        emoji: '🐉',
-        path: '/wings-of-fire',
-      },
-      {
-        id: 'avatar',
-        title: 'Avatar: Elemental Grounds',
-        description: 'Pick a bending style — Air, Water, Earth, Fire, or the rarer Lava, Metal, Sand, and Lightning — and roam an open-world proving grounds until you find your opponent, then fight. Solo vs CPU waves or 2-player duel.',
-        emoji: '🌏',
-        path: '/avatar',
-      },
-    ],
-  },
-  {
-    name: 'Puzzles',
-    games: [
-      {
-        id: 'orbit-maze',
-        title: 'Orbit Maze',
-        description: "A 3D gravity-maze puzzle — tilt the whole transparent sphere and let gravity roll the ball through a twisting tube track, past forks and hidden trap holes, to the goal.",
-        emoji: '🔮',
-        path: '/orbit-maze',
       },
     ],
   },
@@ -182,6 +169,27 @@ const CATEGORIES = [
         emoji: '🌲',
         path: '/gravity-falls',
       },
+      {
+        id: 'dungeon-crawler-max',
+        title: 'Dungeon Crawler Max',
+        description: "A kid-safe game-show dungeon crawl. Bonk silly monsters, loot chests, level up, and fight a floor boss while a floating announcer hypes the crowd and your hamster sidekick heckles supportively.",
+        emoji: '🏰',
+        path: '/dungeon-crawler-max',
+      },
+      {
+        id: 'dungeon-crawler-free-roam',
+        title: 'Dungeon Crawler Max: Free Roam',
+        description: "The game show goes 3D open-world. Roam a wide-open field with five ruined dungeons scattered around, each guarded by its own boss, fighting wandering monsters and looting gear along the way.",
+        emoji: '🗺️',
+        path: '/dungeon-crawler-free-roam',
+      },
+      {
+        id: 'x-marks-the-spot',
+        title: 'X Marks the Spot',
+        description: "A peaceful pirate scavenger hunt — an island, a compass, and a trail of clues leading to buried treasure. Each clue points to the next, and the last one leads straight to gold. The trail reshuffles every time you play.",
+        emoji: '🏴‍☠️',
+        path: '/x-marks-the-spot',
+      },
     ],
   },
   {
@@ -200,6 +208,14 @@ const CATEGORIES = [
         description: 'Start a private chat and invite people with a short room code, or join one someone shared with you. No accounts, no server — just the room.',
         emoji: '💬',
         path: '/chat-lounge',
+      },
+      {
+        id: 'suggestion-box',
+        title: 'Suggestion Box',
+        description: 'Found a bug or have an idea for a new game? Drop an anonymous note — no name required. Checked every Saturday.',
+        emoji: '📮',
+        path: 'https://claude.ai/code/artifact/5183c891-667a-40dd-be69-644253b10454',
+        external: true,
       },
     ],
   },
@@ -221,14 +237,7 @@ export default function Home() {
           <section key={category.name} className={styles.section}>
             <h2 className={styles.sectionTitle}>{category.name}</h2>
             <div className={styles.grid}>
-              {category.games.map(game => (
-                <Link key={game.id} to={game.path} className={styles.card}>
-                  <span className={styles.emoji}>{game.emoji}</span>
-                  <h3 className={styles.cardTitle}>{game.title}</h3>
-                  <p className={styles.cardDesc}>{game.description}</p>
-                  <span className={styles.play}>Play →</span>
-                </Link>
-              ))}
+              {category.games.map(game => <GameCard key={game.id} game={game} />)}
             </div>
           </section>
         ))}
@@ -238,12 +247,7 @@ export default function Home() {
             <h2 className={`${styles.sectionTitle} ${styles.secretTitle}`}>🔓 Secret</h2>
             <div className={styles.grid}>
               {SECRET_GAMES.map(game => (
-                <Link key={game.id} to={game.path} className={`${styles.card} ${styles.secretCard}`}>
-                  <span className={styles.emoji}>{game.emoji}</span>
-                  <h3 className={styles.cardTitle}>{game.title}</h3>
-                  <p className={styles.cardDesc}>{game.description}</p>
-                  <span className={styles.play}>Play →</span>
-                </Link>
+                <GameCard key={game.id} game={game} extraClassName={styles.secretCard} />
               ))}
             </div>
           </section>
@@ -252,5 +256,32 @@ export default function Home() {
 
       {justUnlocked && <div className={styles.secretToast}>🔓 Secret code accepted! New games unlocked below.</div>}
     </div>
+  )
+}
+
+// External entries (e.g. the Suggestion Box, hosted as a separate artifact)
+// need a plain <a>, not a router <Link> — everything else keeps navigating
+// internally without a full page reload.
+function GameCard({ game, extraClassName }) {
+  const className = `${styles.card} ${extraClassName || ''}`
+  const content = (
+    <>
+      <span className={styles.emoji}>{game.emoji}</span>
+      <h3 className={styles.cardTitle}>{game.title}</h3>
+      <p className={styles.cardDesc}>{game.description}</p>
+      <span className={styles.play}>{game.external ? 'Open →' : 'Play →'}</span>
+    </>
+  )
+  if (game.external) {
+    return (
+      <a href={game.path} target="_blank" rel="noopener noreferrer" className={className}>
+        {content}
+      </a>
+    )
+  }
+  return (
+    <Link to={game.path} className={className}>
+      {content}
+    </Link>
   )
 }

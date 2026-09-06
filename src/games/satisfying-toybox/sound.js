@@ -28,3 +28,5 @@ function tone(freq, duration, type, peakGain) {
 export function playPop(freq = 500, duration = 0.09) { tone(freq, duration, 'sine', 0.25) }
 export function playSquish(freq = 220, duration = 0.16) { tone(freq, duration, 'triangle', 0.2) }
 export function playClick(freq = 700, duration = 0.05) { tone(freq, duration, 'square', 0.08) }
+export function playCrack(freq = 140, duration = 0.14) { tone(freq, duration, 'sawtooth', 0.16) }
+export function playChime(freq = 880, duration = 0.35) { tone(freq, duration, 'sine', 0.14) }

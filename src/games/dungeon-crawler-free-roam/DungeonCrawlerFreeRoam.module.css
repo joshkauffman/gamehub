@@ -1,0 +1,330 @@
+.wrapper {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #8fd0f0;
+}
+
+.mount {
+  position: absolute;
+  inset: 0;
+}
+.mount canvas {
+  display: block;
+  outline: none;
+}
+
+.homeLink {
+  position: fixed;
+  top: 76px;
+  left: 10px;
+  color: rgba(255, 255, 255, 0.85);
+  text-decoration: none;
+  font-size: 13px;
+  font-family: Arial, sans-serif;
+  font-weight: bold;
+  background: rgba(0, 0, 0, 0.45);
+  padding: 5px 10px;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+  z-index: 30;
+}
+.homeLink:hover {
+  color: #fff;
+  background: rgba(0, 0, 0, 0.65);
+}
+
+/* ── In-game HUD ─────────────────────────────────────────────────── */
+.hud {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  font-family: Arial, sans-serif;
+  z-index: 15;
+}
+
+.teleportFlash {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  opacity: 0;
+  z-index: 25;
+}
+
+.crosshair {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.75);
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.6);
+}
+
+.statsPanel {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 8px;
+  padding: 10px 14px;
+  min-width: 200px;
+}
+.hpBar, .xpBar {
+  position: relative;
+  height: 14px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+.xpBar { height: 8px; }
+.hpFill {
+  height: 100%;
+  width: 100%;
+  background: #ff5566;
+  transition: width 0.15s;
+}
+.xpFill {
+  height: 100%;
+  width: 0%;
+  background: #8fd3ff;
+  transition: width 0.15s;
+}
+.hpText {
+  position: absolute;
+  top: 14px;
+  left: 20px;
+  font-size: 11px;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+.levelText {
+  font-size: 11px;
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 4px;
+}
+.row {
+  display: flex;
+  gap: 16px;
+  font-size: 14px;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.compass {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 8px;
+  padding: 6px 12px;
+  color: #ffe9b8;
+  font-size: 12px;
+  font-weight: bold;
+  visibility: hidden;
+}
+.compassArrow {
+  display: inline-block;
+  color: #ffd34d;
+  font-size: 14px;
+}
+
+.bossBar {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: min(280px, 34vw);
+  background: rgba(0, 0, 0, 0.55);
+  border-radius: 8px;
+  padding: 8px 10px;
+  visibility: hidden;
+}
+.bossName {
+  font-size: 12px;
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 4px;
+}
+.bossTrack {
+  height: 10px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+}
+.bossFill {
+  height: 100%;
+  width: 100%;
+  background: #ff5566;
+  transition: width 0.15s;
+}
+
+.banner {
+  position: absolute;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.65);
+  border-radius: 8px;
+  padding: 8px 18px;
+  font-size: 17px;
+  font-weight: bold;
+  color: #fff;
+  white-space: nowrap;
+  visibility: hidden;
+  transition: opacity 0.15s;
+}
+
+.announcer {
+  position: absolute;
+  bottom: 84px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 13px;
+  font-style: italic;
+  color: #e9d8ff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+  max-width: 80vw;
+  text-align: center;
+}
+
+.petBubble {
+  position: absolute;
+  bottom: 20px;
+  left: 16px;
+  max-width: 320px;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  color: #ffe9b8;
+}
+
+.controlsHint {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.85);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+  white-space: nowrap;
+}
+
+/* ── Intro / win overlay cards ───────────────────────────────────── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: radial-gradient(ellipse at center, rgba(30, 60, 90, 0.5), rgba(6, 14, 20, 0.85));
+  font-family: Arial, sans-serif;
+  z-index: 20;
+}
+
+.card {
+  max-width: 560px;
+  width: 100%;
+  max-height: 88vh;
+  overflow-y: auto;
+  background: linear-gradient(180deg, #1c3450, #10202f);
+  border: 2px solid #4a7a9a;
+  border-radius: 16px;
+  padding: 28px 30px;
+  text-align: center;
+  color: #eaf6ff;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+}
+
+.emojiRow {
+  font-size: 34px;
+  margin-bottom: 6px;
+}
+
+.title {
+  margin: 0 0 4px;
+  font-size: 24px;
+  color: #ffd34d;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.4);
+}
+
+.tagline {
+  margin: 0 0 16px;
+  font-size: 14px;
+  font-style: italic;
+  color: #a6d6ff;
+}
+
+.story {
+  font-size: 14px;
+  line-height: 1.55;
+  color: #dcecf7;
+  margin: 0 0 18px;
+  text-align: left;
+}
+
+.controls {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: #b8d6ec;
+  margin-bottom: 20px;
+}
+.controls b {
+  color: #fff;
+}
+
+.startButton {
+  font-size: 16px;
+  font-weight: bold;
+  padding: 12px 26px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #ffd34d, #e0a91c);
+  color: #10202f;
+  cursor: pointer;
+  box-shadow: 0 6px 0 #8a6a10;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.startButton:hover {
+  transform: translateY(2px);
+  box-shadow: 0 4px 0 #8a6a10;
+}
+.startButton:active {
+  transform: translateY(6px);
+  box-shadow: 0 0 0 #8a6a10;
+}
+
+.statsList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 15px;
+  margin: 14px 0;
+  color: #dcecf7;
+}
+
+.achList {
+  list-style: none;
+  margin: 0 0 20px;
+  padding: 0;
+  text-align: left;
+  font-size: 13px;
+  color: #ffe9b8;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 12px;
+}
