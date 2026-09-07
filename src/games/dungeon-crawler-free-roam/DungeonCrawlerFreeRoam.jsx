@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom'
 import * as THREE from 'three'
 import styles from './DungeonCrawlerFreeRoam.module.css'
 import {
-  mkInitialState, update, markContestant, boundsCenterXZ, equipWeapon, equipArmor,
+  mkInitialState, update, markContestant, boundsCenterXZ, equipWeapon, equipArmor, equipSpell,
+  chooseClassRace, CLASSES, RACES, SPELLS,
 } from './gameEngine.js'
 import {
   WORLD_HALF, TILE, WALL_HEIGHT, MOUSE_SENSITIVITY, CAMERA_DIST,
@@ -196,9 +197,16 @@ export default function DungeonCrawlerFreeRoam() {
   const stateRef = useRef(null)
   const rafRef = useRef(null)
 
-  const [gearOpen, setGearOpenState] = useState(false)
-  const gearOpenRef = useRef(false)
+  // modal is null | 'gear' | 'classPick' — a single slot since only one
+  // full-screen panel makes sense open at a time; every place that used to
+  // check gearOpen now checks modal !== null so both panels share one
+  // pause/input-gating path.
+  const [modal, setModalState] = useState(null)
+  const modalRef = useRef(null)
+  const [gearTab, setGearTab] = useState('p1')
   const [gearSnapshot, setGearSnapshot] = useState(null)
+  const emptyPick = () => ({ classId: null, raceId: null })
+  const [classPick, setClassPick] = useState({ p1: emptyPick(), p2: emptyPick() })
 
   const hpFillRef = useRef(null)
   const hpTextRef = useRef(null)
@@ -208,9 +216,16 @@ export default function DungeonCrawlerFreeRoam() {
   const levelTextRef = useRef(null)
   const goldTextRef = useRef(null)
   const potionTextRef = useRef(null)
+  const hpFillRef2 = useRef(null)
+  const hpTextRef2 = useRef(null)
+  const xpFillRef2 = useRef(null)
+  const manaFillRef2 = useRef(null)
+  const manaTextRef2 = useRef(null)
+  const levelTextRef2 = useRef(null)
+  const goldTextRef2 = useRef(null)
+  const potionTextRef2 = useRef(null)
   const bannerRef = useRef(null)
   const announcerRef = useRef(null)
-  const petRef = useRef(null)
   const bossBarRef = useRef(null)
   const bossFillRef = useRef(null)
   const bossNameRef = useRef(null)
@@ -222,26 +237,47 @@ export default function DungeonCrawlerFreeRoam() {
 
   function setPhase(p) { phaseRef.current = p; setPhaseState(p) }
 
-  function refreshGearSnapshot() {
-    const p = stateRef.current?.player
-    if (!p) return
-    setGearSnapshot({ weapons: [...p.weapons], armors: [...p.armors], weaponName: p.weaponName, armorName: p.armorName })
+  function snapshotPlayer(p) {
+    return {
+      weapons: [...p.weapons], armors: [...p.armors], spells: [...p.spells],
+      weaponName: p.weaponName, armorName: p.armorName, equippedSpellId: p.equippedSpellId,
+    }
   }
-  function setGearOpen(open) {
-    gearOpenRef.current = open
-    setGearOpenState(open)
-    if (open) {
-      refreshGearSnapshot()
+  function refreshGearSnapshot() {
+    const s = stateRef.current
+    if (!s) return
+    setGearSnapshot({ p1: snapshotPlayer(s.player), p2: snapshotPlayer(s.player2) })
+  }
+  function activeGearPlayer() {
+    return gearTab === 'p1' ? stateRef.current.player : stateRef.current.player2
+  }
+  function setModal(next) {
+    modalRef.current = next
+    setModalState(next)
+    if (next) {
+      if (next === 'gear') { setGearTab('p1'); refreshGearSnapshot() }
+      if (next === 'classPick') setClassPick({ p1: emptyPick(), p2: emptyPick() })
       try { document.exitPointerLock?.() } catch { /* not locked */ }
     }
   }
   function handleEquipWeapon(item) {
-    equipWeapon(stateRef.current, item)
+    equipWeapon(stateRef.current, activeGearPlayer(), item)
     refreshGearSnapshot()
   }
   function handleEquipArmor(item) {
-    equipArmor(stateRef.current, item)
+    equipArmor(stateRef.current, activeGearPlayer(), item)
     refreshGearSnapshot()
+  }
+  function handleEquipSpell(id) {
+    equipSpell(stateRef.current, activeGearPlayer(), id)
+    refreshGearSnapshot()
+  }
+  function confirmClassRace() {
+    const { p1, p2 } = classPick
+    if (!p1.classId || !p1.raceId || !p2.classId || !p2.raceId) return
+    chooseClassRace(stateRef.current, stateRef.current.player, p1.classId, p1.raceId)
+    chooseClassRace(stateRef.current, stateRef.current.player2, p2.classId, p2.raceId)
+    setModal(null)
   }
 
   useEffect(() => {
@@ -292,8 +328,7 @@ export default function DungeonCrawlerFreeRoam() {
     const moverMap = new Map()
     const chestMap = new Map()
     let playerGroup = null
-    let petGroup = null
-    let petPos = { x: 0, z: 0 }
+    let player2Group = null
     let currentInteriorSite = null
 
     const particleGeo = new THREE.BufferGeometry()
@@ -338,7 +373,7 @@ export default function DungeonCrawlerFreeRoam() {
       currentInteriorSite = null
       dungeonGroup.visible = false
       if (playerGroup) { scene.remove(playerGroup); playerGroup = null }
-      if (petGroup) { scene.remove(petGroup); petGroup = null }
+      if (player2Group) { scene.remove(player2Group); player2Group = null }
     }
 
     function buildWorld(state) {
@@ -368,9 +403,8 @@ export default function DungeonCrawlerFreeRoam() {
       }
       playerGroup = makeMover('🧒', 1.6)
       scene.add(playerGroup)
-      petGroup = makeMover('🐹', 1.0)
-      scene.add(petGroup)
-      petPos = { x: 0, z: 2 }
+      player2Group = makeMover('👦', 1.6)
+      scene.add(player2Group)
     }
 
     function buildInterior(site) {
@@ -507,11 +541,15 @@ export default function DungeonCrawlerFreeRoam() {
 
     const raycaster = new THREE.Raycaster()
     function updateCamera(state) {
-      const p = state.player
-      const pivot = new THREE.Vector3(p.x, 1.5, p.z)
+      const p1 = state.player, p2 = state.player2
+      // Pivot on the midpoint of both players, and pull back farther the
+      // more spread out they are, so a shared camera keeps both in frame
+      // instead of only ever following Player 1.
+      const pivot = new THREE.Vector3((p1.x + p2.x) / 2, 1.5, (p1.z + p2.z) / 2)
+      const spread = Math.hypot(p1.x - p2.x, p1.z - p2.z)
       const fx = -Math.sin(state.yaw), fz = -Math.cos(state.yaw)
       const dir = new THREE.Vector3(-fx * Math.cos(state.pitch), Math.sin(state.pitch), -fz * Math.cos(state.pitch)).normalize()
-      let camDist = CAMERA_DIST
+      let camDist = Math.min(22, Math.max(CAMERA_DIST, CAMERA_DIST + spread * 0.6))
       raycaster.set(pivot, dir)
       raycaster.far = camDist
       const clipMeshes = state.mode === 'dungeon' ? interiorClipMeshes : buildingClipMeshes
@@ -521,37 +559,52 @@ export default function DungeonCrawlerFreeRoam() {
       camera.lookAt(pivot)
     }
 
-    // ── Input ──
-    const input = { forward: false, back: false, left: false, right: false, attackPressed: false, potionPressed: false, spellPressed: false, yawDelta: 0, pitchDelta: 0 }
+    // ── Input ── two independent players share this one keyboard: Player 1
+    // is WASD + mouse-look (steers the shared camera), Player 2 is the
+    // arrow-key cluster + Slash/Period/Comma, moving relative to wherever
+    // that camera currently faces (no camera control of their own).
+    const input1 = { forward: false, back: false, left: false, right: false, attackPressed: false, potionPressed: false, spellPressed: false, yawDelta: 0, pitchDelta: 0 }
+    const input2 = { forward: false, back: false, left: false, right: false, attackPressed: false, potionPressed: false, spellPressed: false }
     function onKeyDown(e) {
       if (e.code === 'KeyI' && phaseRef.current === 'playing') {
-        setGearOpen(!gearOpenRef.current)
+        setModal(modalRef.current === 'gear' ? null : 'gear')
         return
       }
-      if (phaseRef.current !== 'playing' || gearOpenRef.current) return
-      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault()
-      if (e.code === 'KeyW' || e.code === 'ArrowUp') input.forward = true
-      if (e.code === 'KeyS' || e.code === 'ArrowDown') input.back = true
-      if (e.code === 'KeyA' || e.code === 'ArrowLeft') input.left = true
-      if (e.code === 'KeyD' || e.code === 'ArrowRight') input.right = true
-      if (e.code === 'Space') input.attackPressed = true
-      if (e.code === 'KeyE') input.potionPressed = true
-      if (e.code === 'KeyF') input.spellPressed = true
+      if (phaseRef.current !== 'playing' || modalRef.current !== null) return
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'Slash', 'Period', 'Comma'].includes(e.code)) e.preventDefault()
+      if (e.code === 'KeyW') input1.forward = true
+      if (e.code === 'KeyS') input1.back = true
+      if (e.code === 'KeyA') input1.left = true
+      if (e.code === 'KeyD') input1.right = true
+      if (e.code === 'Space') input1.attackPressed = true
+      if (e.code === 'KeyE') input1.potionPressed = true
+      if (e.code === 'KeyF') input1.spellPressed = true
+      if (e.code === 'ArrowUp') input2.forward = true
+      if (e.code === 'ArrowDown') input2.back = true
+      if (e.code === 'ArrowLeft') input2.left = true
+      if (e.code === 'ArrowRight') input2.right = true
+      if (e.code === 'Slash') input2.attackPressed = true
+      if (e.code === 'Period') input2.spellPressed = true
+      if (e.code === 'Comma') input2.potionPressed = true
     }
     function onKeyUp(e) {
-      if (e.code === 'KeyW' || e.code === 'ArrowUp') input.forward = false
-      if (e.code === 'KeyS' || e.code === 'ArrowDown') input.back = false
-      if (e.code === 'KeyA' || e.code === 'ArrowLeft') input.left = false
-      if (e.code === 'KeyD' || e.code === 'ArrowRight') input.right = false
+      if (e.code === 'KeyW') input1.forward = false
+      if (e.code === 'KeyS') input1.back = false
+      if (e.code === 'KeyA') input1.left = false
+      if (e.code === 'KeyD') input1.right = false
+      if (e.code === 'ArrowUp') input2.forward = false
+      if (e.code === 'ArrowDown') input2.back = false
+      if (e.code === 'ArrowLeft') input2.left = false
+      if (e.code === 'ArrowRight') input2.right = false
     }
     function onMouseMove(e) {
       if (document.pointerLockElement === renderer.domElement) {
-        input.yawDelta -= e.movementX * MOUSE_SENSITIVITY
-        input.pitchDelta -= e.movementY * MOUSE_SENSITIVITY
+        input1.yawDelta -= e.movementX * MOUSE_SENSITIVITY
+        input1.pitchDelta -= e.movementY * MOUSE_SENSITIVITY
       }
     }
     function onClick() {
-      if (phaseRef.current === 'playing' && !gearOpenRef.current) renderer.domElement.requestPointerLock?.()
+      if (phaseRef.current === 'playing' && modalRef.current === null) renderer.domElement.requestPointerLock?.()
     }
     window.addEventListener('keydown', onKeyDown)
     window.addEventListener('keyup', onKeyUp)
@@ -577,6 +630,16 @@ export default function DungeonCrawlerFreeRoam() {
       if (goldTextRef.current) goldTextRef.current.textContent = `🪙 ${p.gold}`
       if (potionTextRef.current) potionTextRef.current.textContent = `🧃 x${p.potions}`
 
+      const p2 = state.player2
+      if (hpFillRef2.current) hpFillRef2.current.style.width = `${Math.max(0, (p2.hp / p2.maxHp) * 100)}%`
+      if (hpTextRef2.current) hpTextRef2.current.textContent = `❤️ ${Math.max(0, Math.ceil(p2.hp))}/${p2.maxHp}`
+      if (xpFillRef2.current) xpFillRef2.current.style.width = `${Math.max(0, Math.min(1, p2.xp / p2.xpNext)) * 100}%`
+      if (manaFillRef2.current) manaFillRef2.current.style.width = `${Math.max(0, (p2.mana / p2.maxMana) * 100)}%`
+      if (manaTextRef2.current) manaTextRef2.current.textContent = `🔮 ${Math.floor(p2.mana)}/${p2.maxMana}`
+      if (levelTextRef2.current) levelTextRef2.current.textContent = `Lv.${p2.level}`
+      if (goldTextRef2.current) goldTextRef2.current.textContent = `🪙 ${p2.gold}`
+      if (potionTextRef2.current) potionTextRef2.current.textContent = `🧃 x${p2.potions}`
+
       if (bannerRef.current) {
         if (state.banner) {
           bannerRef.current.style.opacity = state.bannerTimer > 0.4 ? 1 : state.bannerTimer / 0.4
@@ -590,10 +653,6 @@ export default function DungeonCrawlerFreeRoam() {
       if (announcerRef.current) {
         announcerRef.current.style.opacity = state.announcerTimer > 0.5 ? 0.95 : Math.max(0, state.announcerTimer / 0.5) * 0.95
         announcerRef.current.textContent = `🔮 MC Marv: "${state.announcerText}"`
-      }
-      if (petRef.current) {
-        petRef.current.style.opacity = state.petTimer > 0.5 ? 1 : Math.max(0, state.petTimer / 0.5)
-        petRef.current.textContent = `🐹 Biscuit: "${state.petText}"`
       }
 
       const boss = state.mode === 'dungeon' ? state.sites[state.activeSite].monsters.find(m => m.isBoss && !m.dead) : null
@@ -640,21 +699,20 @@ export default function DungeonCrawlerFreeRoam() {
       lastTime = now
       const state = stateRef.current
 
-      if (phaseRef.current === 'playing' && !gearOpenRef.current && state) {
-        update(state, input, dt, { setPhase, setWinStats })
+      if (phaseRef.current === 'playing' && modalRef.current === null && state) {
+        update(state, input1, input2, dt, { setPhase, setWinStats })
         if (state.justTeleported) handleTeleport(state, state.justTeleported)
+        if (state.pendingClassPick) { state.pendingClassPick = false; setModal('classPick') }
 
         if (playerGroup) {
           playerGroup.position.set(state.player.x, 0, state.player.z)
           const flicker = state.player.invuln > 0 && Math.floor(state.player.invuln * 10) % 2 === 0
           playerGroup.userData.sprite.material.opacity = flicker ? 0.35 : 1
         }
-        if (petGroup) {
-          const behindX = state.player.x + Math.sin(state.yaw) * 2.2 + Math.cos(state.yaw) * 1.4
-          const behindZ = state.player.z + Math.cos(state.yaw) * 2.2 - Math.sin(state.yaw) * 1.4
-          petPos.x += (behindX - petPos.x) * 0.06
-          petPos.z += (behindZ - petPos.z) * 0.06
-          petGroup.position.set(petPos.x, 0, petPos.z)
+        if (player2Group) {
+          player2Group.position.set(state.player2.x, 0, state.player2.z)
+          const flicker2 = state.player2.invuln > 0 && Math.floor(state.player2.invuln * 10) % 2 === 0
+          player2Group.userData.sprite.material.opacity = flicker2 ? 0.35 : 1
         }
         syncMovers(state)
         syncChests()
@@ -692,7 +750,7 @@ export default function DungeonCrawlerFreeRoam() {
     const mount = mountRef.current
     mount._teardownAll?.()
     mount._buildWorld?.(state)
-    setGearOpen(false)
+    setModal(null)
     setPhase('playing')
   }
 
@@ -701,8 +759,8 @@ export default function DungeonCrawlerFreeRoam() {
       <div ref={mountRef} className={styles.mount} />
       <Link to="/" className={styles.homeLink}>← GameHub</Link>
 
-      {phase === 'playing' && !gearOpen && (
-        <button className={styles.gearButton} onClick={() => setGearOpen(true)}>🎒 Gear (I)</button>
+      {phase === 'playing' && modal === null && (
+        <button className={styles.gearButton} onClick={() => setModal('gear')}>🎒 Gear (I)</button>
       )}
 
       {phase === 'playing' && (
@@ -710,6 +768,7 @@ export default function DungeonCrawlerFreeRoam() {
           <div ref={teleportFlashRef} className={styles.teleportFlash} />
           <div className={styles.crosshair} />
           <div className={styles.statsPanel}>
+            <span className={styles.playerTag}>P1</span>
             <div className={styles.hpBar}><div ref={hpFillRef} className={styles.hpFill} /></div>
             <div ref={hpTextRef} className={styles.hpText}>❤️ 40/40</div>
             <div className={styles.xpBar}><div ref={xpFillRef} className={styles.xpFill} /></div>
@@ -719,6 +778,20 @@ export default function DungeonCrawlerFreeRoam() {
             <div className={styles.row}>
               <span ref={goldTextRef}>🪙 0</span>
               <span ref={potionTextRef}>🧃 x1</span>
+            </div>
+          </div>
+
+          <div className={`${styles.statsPanel} ${styles.statsPanel2}`}>
+            <span className={styles.playerTag}>P2</span>
+            <div className={styles.hpBar}><div ref={hpFillRef2} className={styles.hpFill} /></div>
+            <div ref={hpTextRef2} className={styles.hpText}>❤️ 40/40</div>
+            <div className={styles.xpBar}><div ref={xpFillRef2} className={styles.xpFill} /></div>
+            <div className={styles.manaBar}><div ref={manaFillRef2} className={styles.manaFill} /></div>
+            <div ref={manaTextRef2} className={styles.manaText}>🔮 40/40</div>
+            <div ref={levelTextRef2} className={styles.levelText}>Lv.1</div>
+            <div className={styles.row}>
+              <span ref={goldTextRef2}>🪙 0</span>
+              <span ref={potionTextRef2}>🧃 x1</span>
             </div>
           </div>
 
@@ -736,56 +809,132 @@ export default function DungeonCrawlerFreeRoam() {
 
           <div ref={bannerRef} className={styles.banner} />
           <div ref={announcerRef} className={styles.announcer} />
-          <div ref={petRef} className={styles.petBubble} />
           <div ref={controlsHintRef} className={styles.controlsHint}>
-            W/S move · A/D turn · click to mouse-look · Space attack · F magic · E potion · I gear
+            P1: W/S move · A/D turn · click to mouse-look · Space attack · F magic · E potion — P2: Arrows move · / attack · . magic · , potion — I gear
           </div>
         </div>
       )}
 
-      {gearOpen && gearSnapshot && (
-        <div className={styles.overlay} onClick={() => setGearOpen(false)}>
-          <div className={styles.card} onClick={e => e.stopPropagation()}>
-            <h1 className={styles.title}>🎒 Gear</h1>
-            <p className={styles.tagline}>Pick your own weapon and armor — press I or click outside to close.</p>
+      {modal === 'gear' && gearSnapshot && (() => {
+        const snap = gearSnapshot[gearTab]
+        return (
+          <div className={styles.overlay} onClick={() => setModal(null)}>
+            <div className={styles.card} onClick={e => e.stopPropagation()}>
+              <h1 className={styles.title}>🎒 Gear</h1>
+              <p className={styles.tagline}>Pick your own weapon, armor, and spell — press I or click outside to close.</p>
 
-            <div className={styles.gearSection}>
-              <h2 className={styles.gearHeading}>Weapons</h2>
-              {gearSnapshot.weapons.length === 0 && <p className={styles.gearEmpty}>No weapons found yet — open chests in a dungeon!</p>}
-              <div className={styles.gearList}>
-                {gearSnapshot.weapons.map(w => {
-                  const equipped = gearSnapshot.weaponName === w.name
-                  return (
-                    <button key={w.name} className={`${styles.gearItem} ${equipped ? styles.gearItemActive : ''}`} onClick={() => handleEquipWeapon(w)} disabled={equipped}>
-                      <span className={styles.gearItemEmoji}>{w.emoji}</span>
-                      <span className={styles.gearItemName}>{w.name}</span>
-                      <span className={styles.gearItemStat}>+{w.atk} ATK</span>
-                      {equipped && <span className={styles.equippedTag}>Equipped</span>}
-                    </button>
-                  )
-                })}
+              <div className={styles.gearTabs}>
+                <button className={`${styles.gearTabBtn} ${gearTab === 'p1' ? styles.gearTabActive : ''}`} onClick={() => setGearTab('p1')}>Player 1</button>
+                <button className={`${styles.gearTabBtn} ${gearTab === 'p2' ? styles.gearTabActive : ''}`} onClick={() => setGearTab('p2')}>Player 2</button>
               </div>
-            </div>
 
-            <div className={styles.gearSection}>
-              <h2 className={styles.gearHeading}>Armor</h2>
-              {gearSnapshot.armors.length === 0 && <p className={styles.gearEmpty}>No armor found yet — open chests in a dungeon!</p>}
-              <div className={styles.gearList}>
-                {gearSnapshot.armors.map(a => {
-                  const equipped = gearSnapshot.armorName === a.name
-                  return (
-                    <button key={a.name} className={`${styles.gearItem} ${equipped ? styles.gearItemActive : ''}`} onClick={() => handleEquipArmor(a)} disabled={equipped}>
-                      <span className={styles.gearItemEmoji}>{a.emoji}</span>
-                      <span className={styles.gearItemName}>{a.name}</span>
-                      <span className={styles.gearItemStat}>+{a.def} DEF</span>
-                      {equipped && <span className={styles.equippedTag}>Equipped</span>}
-                    </button>
-                  )
-                })}
+              <div className={styles.gearSection}>
+                <h2 className={styles.gearHeading}>Weapons</h2>
+                {snap.weapons.length === 0 && <p className={styles.gearEmpty}>No weapons found yet — open chests in a dungeon!</p>}
+                <div className={styles.gearList}>
+                  {snap.weapons.map(w => {
+                    const equipped = snap.weaponName === w.name
+                    return (
+                      <button key={w.name} className={`${styles.gearItem} ${equipped ? styles.gearItemActive : ''}`} onClick={() => handleEquipWeapon(w)} disabled={equipped}>
+                        <span className={styles.gearItemEmoji}>{w.emoji}</span>
+                        <span className={styles.gearItemName}>{w.name}</span>
+                        <span className={styles.gearItemStat}>+{w.atk} ATK</span>
+                        {equipped && <span className={styles.equippedTag}>Equipped</span>}
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
-            </div>
 
-            <button className={styles.startButton} onClick={() => setGearOpen(false)}>Back To The Fight →</button>
+              <div className={styles.gearSection}>
+                <h2 className={styles.gearHeading}>Armor</h2>
+                {snap.armors.length === 0 && <p className={styles.gearEmpty}>No armor found yet — open chests in a dungeon!</p>}
+                <div className={styles.gearList}>
+                  {snap.armors.map(a => {
+                    const equipped = snap.armorName === a.name
+                    return (
+                      <button key={a.name} className={`${styles.gearItem} ${equipped ? styles.gearItemActive : ''}`} onClick={() => handleEquipArmor(a)} disabled={equipped}>
+                        <span className={styles.gearItemEmoji}>{a.emoji}</span>
+                        <span className={styles.gearItemName}>{a.name}</span>
+                        <span className={styles.gearItemStat}>+{a.def} DEF</span>
+                        {equipped && <span className={styles.equippedTag}>Equipped</span>}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              <div className={styles.gearSection}>
+                <h2 className={styles.gearHeading}>Spells</h2>
+                <div className={styles.gearList}>
+                  {snap.spells.map(s => {
+                    const def = SPELLS.find(sp => sp.id === s.id)
+                    const equipped = snap.equippedSpellId === s.id
+                    return (
+                      <button key={s.id} className={`${styles.gearItem} ${equipped ? styles.gearItemActive : ''}`} onClick={() => handleEquipSpell(s.id)} disabled={equipped}>
+                        <span className={styles.gearItemEmoji}>{def.emoji}</span>
+                        <span className={styles.gearItemName}>{def.name}</span>
+                        <span className={styles.gearItemStat}>Lv.{s.level}</span>
+                        {equipped && <span className={styles.equippedTag}>Equipped</span>}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              <button className={styles.startButton} onClick={() => setModal(null)}>Back To The Fight →</button>
+            </div>
+          </div>
+        )
+      })()}
+
+      {modal === 'classPick' && (
+        <div className={styles.overlay}>
+          <div className={styles.card}>
+            <h1 className={styles.title}>✨ Choose Your Path</h1>
+            <p className={styles.tagline}>Three dungeons in — time for both players to specialize. Pick one of each, permanently.</p>
+
+            {[['p1', 'Player 1'], ['p2', 'Player 2']].map(([key, label]) => (
+              <div key={key} className={styles.pickPlayerBlock}>
+                <h2 className={styles.pickPlayerHeading}>{label}</h2>
+                <p className={styles.pickLabel}>Class</p>
+                <div className={styles.pickRow}>
+                  {CLASSES.map(c => (
+                    <button
+                      key={c.id}
+                      className={`${styles.pickCard} ${classPick[key].classId === c.id ? styles.pickCardActive : ''}`}
+                      onClick={() => setClassPick(cp => ({ ...cp, [key]: { ...cp[key], classId: c.id } }))}
+                    >
+                      <span className={styles.pickCardEmoji}>{c.emoji}</span>
+                      <span className={styles.pickCardName}>{c.name}</span>
+                      <span className={styles.pickCardDesc}>{c.desc}</span>
+                    </button>
+                  ))}
+                </div>
+                <p className={styles.pickLabel}>Race</p>
+                <div className={styles.pickRow}>
+                  {RACES.map(r => (
+                    <button
+                      key={r.id}
+                      className={`${styles.pickCard} ${classPick[key].raceId === r.id ? styles.pickCardActive : ''}`}
+                      onClick={() => setClassPick(cp => ({ ...cp, [key]: { ...cp[key], raceId: r.id } }))}
+                    >
+                      <span className={styles.pickCardEmoji}>{r.emoji}</span>
+                      <span className={styles.pickCardName}>{r.name}</span>
+                      <span className={styles.pickCardDesc}>{r.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+
+            <button
+              className={styles.startButton}
+              disabled={!classPick.p1.classId || !classPick.p1.raceId || !classPick.p2.classId || !classPick.p2.raceId}
+              onClick={confirmClassRace}
+            >
+              Confirm →
+            </button>
           </div>
         </div>
       )}
@@ -793,28 +942,35 @@ export default function DungeonCrawlerFreeRoam() {
       {phase === 'intro' && (
         <div className={styles.overlay}>
           <div className={styles.card}>
-            <div className={styles.emojiRow}>🧒 🐹 🔮</div>
+            <div className={styles.emojiRow}>🧒 👦 🔮</div>
             <h1 className={styles.title}>Dungeon Crawler Max: Free Roam</h1>
             <p className={styles.tagline}>The Game Show Goes Open World!</p>
             <p className={styles.story}>
-              Same game show, bigger stage! You and your hamster, Biscuit, are free to roam a whole
-              wide-open world this time — five dungeon buildings are scattered around the map, each
-              guarded by its own boss. Walk up to a door and you'll be teleported straight inside;
-              find the exit to teleport back out. Floating host MC Marv is narrating from somewhere
-              overhead. Fighting isn't just fists anymore — swing whatever's in your hands or fling
-              magic bolts from a distance, and open chests to build up a stash of weapons and armor
-              you pick from and equip yourself in the Gear menu. Feeling outmatched? Home Base and a
-              couple of Rest Stops scattered across the field are safe zones — no monster can follow
-              you in. Explore, fight, loot, and clear every dungeon to win the show. Getting knocked
-              out is still just a free respawn — this game show has excellent insurance.
+              Same game show, bigger stage — and now it's a two-player affair! Grab a second person
+              for the keyboard, because you're both free to roam a whole wide-open world together —
+              eighteen dungeon buildings are scattered around the map, each guarded by its own boss,
+              building toward whoever's really running this show. Walk up to a door and you'll both be
+              teleported straight inside; find the exit to teleport back out. Floating host MC Marv is
+              narrating from somewhere overhead. Fighting isn't just fists anymore — swing whatever's
+              in your hands, or fling one of five spells you find as scrolls and level up over time.
+              Chests also drop weapons and armor you pick from and equip yourself in the Gear menu —
+              each player keeps their own stash. Three dungeons in, you'll both pick a class and race
+              that permanently shape your stats. Feeling outmatched? Home Base and several Rest Stops
+              scattered across the field are safe zones — no monster can follow you in. Explore, fight,
+              loot, and clear every dungeon to win the show. Getting knocked out is still just a free
+              respawn — this game show has excellent insurance.
             </p>
             <div className={styles.controls}>
-              <span><b>Move</b> — W / S</span>
-              <span><b>Turn</b> — A / D</span>
-              <span><b>Look</b> — click + mouse</span>
-              <span><b>Attack</b> — Space</span>
-              <span><b>Magic</b> — F</span>
-              <span><b>Potion</b> — E</span>
+              <span><b>P1 Move</b> — W / S</span>
+              <span><b>P1 Turn</b> — A / D</span>
+              <span><b>P1 Look</b> — click + mouse</span>
+              <span><b>P1 Attack</b> — Space</span>
+              <span><b>P1 Magic</b> — F</span>
+              <span><b>P1 Potion</b> — E</span>
+              <span><b>P2 Move</b> — Arrow keys</span>
+              <span><b>P2 Attack</b> — /</span>
+              <span><b>P2 Magic</b> — .</span>
+              <span><b>P2 Potion</b> — ,</span>
               <span><b>Gear</b> — I</span>
             </div>
             <button className={styles.startButton} onClick={startGame}>Step Into The World →</button>

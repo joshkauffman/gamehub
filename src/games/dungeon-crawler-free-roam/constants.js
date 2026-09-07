@@ -6,11 +6,11 @@
 // between them. No scene swap on entry — walking through a gap in a
 // ruin's walls IS entering the dungeon.
 
-export const WORLD_HALF = 340
+export const WORLD_HALF = 420
 export const TILE = 6
 export const SITE_COLS = 20
 export const SITE_ROWS = 12
-export const SITE_RADIUS = 220
+export const SITE_RADIUS = 300
 export const WALL_HEIGHT = 4.5
 
 export const BUILDING_RADIUS = 9
@@ -36,16 +36,19 @@ export const POTION_COOLDOWN = 0.8
 export const INVULN_TIME = 1.0
 export const KNOCKOUT_INVULN = 1.6
 
-export const OVERWORLD_MOB_COUNT = 22
+export const OVERWORLD_MOB_COUNT = 40
 export const CAMERA_DIST = 9.5
 
 export const MAX_MANA = 40
 export const MANA_REGEN = 5 // per second
-export const SPELL_COST = 14
-export const SPELL_COOLDOWN = 0.5
+// Per-spell cost/cooldown/damage now live in gameEngine.js's SPELLS table
+// (alongside WEAPONS/ARMORS/MONSTER_DEFS) — these three stay here because
+// they're shared physics/rendering constants for *any* spell's projectile,
+// not something that varies spell to spell.
 export const SPELL_SPEED = 20
 export const SPELL_RADIUS = 0.45
 export const SPELL_LIFE = 1.4 // seconds before a bolt fizzles out
+export const MAX_SPELL_LEVEL = 5
 
 export const SAFE_ZONE_HOME_RADIUS = 24
 export const SAFE_ZONE_REST_RADIUS = 13

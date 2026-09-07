@@ -28,6 +28,12 @@ const POTION_COOLDOWN = 40
 const INVULN_FRAMES = 55
 const KNOCKOUT_INVULN = 90
 
+const MAX_MANA = 40
+const MANA_REGEN = 0.084
+const SPELL_SPEED = 9
+const SPELL_RADIUS = 10
+const MAX_SPELL_LEVEL = 5
+
 // ── Content ──────────────────────────────────────────────────────────
 const FLOOR_THEMES = [
   { name: 'The Snack Cellar', wallColor: '#2b1810', floorColor: '#4a3222', accent: '#e0b060', monsterPool: ['slime', 'rat', 'fly'], boss: 'gummyking' },
@@ -35,6 +41,19 @@ const FLOOR_THEMES = [
   { name: 'The Bat Belfry', wallColor: '#161b2b', floorColor: '#232c47', accent: '#7fa6ff', monsterPool: ['bat', 'spider', 'fly'], boss: 'bartholomew' },
   { name: 'Skeleton Crew Break Room', wallColor: '#1c1c1c', floorColor: '#333333', accent: '#e8dcb8', monsterPool: ['skeleton', 'ghost', 'bunny'], boss: 'bonesmcgee' },
   { name: "The Landlord's Office", wallColor: '#2a1020', floorColor: '#451a35', accent: '#ff9fcf', monsterPool: ['skeleton', 'sock', 'bat', 'ghost'], boss: 'landlord' },
+  { name: 'The Vending Machine Vault', wallColor: '#2a2a1c', floorColor: '#3a3a26', accent: '#f0c040', monsterPool: ['vendbot', 'rat', 'slime'], boss: 'coinsmasher' },
+  { name: 'Laundry Level Nightmare', wallColor: '#1c2a2a', floorColor: '#243a3a', accent: '#8fe0e0', monsterPool: ['lintworm', 'sock', 'bunny'], boss: 'spincycle' },
+  { name: 'The Arcade Basement', wallColor: '#150f2a', floorColor: '#221a3f', accent: '#ff5fd1', monsterPool: ['pixelbug', 'fly', 'rat'], boss: 'highscorehog' },
+  { name: 'Greenhouse of Gnashing', wallColor: '#132015', floorColor: '#1f3322', accent: '#7fe08a', monsterPool: ['vine', 'spider', 'bunny'], boss: 'manfern' },
+  { name: 'The Ice Cream Parlor Freezer', wallColor: '#1a2430', floorColor: '#28394a', accent: '#bfe8ff', monsterPool: ['scoopling', 'ghost', 'fly'], boss: 'frostbite' },
+  { name: 'Garage Sale Gauntlet', wallColor: '#2a2018', floorColor: '#3d2f22', accent: '#e0a060', monsterPool: ['junkbot', 'rat', 'skeleton'], boss: 'rustyrecliner' },
+  { name: 'Rooftop Pigeon Coliseum', wallColor: '#1a2438', floorColor: '#28374f', accent: '#cfe0ff', monsterPool: ['pigeon', 'bat', 'fly'], boss: 'biggulliver' },
+  { name: 'Boiler Room Blues', wallColor: '#241414', floorColor: '#3a2020', accent: '#ff9a6b', monsterPool: ['steamimp', 'ghost', 'spider'], boss: 'steamsalot' },
+  { name: 'The Petting Zoo of Doom', wallColor: '#22200f', floorColor: '#39351c', accent: '#ffe08a', monsterPool: ['alpaca', 'bunny', 'sock'], boss: 'nibbles' },
+  { name: 'Library of Overdue Books', wallColor: '#1a1610', floorColor: '#2b2418', accent: '#d8c090', monsterPool: ['bookworm', 'ghost', 'bat'], boss: 'lastlibrarian' },
+  { name: 'Talent Show Backstage', wallColor: '#2a1428', floorColor: '#3f1f3d', accent: '#ff9fe0', monsterPool: ['costume', 'skeleton', 'sock'], boss: 'understudy' },
+  { name: 'VIP Green Room', wallColor: '#141f18', floorColor: '#1f3527', accent: '#8affc0', monsterPool: ['fan', 'ghost', 'skeleton'], boss: 'divadeluxe' },
+  { name: "The Producer's Penthouse", wallColor: '#0c0c14', floorColor: '#181824', accent: '#ffd34d', monsterPool: ['fan', 'costume', 'skeleton'], boss: 'producer' },
 ]
 
 const MONSTER_DEFS = {
@@ -47,6 +66,18 @@ const MONSTER_DEFS = {
   spider: { name: 'Corner Spider', emoji: '🕷️', r: 13, hp: 13, atk: 3, speed: 2.0, xp: 8 },
   skeleton: { name: 'Skeleton Intern', emoji: '💀', r: 16, hp: 24, atk: 5, speed: 1.5, xp: 12 },
   ghost: { name: 'Office Ghost', emoji: '👻', r: 15, hp: 18, atk: 4, speed: 1.8, xp: 10 },
+  vendbot: { name: 'Vendbot', emoji: '🥤', r: 16, hp: 22, atk: 4, speed: 1.4, xp: 9 },
+  lintworm: { name: 'Lint Worm', emoji: '🧵', r: 12, hp: 14, atk: 3, speed: 2.0, xp: 8 },
+  pixelbug: { name: 'Pixel Bug', emoji: '👾', r: 12, hp: 13, atk: 3, speed: 3.2, xp: 9 },
+  vine: { name: 'Grasping Vine', emoji: '🌿', r: 14, hp: 19, atk: 4, speed: 1.2, xp: 10 },
+  scoopling: { name: 'Scoopling', emoji: '🍦', r: 13, hp: 15, atk: 3, speed: 2.4, xp: 9 },
+  junkbot: { name: 'Junkbot', emoji: '🔧', r: 16, hp: 23, atk: 5, speed: 1.6, xp: 11 },
+  pigeon: { name: 'Rooftop Pigeon', emoji: '🐦', r: 11, hp: 12, atk: 2, speed: 3.6, xp: 8 },
+  steamimp: { name: 'Steam Imp', emoji: '💨', r: 13, hp: 17, atk: 4, speed: 2.6, xp: 10 },
+  alpaca: { name: 'Grumpy Alpaca', emoji: '🦙', r: 15, hp: 20, atk: 4, speed: 2.2, xp: 10 },
+  bookworm: { name: 'Bookworm', emoji: '📖', r: 12, hp: 16, atk: 3, speed: 1.8, xp: 9 },
+  costume: { name: 'Loose Costume', emoji: '🎭', r: 15, hp: 21, atk: 5, speed: 2.0, xp: 11 },
+  fan: { name: 'Overzealous Fan', emoji: '💅', r: 13, hp: 18, atk: 4, speed: 3.0, xp: 10 },
 }
 
 const BOSS_DEFS = {
@@ -55,6 +86,19 @@ const BOSS_DEFS = {
   bartholomew: { name: 'Bartholomew the Belfry Bat', emoji: '🦇', r: 30, hp: 190, atk: 10, speed: 2.4, xp: 150 },
   bonesmcgee: { name: 'Bones McGee, Shift Supervisor', emoji: '💀', r: 32, hp: 220, atk: 12, speed: 1.6, xp: 190 },
   landlord: { name: 'The Landlord', emoji: '👹', r: 34, hp: 300, atk: 15, speed: 1.7, xp: 300 },
+  coinsmasher: { name: 'Coinsmasher 3000', emoji: '🥤', r: 32, hp: 345, atk: 17, speed: 1.4, xp: 207 },
+  spincycle: { name: 'The Spin Cycle', emoji: '🧺', r: 32, hp: 390, atk: 19, speed: 2.0, xp: 234 },
+  highscorehog: { name: 'The High Score Hog', emoji: '👾', r: 32, hp: 435, atk: 21, speed: 2.6, xp: 261 },
+  manfern: { name: 'The Man-Eating Fern', emoji: '🌿', r: 33, hp: 480, atk: 23, speed: 1.2, xp: 288 },
+  frostbite: { name: 'General Frostbite', emoji: '🍦', r: 33, hp: 525, atk: 25, speed: 1.8, xp: 315 },
+  rustyrecliner: { name: 'The Rusty Recliner', emoji: '🛋️', r: 34, hp: 570, atk: 27, speed: 1.3, xp: 342 },
+  biggulliver: { name: 'Big Gulliver', emoji: '🐦', r: 34, hp: 615, atk: 29, speed: 3.0, xp: 369 },
+  steamsalot: { name: 'Sir Steamsalot', emoji: '💨', r: 34, hp: 660, atk: 31, speed: 1.7, xp: 396 },
+  nibbles: { name: 'Nibbles the Alpaca Overlord', emoji: '🦙', r: 35, hp: 705, atk: 33, speed: 2.2, xp: 423 },
+  lastlibrarian: { name: 'The Last Librarian', emoji: '📖', r: 35, hp: 750, atk: 35, speed: 1.6, xp: 450 },
+  understudy: { name: 'Mister Understudy', emoji: '🎭', r: 35, hp: 795, atk: 37, speed: 2.1, xp: 477 },
+  divadeluxe: { name: 'The Diva Deluxe', emoji: '💅', r: 36, hp: 840, atk: 39, speed: 2.4, xp: 504 },
+  producer: { name: 'The Producer', emoji: '🎬', r: 40, hp: 1700, atk: 55, speed: 2.0, xp: 1000 },
 }
 
 const WEAPONS = [
@@ -65,6 +109,17 @@ const WEAPONS = [
   { name: 'Laser Pointer', emoji: '🔦', atk: 13 },
   { name: 'Giant Serving Spoon', emoji: '🍴', atk: 18 },
   { name: 'Star Wand of Destiny', emoji: '✨', atk: 24 },
+  { name: 'Frying Pan of Justice', emoji: '🍳', atk: 31 },
+  { name: 'Boomerang Spatula', emoji: '🪃', atk: 39 },
+  { name: 'Confetti Cannon', emoji: '🎉', atk: 48 },
+  { name: 'Nunchaku of Pool Noodles', emoji: '🏊', atk: 58 },
+  { name: 'The Mop of Many Legends', emoji: '🧹', atk: 69 },
+  { name: 'Inflatable Comet Hammer', emoji: '☄️', atk: 81 },
+  { name: 'Disco Ball Mace', emoji: '🪩', atk: 94 },
+  { name: 'Rubber Chicken of Doom', emoji: '🐔', atk: 108 },
+  { name: 'The Grand Piano Gauntlet', emoji: '🎹', atk: 123 },
+  { name: 'Kazoo of Ultimate Destiny', emoji: '🎺', atk: 139 },
+  { name: "The Producer's Golden Microphone", emoji: '🎤', atk: 156 },
 ]
 const ARMORS = [
   { name: 'Fuzzy Pajamas', emoji: '🩳', def: 1 },
@@ -74,6 +129,37 @@ const ARMORS = [
   { name: 'Bubble Wrap Armor', emoji: '🫧', def: 9 },
   { name: 'Cardboard Knight Armor', emoji: '📦', def: 13 },
   { name: 'Golden Nightlight Armor', emoji: '🌟', def: 18 },
+  { name: 'Oven Mitt Gauntlets', emoji: '🧤', def: 24 },
+  { name: 'Traffic Cone Helmet', emoji: '🚧', def: 31 },
+  { name: 'Bubble Machine Barrier', emoji: '🎐', def: 39 },
+  { name: 'Party Balloon Shield', emoji: '🎈', def: 48 },
+  { name: 'Bounce House Bodysuit', emoji: '🏰', def: 58 },
+  { name: 'Kevlar Pool Noodle Vest', emoji: '🏊', def: 69 },
+  { name: 'Mirror Ball Mail', emoji: '🪩', def: 81 },
+  { name: 'Velvet Rope Barrier', emoji: '🎀', def: 94 },
+  { name: 'VIP Laminate Armor', emoji: '🪪', def: 108 },
+  { name: "The Producer's Velvet Robe", emoji: '🥋', def: 123 },
+]
+
+const SPELLS = [
+  { id: 'bolt', name: 'Magic Bolt', emoji: '🔮', kind: 'projectile', baseCost: 14, cooldown: 30, baseDamage: 6, splash: 0 },
+  { id: 'fireball', name: 'Fireball', emoji: '🔥', kind: 'projectile', baseCost: 22, cooldown: 66, baseDamage: 14, splash: 40 },
+  { id: 'ice', name: 'Ice Shard', emoji: '❄️', kind: 'projectile', baseCost: 16, cooldown: 42, baseDamage: 7, splash: 0, slowMult: 0.4, slowFrames: 120 },
+  { id: 'chainzap', name: 'Chain Zap', emoji: '⚡', kind: 'projectile', baseCost: 20, cooldown: 54, baseDamage: 5, splash: 70 },
+  { id: 'snackheal', name: 'Snack Heal', emoji: '🧃', kind: 'heal', baseCost: 18, cooldown: 96, baseHeal: 14 },
+]
+
+const CLASSES = [
+  { id: 'warrior', name: 'Warrior', emoji: '⚔️', desc: 'Melee-focused: more attack, more health.', atk: 3, def: 1, hp: 10, mana: 0 },
+  { id: 'mage', name: 'Mage', emoji: '🪄', desc: 'A glass-cannon spellcaster: huge mana pool, less health.', atk: -1, def: 0, hp: -6, mana: 20 },
+  { id: 'rogue', name: 'Rogue', emoji: '🗡️', desc: 'Fast and balanced, with a little extra mana.', atk: 1, def: 0, hp: 0, mana: 5, speedMult: 1.15 },
+  { id: 'cleric', name: 'Cleric', emoji: '💖', desc: 'Tanky support with solid defense and mana.', atk: 0, def: 2, hp: 6, mana: 10 },
+]
+const RACES = [
+  { id: 'human', name: 'Human', emoji: '🧑', desc: 'Balanced all-rounder.', atk: 1, def: 1, hp: 4, mana: 4 },
+  { id: 'elf', name: 'Elf', emoji: '🧝', desc: 'Extra mana and speed, but fragile.', atk: 0, def: 0, hp: -4, mana: 12, speedMult: 1.1 },
+  { id: 'dwarf', name: 'Dwarf', emoji: '🧔', desc: 'Tough and tanky, but a little slow.', atk: 0, def: 2, hp: 10, mana: 0, speedMult: 0.92 },
+  { id: 'hamsterkin', name: 'Hamsterkin', emoji: '🐹', desc: 'Fast and lucky with gold, but a lighter hitter.', atk: -1, def: 0, hp: 0, mana: 0, speedMult: 1.2, goldMult: 1.2 },
 ]
 
 const ACHIEVEMENTS = [
@@ -84,6 +170,9 @@ const ACHIEVEMENTS = [
   { id: 'snackbreak', name: 'Snack Break', desc: 'Drink a potion.' },
   { id: 'bossbeat1', name: 'Big Boss Energy', desc: 'Defeat a floor boss.' },
   { id: 'geared', name: 'Fashionably Equipped', desc: 'Equip a weapon and armor.' },
+  { id: 'spellcaster', name: 'Wand Enthusiast', desc: 'Cast your first spell.' },
+  { id: 'spellbound', name: 'Spellbound', desc: 'Learn all 5 spells.' },
+  { id: 'archmage', name: 'Archmage', desc: 'Level a spell up to level 5.' },
   { id: 'oof', name: 'Free Respawn', desc: 'Get knocked out (it happens to everyone).' },
   { id: 'richkid', name: 'Pocket Full of Gold', desc: 'Collect 200 gold.' },
   { id: 'champion', name: 'Dungeon Champion', desc: 'Beat the whole dungeon!' },
@@ -160,7 +249,7 @@ function createMonster(type, x, y, floorIndex, id) {
     hp: Math.round(def.hp * mult), maxHp: Math.round(def.hp * mult),
     atk: Math.round(def.atk * mult), speed: def.speed, xp: Math.round(def.xp * mult),
     wanderDir: { x: 0, y: 0 }, wanderTimer: 0, atkCooldown: 0,
-    knockX: 0, knockY: 0, knockTimer: 0,
+    knockX: 0, knockY: 0, knockTimer: 0, slowMult: 1, slowTimer: 0,
     dead: false, removeMe: false, isBoss: false,
   }
 }
@@ -170,7 +259,7 @@ function createBoss(bossId, x, y, id) {
     id, type: bossId, name: def.name, emoji: def.emoji, x, y, r: def.r,
     hp: def.hp, maxHp: def.hp, atk: def.atk, speed: def.speed, xp: def.xp,
     wanderDir: { x: 0, y: 0 }, wanderTimer: 0, atkCooldown: 0,
-    knockX: 0, knockY: 0, knockTimer: 0,
+    knockX: 0, knockY: 0, knockTimer: 0, slowMult: 1, slowTimer: 0,
     dead: false, removeMe: false, isBoss: true,
   }
 }
@@ -241,6 +330,9 @@ function mkPlayer(spawn) {
     baseAtk: 4, baseDef: 0, weaponAtk: 0, armorDef: 0,
     atk: 4, def: 0,
     maxHp: 40, hp: 40,
+    maxMana: MAX_MANA, mana: MAX_MANA, spellCooldown: 0,
+    spells: [{ id: 'bolt', level: 1 }], equippedSpellId: 'bolt',
+    classId: null, raceId: null, speedMult: 1, goldMult: 1,
     gold: 0, potions: 1,
     weaponName: null, armorName: null,
     attackCooldown: 0, attackTimer: 0, hitIds: new Set(),
@@ -257,13 +349,14 @@ function mkInitialState() {
     bossRoom: floor.bossRoom, monsters: floor.monsters, chests: floor.chests,
     exit: null, bossSpawned: false, bossActive: false, chestsOpened: 0,
     player, playerSpawn: floor.playerSpawn,
+    projectiles: [],
     particles: [], bannerQueue: [], banner: null, bannerTimer: 0,
     petText: pick(PET_LINES.intro), petTimer: 260,
     announcerText: pick(ANNOUNCER_LINES.welcome), announcerTimer: 260,
     achievements: new Set(),
     camera: { x: floor.playerSpawn.x, y: floor.playerSpawn.y },
     shake: 0, frame: 0,
-    attackPressed: false, potionPressed: false,
+    attackPressed: false, potionPressed: false, spellPressed: false,
   }
 }
 
@@ -277,6 +370,56 @@ function grantAchievement(g, id) {
   g.achievements.add(id)
   const def = ACHIEVEMENTS.find(a => a.id === id)
   if (def) pushBanner(g, '🏅', `Achievement: ${def.name}`, '#FFD34D')
+}
+function computeSpellPower(spellDef, level) {
+  const mult = 1 + 0.3 * (level - 1)
+  const costMult = Math.max(0.68, 1 - 0.08 * (level - 1))
+  return {
+    cost: Math.round(spellDef.baseCost * costMult),
+    damage: spellDef.baseDamage != null ? Math.round(spellDef.baseDamage * mult) : 0,
+    heal: spellDef.baseHeal != null ? Math.round(spellDef.baseHeal * mult) : 0,
+  }
+}
+function equipSpell(g, id) {
+  if (!g.player.spells.some(s => s.id === id)) return
+  g.player.equippedSpellId = id
+}
+function learnOrLevelSpell(g, id) {
+  const def = SPELLS.find(s => s.id === id)
+  const known = g.player.spells.find(s => s.id === id)
+  if (!known) {
+    g.player.spells.push({ id, level: 1 })
+    pushBanner(g, def.emoji, `Learned a new spell: ${def.name}!`, '#C9A6FF')
+    if (g.player.spells.length === SPELLS.length) grantAchievement(g, 'spellbound')
+  } else if (known.level < MAX_SPELL_LEVEL) {
+    known.level += 1
+    pushBanner(g, def.emoji, `${def.name} leveled up! Now level ${known.level}.`, '#C9A6FF')
+    if (known.level === MAX_SPELL_LEVEL) grantAchievement(g, 'archmage')
+  } else {
+    const gold = Math.round((20 + known.level * 10) * g.player.goldMult)
+    g.player.gold += gold
+    pushBanner(g, '💰', `Already mastered ${def.name} — sold the spare scroll for ${gold} gold`, '#FFD34D')
+  }
+}
+function chooseClassRace(g, classId, raceId) {
+  if (g.player.classId) return
+  const cls = CLASSES.find(c => c.id === classId)
+  const race = RACES.find(r => r.id === raceId)
+  if (!cls || !race) return
+  const p = g.player
+  p.classId = classId
+  p.raceId = raceId
+  p.baseAtk += cls.atk + race.atk
+  p.baseDef += cls.def + race.def
+  p.maxHp += cls.hp + race.hp
+  p.maxMana += cls.mana + race.mana
+  p.atk = p.baseAtk + p.weaponAtk
+  p.def = p.baseDef + p.armorDef
+  p.hp = p.maxHp
+  p.mana = p.maxMana
+  p.speedMult = (cls.speedMult || 1) * (race.speedMult || 1)
+  p.goldMult = (cls.goldMult || 1) * (race.goldMult || 1)
+  pushBanner(g, cls.emoji, `You are now a ${cls.name} ${race.name}!`, '#FFD34D')
 }
 function spawnBurst(g, x, y, count, colors) {
   for (let i = 0; i < count; i++) {
@@ -321,7 +464,7 @@ function checkLevelUp(g) {
 function onMonsterDeath(g, m) {
   spawnBurst(g, m.x, m.y, m.isBoss ? 26 : 12, ['#FFD34D', '#FF8FD3', '#8FD3FF', '#B6FF6B'])
   g.player.xp += m.xp
-  g.player.gold += Math.round(rand(m.xp * 0.6, m.xp * 1.3))
+  g.player.gold += Math.round(rand(m.xp * 0.6, m.xp * 1.3) * g.player.goldMult)
   if (!g.achievements.has('firstblood')) grantAchievement(g, 'firstblood')
   if (m.type === 'sock') grantAchievement(g, 'sockit')
   if (Math.random() < 0.1) { g.player.potions = Math.min(5, g.player.potions + 1); pushBanner(g, '🧃', 'A snack potion fell out!', '#7CFF6B') }
@@ -349,40 +492,42 @@ function openChest(g, c) {
   g.chestsOpened += 1
   if (g.chestsOpened === 5) grantAchievement(g, 'lootgoblin')
   const roll = Math.random()
-  if (roll < 0.35) {
-    const amt = 8 + Math.floor(Math.random() * 10) * (g.floorIndex + 1)
+  const rollDepth = g.floorIndex + 1 + Math.floor(Math.random() * 2)
+  if (roll < 0.3) {
+    const amt = Math.round((8 + Math.floor(Math.random() * 10) * (g.floorIndex + 1)) * g.player.goldMult)
     g.player.gold += amt
     pushBanner(g, '🪙', `Found ${amt} gold!`, '#FFD34D')
-  } else if (roll < 0.6) {
+  } else if (roll < 0.5) {
     g.player.potions = Math.min(5, g.player.potions + 1)
     pushBanner(g, '🧃', 'Found a snack potion!', '#7CFF6B')
-  } else {
-    const tier = Math.min(WEAPONS.length - 1, g.floorIndex + 1 + Math.floor(Math.random() * 2))
-    if (Math.random() < 0.5) {
-      const w = WEAPONS[tier]
-      if (w.atk > g.player.weaponAtk) {
-        g.player.weaponAtk = w.atk; g.player.weaponName = w.name
-        g.player.atk = g.player.baseAtk + g.player.weaponAtk
-        pushBanner(g, w.emoji, `Equipped ${w.name}! (+${w.atk} ATK)`, '#8FD3FF')
-        if (g.player.weaponName && g.player.armorName) grantAchievement(g, 'geared')
-      } else {
-        const gold = w.atk * 3
-        g.player.gold += gold
-        pushBanner(g, '💰', `Found ${w.name}, sold for ${gold} gold`, '#FFD34D')
-      }
+  } else if (roll < 0.65) {
+    const tier = Math.min(WEAPONS.length - 1, rollDepth)
+    const w = WEAPONS[tier]
+    if (w.atk > g.player.weaponAtk) {
+      g.player.weaponAtk = w.atk; g.player.weaponName = w.name
+      g.player.atk = g.player.baseAtk + g.player.weaponAtk
+      pushBanner(g, w.emoji, `Equipped ${w.name}! (+${w.atk} ATK)`, '#8FD3FF')
+      if (g.player.weaponName && g.player.armorName) grantAchievement(g, 'geared')
     } else {
-      const a = ARMORS[tier]
-      if (a.def > g.player.armorDef) {
-        g.player.armorDef = a.def; g.player.armorName = a.name
-        g.player.def = g.player.baseDef + g.player.armorDef
-        pushBanner(g, a.emoji, `Equipped ${a.name}! (+${a.def} DEF)`, '#8FD3FF')
-        if (g.player.weaponName && g.player.armorName) grantAchievement(g, 'geared')
-      } else {
-        const gold = a.def * 3
-        g.player.gold += gold
-        pushBanner(g, '💰', `Found ${a.name}, sold for ${gold} gold`, '#FFD34D')
-      }
+      const gold = Math.round(w.atk * 3 * g.player.goldMult)
+      g.player.gold += gold
+      pushBanner(g, '💰', `Found ${w.name}, sold for ${gold} gold`, '#FFD34D')
     }
+  } else if (roll < 0.8) {
+    const tier = Math.min(ARMORS.length - 1, rollDepth)
+    const a = ARMORS[tier]
+    if (a.def > g.player.armorDef) {
+      g.player.armorDef = a.def; g.player.armorName = a.name
+      g.player.def = g.player.baseDef + g.player.armorDef
+      pushBanner(g, a.emoji, `Equipped ${a.name}! (+${a.def} DEF)`, '#8FD3FF')
+      if (g.player.weaponName && g.player.armorName) grantAchievement(g, 'geared')
+    } else {
+      const gold = Math.round(a.def * 3 * g.player.goldMult)
+      g.player.gold += gold
+      pushBanner(g, '💰', `Found ${a.name}, sold for ${gold} gold`, '#FFD34D')
+    }
+  } else {
+    learnOrLevelSpell(g, pick(SPELLS).id)
   }
   if (g.player.gold >= 200) grantAchievement(g, 'richkid')
 }
@@ -400,12 +545,14 @@ function spawnBoss(g) {
 
 function updateMonsterAI(g, m) {
   if (m.atkCooldown > 0) m.atkCooldown -= 1
+  if (m.slowTimer > 0) m.slowTimer -= 1
+  const spd = m.speed * (m.slowTimer > 0 ? m.slowMult : 1)
   if (m.knockTimer > 0) { tryMoveEntity(g, m, m.knockX, m.knockY); m.knockTimer -= 1; return }
   const dx0 = g.player.x - m.x, dy0 = g.player.y - m.y
   const d = Math.hypot(dx0, dy0)
   const aggro = m.isBoss ? 999999 : 230
   if (d < aggro && d > 0.001) {
-    tryMoveEntity(g, m, (dx0 / d) * m.speed, (dy0 / d) * m.speed)
+    tryMoveEntity(g, m, (dx0 / d) * spd, (dy0 / d) * spd)
     if (d < m.r + PLAYER_R + 8 && m.atkCooldown <= 0 && g.player.invuln <= 0) {
       g.player.hp -= m.atk
       g.player.invuln = INVULN_FRAMES
@@ -420,7 +567,7 @@ function updateMonsterAI(g, m) {
       m.wanderDir = { x: Math.cos(a), y: Math.sin(a) }
       m.wanderTimer = 60 + Math.random() * 90
     }
-    tryMoveEntity(g, m, m.wanderDir.x * m.speed * 0.4, m.wanderDir.y * m.speed * 0.4)
+    tryMoveEntity(g, m, m.wanderDir.x * spd * 0.4, m.wanderDir.y * spd * 0.4)
   }
 }
 
@@ -458,6 +605,7 @@ function advanceFloor(g, helpers) {
   pushBanner(g, '🚪', `Floor ${nextIndex + 1}: ${floor.theme.name}`, floor.theme.accent)
   announcerSay(g, 'floorStart')
   petSay(g, 'floorStart')
+  if (nextIndex === 2 && !g.player.classId) helpers.setPhase('classPick')
 }
 
 // ── Per-frame update ─────────────────────────────────────────────────
@@ -473,7 +621,7 @@ function update(g, keys, helpers) {
     const len = Math.hypot(mx, my)
     mx /= len; my /= len
     g.player.facing = { x: mx, y: my }
-    tryMoveEntity(g, g.player, mx * PLAYER_SPEED, my * PLAYER_SPEED)
+    tryMoveEntity(g, g.player, mx * PLAYER_SPEED * g.player.speedMult, my * PLAYER_SPEED * g.player.speedMult)
   }
 
   if (g.player.attackCooldown > 0) g.player.attackCooldown -= 1
@@ -503,6 +651,34 @@ function update(g, keys, helpers) {
     }
   }
 
+  if (g.player.spellCooldown > 0) g.player.spellCooldown -= 1
+  g.player.mana = Math.min(g.player.maxMana, g.player.mana + MANA_REGEN)
+  if (g.spellPressed) {
+    g.spellPressed = false
+    const spellDef = SPELLS.find(s => s.id === g.player.equippedSpellId)
+    const known = g.player.spells.find(s => s.id === g.player.equippedSpellId)
+    if (spellDef && known && g.player.spellCooldown <= 0) {
+      const power = computeSpellPower(spellDef, known.level)
+      if (g.player.mana >= power.cost) {
+        g.player.spellCooldown = spellDef.cooldown
+        g.player.mana -= power.cost
+        grantAchievement(g, 'spellcaster')
+        if (spellDef.kind === 'heal') {
+          g.player.hp = Math.min(g.player.maxHp, g.player.hp + power.heal)
+          pushBanner(g, spellDef.emoji, `${spellDef.name}! HP restored.`, '#7CFF6B')
+        } else {
+          g.projectiles.push({
+            x: g.player.x + g.player.facing.x * 20, y: g.player.y + g.player.facing.y * 20,
+            vx: g.player.facing.x * SPELL_SPEED, vy: g.player.facing.y * SPELL_SPEED,
+            life: 90, dmg: power.damage, splash: spellDef.splash || 0,
+            slowMult: spellDef.slowMult, slowFrames: spellDef.slowFrames,
+            emoji: spellDef.emoji, hitIds: new Set(), dead: false,
+          })
+        }
+      }
+    }
+  }
+
   if (g.player.potionCooldown > 0) g.player.potionCooldown -= 1
   if (g.potionPressed) {
     g.potionPressed = false
@@ -520,6 +696,32 @@ function update(g, keys, helpers) {
 
   for (const m of g.monsters) { if (!m.dead) updateMonsterAI(g, m) }
   g.monsters = g.monsters.filter(m => !m.removeMe)
+
+  for (const pr of g.projectiles) {
+    if (pr.dead) continue
+    pr.x += pr.vx; pr.y += pr.vy; pr.life -= 1
+    if (pr.life <= 0 || !circleWalkable(g.tiles, pr.x, pr.y, SPELL_RADIUS)) { pr.dead = true; continue }
+    for (const m of g.monsters) {
+      if (m.dead || pr.hitIds.has(m.id)) continue
+      const dd = (pr.x - m.x) ** 2 + (pr.y - m.y) ** 2
+      if (dd < (SPELL_RADIUS + m.r) ** 2) {
+        pr.hitIds.add(m.id)
+        const splashR = pr.splash + SPELL_RADIUS
+        for (const m2 of g.monsters) {
+          if (m2.dead) continue
+          const dd2 = (pr.x - m2.x) ** 2 + (pr.y - m2.y) ** 2
+          if (dd2 < (splashR + m2.r) ** 2) {
+            damageMonster(g, m2, pr.dmg)
+            spawnBurst(g, m2.x, m2.y, 5, ['#c9a6ff', '#8fd3ff', '#ffffff'])
+            if (pr.slowMult) { m2.slowMult = pr.slowMult; m2.slowTimer = pr.slowFrames }
+          }
+        }
+        pr.dead = true
+        break
+      }
+    }
+  }
+  g.projectiles = g.projectiles.filter(pr => !pr.dead)
 
   for (const c of g.chests) {
     if (c.opened) continue
@@ -597,6 +799,12 @@ function draw(g, ctx, W, H) {
   }
   ctx.globalAlpha = 1
 
+  for (const pr of g.projectiles) {
+    if (pr.dead) continue
+    ctx.font = '22px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+    ctx.fillText(pr.emoji, pr.x, pr.y)
+  }
+
   for (const m of g.monsters) {
     if (m.dead) continue
     ctx.font = (m.isBoss ? '54px' : '30px') + ' serif'
@@ -638,7 +846,7 @@ function drawHUD(g, ctx, W, H) {
   const barX = 16, barY = 16, barW = 200, barH = 16
 
   ctx.fillStyle = 'rgba(0,0,0,0.55)'
-  ctx.fillRect(barX - 8, barY - 8, barW + 90, 78)
+  ctx.fillRect(barX - 8, barY - 8, barW + 90, 96)
 
   ctx.fillStyle = '#3a0f0f'; ctx.fillRect(barX, barY, barW, barH)
   ctx.fillStyle = '#FF5566'; ctx.fillRect(barX, barY, barW * Math.max(0, p.hp / p.maxHp), barH)
@@ -653,7 +861,15 @@ function drawHUD(g, ctx, W, H) {
   ctx.fillStyle = '#fff'; ctx.font = 'bold 11px sans-serif'
   ctx.fillText(`Lv.${p.level}`, barX + barW + 8, xpY + 5)
 
-  const rowY = xpY + 24
+  const manaY = xpY + 14
+  ctx.fillStyle = '#1a1030'; ctx.fillRect(barX, manaY, barW, 8)
+  ctx.fillStyle = '#C9A6FF'; ctx.fillRect(barX, manaY, barW * clamp(p.mana / p.maxMana, 0, 1), 8)
+  ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.strokeRect(barX, manaY, barW, 8)
+  ctx.fillStyle = '#fff'; ctx.font = 'bold 10px sans-serif'
+  const equippedSpell = SPELLS.find(s => s.id === p.equippedSpellId)
+  ctx.fillText(`${equippedSpell ? equippedSpell.emoji : '🔮'} ${Math.floor(p.mana)}/${p.maxMana}`, barX + barW + 8, manaY + 4)
+
+  const rowY = manaY + 24
   ctx.font = 'bold 14px sans-serif'
   ctx.fillText(`🪙 ${p.gold}`, barX, rowY)
   ctx.fillText(`🧃 x${p.potions}`, barX + 90, rowY)
@@ -713,7 +929,7 @@ function drawHUD(g, ctx, W, H) {
   if (g.floorIndex === 0 && g.frame < 600) {
     ctx.globalAlpha = Math.min(1, (600 - g.frame) / 60)
     ctx.font = '13px sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'
-    ctx.fillText('WASD / Arrows to move · Space to attack · E to drink a potion', W / 2, H - 16)
+    ctx.fillText('WASD / Arrows to move · Space to attack · F to cast a spell · E to drink a potion · I for spellbook', W / 2, H - 16)
     ctx.globalAlpha = 1
   }
 }
@@ -729,7 +945,27 @@ export default function DungeonCrawlerMax() {
   const gRef = useRef(null)
   const rafRef = useRef(null)
 
+  const [spellSnapshot, setSpellSnapshot] = useState(null)
+  const [pickClass, setPickClass] = useState(null)
+  const [pickRace, setPickRace] = useState(null)
+
   function setPhase(p) { phaseRef.current = p; setPhaseState(p) }
+  function refreshSpellSnapshot() {
+    const p = gRef.current?.player
+    if (!p) return
+    setSpellSnapshot({ spells: [...p.spells], equippedSpellId: p.equippedSpellId })
+  }
+  function handleEquipSpell(id) {
+    equipSpell(gRef.current, id)
+    refreshSpellSnapshot()
+  }
+  function confirmClassRace() {
+    if (!pickClass || !pickRace) return
+    chooseClassRace(gRef.current, pickClass, pickRace)
+    setPickClass(null)
+    setPickRace(null)
+    setPhase('playing')
+  }
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -748,6 +984,11 @@ export default function DungeonCrawlerMax() {
       keysRef.current[e.code] = true
       if (e.code === 'Space') { e.preventDefault(); if (gRef.current) gRef.current.attackPressed = true }
       if (e.code === 'KeyE') { if (gRef.current) gRef.current.potionPressed = true }
+      if (e.code === 'KeyF') { if (gRef.current) gRef.current.spellPressed = true }
+      if (e.code === 'KeyI') {
+        if (phaseRef.current === 'playing') { refreshSpellSnapshot(); setPhase('spellbook') }
+        else if (phaseRef.current === 'spellbook') setPhase('playing')
+      }
     }
     const onKeyUp = (e) => { keysRef.current[e.code] = false }
     window.addEventListener('keydown', onKeyDown)
@@ -784,6 +1025,9 @@ export default function DungeonCrawlerMax() {
     const g = mkInitialState()
     grantAchievement(g, 'contestant')
     gRef.current = g
+    setSpellSnapshot(null)
+    setPickClass(null)
+    setPickRace(null)
     setPhase('playing')
   }
 
@@ -802,15 +1046,85 @@ export default function DungeonCrawlerMax() {
               Congratulations, contestant! You — and your hamster, Biscuit — have just been zapped into
               THE DUNGEON, a magical game show broadcast to who-knows-where. Floating host MC Marv will
               explain the rules while a crowd (somewhere) cheers: clear every floor, bonk silly monsters,
-              grab loot, and get stronger. Don't worry about getting hurt — this game show has excellent
-              insurance.
+              grab loot, and get stronger. You'll pick a class and race on floor 3, and spell scrolls
+              found in chests can be leveled up and equipped from your spellbook. Don't worry about
+              getting hurt — this game show has excellent insurance. 18 floors stand between you and
+              the mysterious Producer at the top.
             </p>
             <div className={styles.controls}>
               <span><b>Move</b> — WASD / Arrows</span>
               <span><b>Attack</b> — Space</span>
+              <span><b>Magic</b> — F</span>
               <span><b>Potion</b> — E</span>
+              <span><b>Spellbook</b> — I</span>
             </div>
             <button className={styles.startButton} onClick={startGame}>Step Into The Dungeon →</button>
+          </div>
+        </div>
+      )}
+
+      {phase === 'classPick' && (
+        <div className={styles.overlay}>
+          <div className={styles.card}>
+            <h1 className={styles.title}>Choose Your Class &amp; Race</h1>
+            <p className={styles.tagline}>Floor 3 awaits — pick your path before you go in.</p>
+            <p className={styles.pickLabel}>Class</p>
+            <div className={styles.pickRow}>
+              {CLASSES.map(c => (
+                <button
+                  key={c.id}
+                  className={`${styles.pickCard} ${pickClass === c.id ? styles.pickCardActive : ''}`}
+                  onClick={() => setPickClass(c.id)}
+                >
+                  <span className={styles.pickCardEmoji}>{c.emoji}</span>
+                  <span className={styles.pickCardName}>{c.name}</span>
+                  <span className={styles.pickCardDesc}>{c.desc}</span>
+                </button>
+              ))}
+            </div>
+            <p className={styles.pickLabel}>Race</p>
+            <div className={styles.pickRow}>
+              {RACES.map(r => (
+                <button
+                  key={r.id}
+                  className={`${styles.pickCard} ${pickRace === r.id ? styles.pickCardActive : ''}`}
+                  onClick={() => setPickRace(r.id)}
+                >
+                  <span className={styles.pickCardEmoji}>{r.emoji}</span>
+                  <span className={styles.pickCardName}>{r.name}</span>
+                  <span className={styles.pickCardDesc}>{r.desc}</span>
+                </button>
+              ))}
+            </div>
+            <button className={styles.startButton} disabled={!pickClass || !pickRace} onClick={confirmClassRace}>Confirm →</button>
+          </div>
+        </div>
+      )}
+
+      {phase === 'spellbook' && spellSnapshot && (
+        <div className={styles.overlay}>
+          <div className={styles.card}>
+            <h1 className={styles.title}>📖 Spellbook</h1>
+            <p className={styles.tagline}>Pick which spell is equipped — press I to close.</p>
+            <div className={styles.gearList}>
+              {spellSnapshot.spells.map(s => {
+                const def = SPELLS.find(d => d.id === s.id)
+                const equipped = spellSnapshot.equippedSpellId === s.id
+                return (
+                  <button
+                    key={s.id}
+                    className={`${styles.gearItem} ${equipped ? styles.gearItemActive : ''}`}
+                    onClick={() => handleEquipSpell(s.id)}
+                    disabled={equipped}
+                  >
+                    <span className={styles.gearItemEmoji}>{def.emoji}</span>
+                    <span className={styles.gearItemName}>{def.name} (Lv.{s.level})</span>
+                    {equipped && <span className={styles.equippedTag}>Equipped</span>}
+                  </button>
+                )
+              })}
+            </div>
+            <button className={styles.startButton} onClick={() => setPhase('playing')}>Back To The Dungeon →</button>
           </div>
         </div>
       )}
