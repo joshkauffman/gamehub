@@ -41,6 +41,13 @@ const CATEGORIES = [
         path: '/obvious-mario-knockoff',
       },
       {
+        id: 'shirby-and-the-forgotten-place',
+        title: 'Shirby and the Forgotten Place',
+        description: "A small pink puffball inhales forgotten creatures and copies their powers — Blade, Ember, Frost, Zap, Rock, or Bubble. It's a knockoff. It knows it's a knockoff. That's the whole bit.",
+        emoji: '🩷',
+        path: '/shirby-and-the-forgotten-place',
+      },
+      {
         id: 'retro-arcade',
         title: 'Retro Arcade',
         description: 'A cabinet of 9 arcade classics reimagined: maze-chase, rock shooter, bug formation dive, speed run, platform brawler, brick-breaker, invasion, road-hopper, and a falling-block puzzle.',
@@ -172,14 +179,14 @@ const CATEGORIES = [
       {
         id: 'dungeon-crawler-max',
         title: 'Dungeon Crawler Max',
-        description: "A kid-safe game-show dungeon crawl. Bonk silly monsters, loot chests, level up, and fight a floor boss while a floating announcer hypes the crowd and your hamster sidekick heckles supportively.",
+        description: "A kid-safe game-show dungeon crawl through 18 floors. Bonk monsters, loot chests, cast spells you level up over time, pick a class and race on floor 3, and fight a floor boss all the way to the mysterious Producer, while your hamster sidekick heckles supportively.",
         emoji: '🏰',
         path: '/dungeon-crawler-max',
       },
       {
         id: 'dungeon-crawler-free-roam',
         title: 'Dungeon Crawler Max: Free Roam',
-        description: "The game show goes 3D open-world. Roam a wide-open field with five ruined dungeons scattered around, each guarded by its own boss, fighting wandering monsters and looting gear along the way.",
+        description: "The game show goes 3D open-world — now with local two-player! Roam a wide-open field with 18 dungeons scattered around, each guarded by its own boss, finding spell scrolls and gear to equip and picking a class and race along the way.",
         emoji: '🗺️',
         path: '/dungeon-crawler-free-roam',
       },
