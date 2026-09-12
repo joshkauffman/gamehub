@@ -38,6 +38,10 @@ export const ZAP_PULSE_RADIUS = 74
 export const ROCK_COOLDOWN = 48
 export const ROCK_RADIUS = 62
 export const BUBBLE_COOLDOWN = 22
+export const GUST_COOLDOWN = 50
+export const GUST_DURATION = 22
+export const GUST_SPEED_MULT = 2.4
+export const STAR_DURATION = 320
 
 // ── Content ────────────────────────────────────────────────────────────
 // A "talented" enemy grants its `power` id when swallowed; a plain one
@@ -55,6 +59,10 @@ export const ENEMY_DEFS = {
   pebblegolem: { name: 'Pebble Golem', power: 'rock', color: '#8a8070', kind: 'ground' },
   bubblefish: { name: 'Bubble Fish', power: 'bubble', color: '#5ac8f0', kind: 'bob' },
   spikeball: { name: 'Rolling Spike Ball', power: null, color: '#333333', kind: 'ground', noInhale: true },
+  whirlwindwisp: { name: 'Whirlwind Wisp', power: 'gust', color: '#d8f0ff', kind: 'fly' },
+  lintghost: { name: 'Lint Ghost', power: null, color: '#3a3040', kind: 'fly' },
+  sockpuppet: { name: 'Sock Puppet', power: null, color: '#8a6a9a', kind: 'erratic' },
+  bedspring: { name: 'Bed Spring', power: null, color: '#707078', kind: 'ground', noInhale: true },
 }
 
 export const POWERS = {
@@ -64,6 +72,7 @@ export const POWERS = {
   zap: { name: 'Zap', hatColor: '#f5e050', accent: '#c9a800', emoji: '⚡' },
   rock: { name: 'Rock', hatColor: '#a89878', accent: '#6b5f47', emoji: '🪨' },
   bubble: { name: 'Bubble', hatColor: '#7ad0ff', accent: '#3f8fc9', emoji: '🫧' },
+  gust: { name: 'Gust', hatColor: '#d8f0ff', accent: '#6bb0c9', emoji: '🌪️' },
 }
 
 // Swallowing a second, *different* talented enemy while a power is already
@@ -77,30 +86,41 @@ export const POWERS = {
 // primitives the six base powers already use, but every combo picks its
 // own parameters so the *mechanic* differs (bigger reach vs. a chained
 // hit vs. a follow-up bolt vs. a piercing/bouncing/spread/gravity-affected
-// shot), not just the color. Rock is the "heavy" element in every combo it
-// touches (slow, huge, hits hardest); Zap (without Rock) is the "fast"
-// element (quick, weak, spammable); everything else lands in between —
-// see usePowerAttack()/megaArcAttack()/megaAoeAttack()/megaFireProjectile()/
-// megaMagnetTick() in engine.js for what each field actually does.
+// shot), not just the color. `tier` (heavy/fast/balanced) also drives the
+// mega hat's silhouette in render.js, on top of each combo's own unique
+// emoji and two-tone (not blended) hat coloring — three independent knobs
+// so no two combos read the same at a glance. Rock is the "heavy" element
+// in every combo it touches (slow, huge, hits hardest); Zap (without Rock)
+// is the "fast" element (quick, weak, spammable); everything else lands in
+// between — see usePowerAttack()/megaArcAttack()/megaAoeAttack()/
+// megaFireProjectile()/megaMagnetTick() in engine.js for what each field
+// actually does, and drawPlayer()/drawProjectile() in render.js for how
+// tier/shape/emoji turn into a distinct look.
 export const MEGA_POWERS = {
   // ── Heavy (Rock-involved): slow, huge, hits hardest ─────────────────
-  'blade+rock': { name: 'Boulder Blade', emoji: '🪨', attack: { shape: 'arc', reachMult: 2.0, arcHMult: 1.8, cooldown: 74, bossDmg: 3, killScore: 250, color: '#a89878' } },
-  'ember+rock': { name: 'Magma Slam', emoji: '🌋', attack: { shape: 'aoe', radius: 100, cooldown: 74, bossDmg: 3, killScore: 250, color: '#ff5a1a' } },
-  'frost+rock': { name: 'Glacier Smash', emoji: '🧊', attack: { shape: 'aoe', radius: 115, cooldown: 74, bossDmg: 3, killScore: 250, color: '#8fe0ff' } },
-  'rock+zap': { name: 'Magnet Slam', emoji: '🧲', attack: { shape: 'magnet', radius: 130, cooldown: 74, bossDmg: 3, killScore: 250, color: '#f5e050' } },
-  'bubble+rock': { name: 'Heavy Bubble', emoji: '🪨', attack: { shape: 'projectile', gravity: 0.35, speed: 0.6, burstRadius: 55, big: true, cooldown: 74, bossDmg: 3, killScore: 250, color: '#a89878' } },
+  'blade+rock': { name: 'Boulder Blade', emoji: '🪨', attack: { shape: 'arc', tier: 'heavy', reachMult: 2.0, arcHMult: 1.8, cooldown: 74, bossDmg: 3, killScore: 250, color: '#a89878' } },
+  'ember+rock': { name: 'Magma Slam', emoji: '🌋', attack: { shape: 'aoe', tier: 'heavy', radius: 100, cooldown: 74, bossDmg: 3, killScore: 250, color: '#ff5a1a' } },
+  'frost+rock': { name: 'Glacier Smash', emoji: '🧊', attack: { shape: 'aoe', tier: 'heavy', radius: 115, cooldown: 74, bossDmg: 3, killScore: 250, color: '#8fe0ff' } },
+  'rock+zap': { name: 'Magnet Slam', emoji: '🧲', attack: { shape: 'magnet', tier: 'heavy', radius: 130, cooldown: 74, bossDmg: 3, killScore: 250, color: '#f5e050' } },
+  'bubble+rock': { name: 'Heavy Bubble', emoji: '🌊', attack: { shape: 'projectile', tier: 'heavy', gravity: 0.35, speed: 0.6, burstRadius: 55, big: true, cooldown: 74, bossDmg: 3, killScore: 250, color: '#a89878' } },
+  'gust+rock': { name: 'Cyclone Boulder', emoji: '🌪️', attack: { shape: 'dash', tier: 'heavy', reachMult: 2.2, dashSpeedMult: 1.8, cooldown: 74, bossDmg: 3, killScore: 250, color: '#a89878' } },
   // ── Fast (Zap without Rock, plus Scald Spray): quick, weak, spammable ─
-  'blade+zap': { name: 'Storm Blade', emoji: '⚡', attack: { shape: 'arc', chainRadius: 90, cooldown: 30, bossDmg: 1, killScore: 100, color: '#f5e050' } },
-  'ember+zap': { name: 'Plasma Storm', emoji: '🌩️', attack: { shape: 'projectile', speed: 1.15, burstRadius: 50, cooldown: 30, bossDmg: 1, killScore: 100, color: '#ff9a3d' } },
-  'frost+zap': { name: 'Blizzard Shock', emoji: '🌨️', attack: { shape: 'projectile', pierceCount: 3, cooldown: 30, bossDmg: 1, killScore: 100, color: '#8fe0ff' } },
-  'bubble+zap': { name: 'Charged Bubble', emoji: '⚡', attack: { shape: 'projectile', speed: 1.1, bounces: 3, cooldown: 30, bossDmg: 1, killScore: 100, color: '#f5e050' } },
-  'bubble+ember': { name: 'Scald Spray', emoji: '♨️', attack: { shape: 'projectile', count: 3, spreadAngle: 0.4, cooldown: 30, bossDmg: 1, killScore: 100, color: '#ff9a3d' } },
+  'blade+zap': { name: 'Storm Blade', emoji: '⚡', attack: { shape: 'arc', tier: 'fast', chainRadius: 90, cooldown: 30, bossDmg: 1, killScore: 100, color: '#f5e050' } },
+  'ember+zap': { name: 'Plasma Storm', emoji: '🌩️', attack: { shape: 'projectile', tier: 'fast', speed: 1.15, burstRadius: 50, cooldown: 30, bossDmg: 1, killScore: 100, color: '#ff9a3d' } },
+  'frost+zap': { name: 'Blizzard Shock', emoji: '🌨️', attack: { shape: 'projectile', tier: 'fast', pierceCount: 3, cooldown: 30, bossDmg: 1, killScore: 100, color: '#8fe0ff' } },
+  'bubble+zap': { name: 'Charged Bubble', emoji: '💥', attack: { shape: 'projectile', tier: 'fast', speed: 1.1, bounces: 3, cooldown: 30, bossDmg: 1, killScore: 100, color: '#f5e050' } },
+  'bubble+ember': { name: 'Scald Spray', emoji: '♨️', attack: { shape: 'projectile', tier: 'fast', count: 3, spreadAngle: 0.4, cooldown: 30, bossDmg: 1, killScore: 100, color: '#ff9a3d' } },
+  'gust+zap': { name: 'Thunder Dash', emoji: '🌪️', attack: { shape: 'dash', tier: 'fast', dashSpeedMult: 3.0, chainRadius: 80, cooldown: 30, bossDmg: 1, killScore: 100, color: '#f5e050' } },
   // ── Balanced (everything else) ──────────────────────────────────────
-  'blade+ember': { name: 'Blazing Blade', emoji: '🔥', attack: { shape: 'arc', reachMult: 1.6, cooldown: 46, bossDmg: 2, killScore: 180, color: '#ff7a3a' } },
-  'blade+frost': { name: 'Frost Blade', emoji: '❄️', attack: { shape: 'arc', bolt: true, cooldown: 46, bossDmg: 2, killScore: 180, color: '#8fe0ff' } },
-  'blade+bubble': { name: 'Bubble Blade', emoji: '🫧', attack: { shape: 'arc', projectile: true, cooldown: 46, bossDmg: 2, killScore: 180, color: '#7ad0ff' } },
-  'ember+frost': { name: 'Steam Burst', emoji: '💨', attack: { shape: 'aoe', radius: 90, launch: -4, cooldown: 46, bossDmg: 2, killScore: 180, color: '#ffffff' } },
-  'bubble+frost': { name: 'Ice Bubble', emoji: '🧊', attack: { shape: 'projectile', speed: 0.6, life: 1.4, pierceCount: 2, big: true, cooldown: 48, bossDmg: 2, killScore: 180, color: '#8fe0ff' } },
+  'blade+ember': { name: 'Blazing Blade', emoji: '🔥', attack: { shape: 'arc', tier: 'balanced', reachMult: 1.6, cooldown: 46, bossDmg: 2, killScore: 180, color: '#ff7a3a' } },
+  'blade+frost': { name: 'Frost Blade', emoji: '❄️', attack: { shape: 'arc', tier: 'balanced', bolt: true, cooldown: 46, bossDmg: 2, killScore: 180, color: '#8fe0ff' } },
+  'blade+bubble': { name: 'Bubble Blade', emoji: '🫧', attack: { shape: 'arc', tier: 'balanced', projectile: true, cooldown: 46, bossDmg: 2, killScore: 180, color: '#7ad0ff' } },
+  'ember+frost': { name: 'Steam Burst', emoji: '💨', attack: { shape: 'aoe', tier: 'balanced', radius: 90, launch: -4, cooldown: 46, bossDmg: 2, killScore: 180, color: '#ffffff' } },
+  'bubble+frost': { name: 'Ice Bubble', emoji: '🥶', attack: { shape: 'projectile', tier: 'balanced', speed: 0.6, life: 1.4, pierceCount: 2, big: true, cooldown: 48, bossDmg: 2, killScore: 180, color: '#8fe0ff' } },
+  'blade+gust': { name: 'Tornado Blade', emoji: '🌪️', attack: { shape: 'dash', tier: 'balanced', reachMult: 1.4, dashSpeedMult: 2.2, cooldown: 46, bossDmg: 2, killScore: 180, color: '#c9c9d8' } },
+  'ember+gust': { name: 'Firestorm Dash', emoji: '🔥', attack: { shape: 'dash', tier: 'balanced', reachMult: 1.3, dashSpeedMult: 2.5, cooldown: 46, bossDmg: 2, killScore: 180, color: '#ff7a3a' } },
+  'frost+gust': { name: 'Blizzard Dash', emoji: '❄️', attack: { shape: 'dash', tier: 'balanced', reachMult: 1.5, dashSpeedMult: 2.1, cooldown: 48, bossDmg: 2, killScore: 180, color: '#8fe0ff' } },
+  'bubble+gust': { name: 'Cyclone Bubble', emoji: '🫧', attack: { shape: 'dash', tier: 'balanced', reachMult: 1.3, dashSpeedMult: 2.2, launch: -5, cooldown: 46, bossDmg: 2, killScore: 180, color: '#7ad0ff' } },
 }
 
 export function blendHex(a, b) {
@@ -131,4 +151,5 @@ export const THEMES = {
   arcade: { sky: ['#0a0520', '#2a0a4a'], ground: '#241a3a', groundTop: '#4a2a7a', glow: true, void: '#000006' },
   landfill: { sky: ['#3a3020', '#6a5a30'], ground: '#3a3020', groundTop: '#8a7a30', haze: true, void: '#1a1408' },
   horror: { sky: ['#0a0208', '#2a0512'], ground: '#241018', groundTop: '#5c0f1e', haze: true, void: '#030103' },
+  underbed: { sky: ['#050308', '#150a20'], ground: '#0f0a14', groundTop: '#241830', haze: true, eyes: true, void: '#000002' },
 }

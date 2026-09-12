@@ -101,11 +101,12 @@ export default function ShirbyAndTheForgottenPlace() {
             A small pink puffball inhales things and copies their powers, because that's simply
             how this works now. Wander {worldCount} increasingly strange corners of a place where
             lost and forgotten things pile up and come to life, swallow the talented ones to copy
-            Blade, Ember, Frost, Zap, Rock, or Bubble, and float clean over anything jumping won't
-            reach. Already got a power equipped? Swallow a <em>different</em> talented one anyway —
-            the two fuse into a mega power on the spot. Any resemblance to a certain star-riding
-            hero (and his own combo-copy-ability spinoff) is <em>extremely</em> on purpose and also
-            legally just vibes.
+            Blade, Ember, Frost, Zap, Rock, Bubble, or Gust, and float clean over anything jumping
+            won't reach. Already got a power equipped? Swallow a <em>different</em> talented one
+            anyway — the two fuse into a mega power on the spot. Keep an eye out for a Forgotten
+            Star, too — a few seconds of speed and invincibility, no swallowing required. Any
+            resemblance to a certain star-riding hero (and his own combo-copy-ability spinoff) is
+            <em>extremely</em> on purpose and also legally just vibes.
           </p>
           <p className={styles.controls}>
             ← → move · ↑ / Space jump (hold in the air to float) · Z hold to inhale, tap ↓ to

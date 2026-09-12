@@ -17,6 +17,7 @@ import {
   KNOCKBACK_VX, KNOCKBACK_VY, PROJECTILE_SPEED, PROJECTILE_LIFE,
   BLADE_COOLDOWN, BLADE_REACH, BLADE_ARC_H, EMBER_RANGE, EMBER_TICK, FROST_COOLDOWN,
   ZAP_PULSE_COOLDOWN, ZAP_PULSE_RADIUS, ROCK_COOLDOWN, ROCK_RADIUS, BUBBLE_COOLDOWN,
+  GUST_COOLDOWN, GUST_DURATION, GUST_SPEED_MULT, STAR_DURATION,
   ENEMY_DEFS, POWERS, MEGA_POWERS, getPowerDisplay, TILE, W,
 } from './constants.js'
 import { LEVELS } from './levels.js'
@@ -32,6 +33,7 @@ const POWER_QUIPS = {
   zap: '(suspiciously spark-shaped)',
   rock: '(suspiciously rock-shaped)',
   bubble: '(suspiciously bubble-shaped)',
+  gust: '(suspiciously wind-shaped)',
 }
 
 function freshLevelEntities(level) {
@@ -61,7 +63,7 @@ export function loadLevel(state, idx, preservePower) {
     vx: 0, vy: 0, onGround: false, facing: 1,
     hp: MAX_HP, invincible: 60, dead: false,
     power: prevPower, mouthContent: null, inhaling: false, inhaleTarget: null,
-    attackCooldown: 0, attackTimer: 0, emberTick: 0,
+    attackCooldown: 0, attackTimer: 0, emberTick: 0, starTimer: 0,
     prevJumpHeld: false, prevDownHeld: false, prevAttackHeld: false,
   }
 }
@@ -264,6 +266,13 @@ function megaAoeAttack(state, p, atk) {
 function megaFireProjectile(state, p, atk) {
   const count = atk.count || 1
   const speed = PROJECTILE_SPEED * (atk.speed || 1)
+  // A visual family tag so render.js can draw a genuinely different shape
+  // per mechanic instead of the same glowing orb for all six projectile
+  // combos — priority order matches which mechanic actually dominates the
+  // combo's identity when more than one flag is set (e.g. Heavy Bubble has
+  // both gravity and a burst, but reads as "the falling one").
+  const pshape = atk.gravity > 0.15 ? 'fall' : atk.pierceCount ? 'pierce' : atk.bounces ? 'bounce'
+    : atk.burstRadius ? 'burst' : count > 1 ? 'spread' : 'orb'
   for (let i = 0; i < count; i++) {
     const spread = count > 1 ? (i - (count - 1) / 2) * (atk.spreadAngle || 0) : 0
     const size = atk.big ? 24 : 16
@@ -273,7 +282,7 @@ function megaFireProjectile(state, p, atk) {
       life: (atk.life || 1) * PROJECTILE_LIFE, gravity: atk.gravity ?? 0.08,
       color: atk.color, bossDmg: atk.bossDmg, killScore: atk.killScore,
       pierceLeft: atk.pierceCount || 0, bouncesLeft: atk.bounces || 0,
-      burstRadius: atk.burstRadius || 0, big: !!atk.big, dead: false,
+      burstRadius: atk.burstRadius || 0, big: !!atk.big, pshape, dead: false,
     })
   }
 }
@@ -296,6 +305,36 @@ function megaMagnetTick(state, p, atk) {
   }
 }
 
+// Tornado Blade / Firestorm Dash / Blizzard Dash / Thunder Dash / Cyclone
+// Boulder / Cyclone Bubble: every Gust combo turns the dash into the
+// attack itself — Shirby's whole body becomes the hitbox for the
+// duration instead of throwing out a separate arc/burst/shot, so the
+// mechanic (move fast, plow through a line of enemies) is what's actually
+// different here, not just numbers on top of an existing shape. Runs once
+// per frame for the attack's whole active window (see the `atk.shape ===
+// 'dash'` per-tick call below), same repeated-tick pattern as Magnet Slam.
+function megaDashAttack(state, p, atk) {
+  p.vx = p.facing * MAX_SPEED * (atk.dashSpeedMult || 2.2)
+  const reach = atk.reachMult || 1
+  const hb = { x: p.x - p.w * (reach - 1) / 2, y: p.y - p.h * (reach - 1) / 2, w: p.w * reach, h: p.h * reach }
+  let hitPoint = null
+  for (const e of state.enemies) {
+    if (e.alive && e.squish <= 0 && aabb(hb, e)) {
+      killEnemy(state, e, atk.killScore, atk.color)
+      e.vy = -4
+      hitPoint = hitPoint || { x: e.x, y: e.y }
+    }
+  }
+  if (state.boss?.alive && aabb(hb, state.boss)) hurtBoss(state, state.boss, atk.bossDmg, atk.color)
+  if (atk.chainRadius && hitPoint) {
+    for (const e of state.enemies) {
+      if (!e.alive || e.squish > 0) continue
+      if (Math.hypot(e.x - hitPoint.x, e.y - hitPoint.y) < atk.chainRadius) killEnemy(state, e, atk.killScore, atk.color)
+    }
+  }
+  if (atk.launch) p.vy = atk.launch
+}
+
 function usePowerAttack(state, p, input, attackPressed) {
   const boss = state.boss
   if (p.attackCooldown > 0) p.attackCooldown--
@@ -306,8 +345,8 @@ function usePowerAttack(state, p, input, attackPressed) {
     const atk = megaDef.attack
     if (attackPressed && p.attackCooldown <= 0) {
       p.attackCooldown = atk.cooldown
-      p.attackTimer = atk.shape === 'magnet' ? 20 : 14
-      p.invincible = Math.max(p.invincible, atk.shape === 'magnet' ? 26 : 18)
+      p.attackTimer = atk.shape === 'magnet' ? 20 : atk.shape === 'dash' ? GUST_DURATION : 14
+      p.invincible = Math.max(p.invincible, atk.shape === 'magnet' || atk.shape === 'dash' ? 26 : 18)
       if (atk.shape === 'arc') megaArcAttack(state, p, atk)
       else if (atk.shape === 'aoe') megaAoeAttack(state, p, atk)
       else if (atk.shape === 'projectile') megaFireProjectile(state, p, atk)
@@ -316,6 +355,7 @@ function usePowerAttack(state, p, input, attackPressed) {
       }
     }
     if (atk.shape === 'magnet' && p.attackTimer > 0) megaMagnetTick(state, p, atk)
+    if (atk.shape === 'dash' && p.attackTimer > 0) megaDashAttack(state, p, atk)
     return
   }
   if (p.power === 'blade') {
@@ -390,6 +430,26 @@ function usePowerAttack(state, p, input, attackPressed) {
         vx: p.facing * PROJECTILE_SPEED * 0.75, vy: -2.5, life: PROJECTILE_LIFE, dead: false,
       })
     }
+    return
+  }
+  if (p.power === 'gust') {
+    // A spinning dash: Shirby's own body is the hitbox for the whole
+    // active window, same "movement is the attack" idea every Gust mega
+    // combo builds on (see megaDashAttack above) — base Gust is just the
+    // plain, un-fused version of that.
+    if (attackPressed && p.attackCooldown <= 0) {
+      p.attackCooldown = GUST_COOLDOWN
+      p.attackTimer = GUST_DURATION
+      p.invincible = Math.max(p.invincible, 26)
+    }
+    if (p.attackTimer > 0) {
+      p.vx = p.facing * MAX_SPEED * GUST_SPEED_MULT
+      const hb = { x: p.x, y: p.y, w: p.w, h: p.h }
+      for (const e of state.enemies) {
+        if (e.alive && e.squish <= 0 && aabb(hb, e)) { killEnemy(state, e, 100, '#bfe8ff'); e.vy = -4 }
+      }
+      if (boss?.alive && aabb(hb, boss)) hurtBoss(state, boss, 1, '#bfe8ff')
+    }
   }
 }
 
@@ -410,7 +470,8 @@ export function stepGame(state, input) {
     if (input.left) { p.vx -= MOVE_ACCEL; p.facing = -1 }
     if (input.right) { p.vx += MOVE_ACCEL; p.facing = 1 }
     if (!input.left && !input.right) p.vx *= FRICTION
-    p.vx = Math.max(-MAX_SPEED, Math.min(MAX_SPEED, p.vx))
+    const speedCap = p.starTimer > 0 ? MAX_SPEED * 1.5 : MAX_SPEED
+    p.vx = Math.max(-speedCap, Math.min(speedCap, p.vx))
 
     if (input.jump && p.onGround) p.vy = JUMP_V
     p.prevJumpHeld = input.jump
@@ -443,6 +504,7 @@ export function stepGame(state, input) {
       if (block.contents === 'button') { state.score += 10; state.buttonCount += 1; spawnParticles(state, block.x + TILE / 2, block.y, '#ffd873', 6) }
       else if (block.contents === 'heart') { p.hp = Math.min(MAX_HP, p.hp + 2); showMessage(state, 'Forgotten Heart! +2 HP'); spawnParticles(state, block.x + TILE / 2, block.y, '#ff6f8a', 6) }
       else if (block.contents === '1up') { state.lives += 1; showMessage(state, 'Spare Puff found! +1 life'); spawnParticles(state, block.x + TILE / 2, block.y, '#7bff8a', 6) }
+      else if (block.contents === 'star') { p.starTimer = STAR_DURATION; showMessage(state, 'Forgotten Star! Invincible & speedy!'); spawnParticles(state, block.x + TILE / 2, block.y, '#ffe873', 10) }
     } else if (block.kind === 'brick') {
       block.bump = 6
     }
@@ -666,6 +728,13 @@ export function stepGame(state, input) {
   state.particles = state.particles.filter(pt => pt.life > 0)
 
   if (p.invincible > 0) p.invincible--
+  // A Forgotten Star's invincibility rides the same p.invincible field a
+  // normal hit uses (so contact damage is already a no-op for free — see
+  // hitPlayer's `p.invincible > 0` guard) but keeps re-topping it up
+  // before it can hit 0, instead of the one-shot window a hit gets.
+  // render.js skips the hit-flicker for as long as starTimer is running so
+  // this doesn't just look like Shirby endlessly blinking.
+  if (p.starTimer > 0) { p.starTimer--; p.invincible = Math.max(p.invincible, 4) }
   if (state.messageTimer > 0) state.messageTimer--
 
   if (state.status !== 'playing') return // a boss defeat above may have already started a transition

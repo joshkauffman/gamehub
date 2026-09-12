@@ -1,7 +1,9 @@
 // ── Shirby and the Forgotten Place — level data ───────────────────────
-// Four worlds of two levels each: a regular level, then a boss level
+// Five worlds of two levels each: a regular level, then a boss level
 // (flagX: null — beating the boss clears the level instead of a flagpole).
-// Beating the last boss finishes the game; see engine.js's stepGame.
+// Beating the last boss finishes the game; see engine.js's stepGame (the
+// win check is just `levelIndex + 1 < LEVELS.length`, so nothing else
+// needs to know how many worlds there are — add another and it's final).
 //
 // Shirby floats, so pits here are a "detour, not a wall" — a precision
 // jump is never the only way past a gap, floating always works too. Don't
@@ -144,7 +146,7 @@ export const LEVELS = [
     enemies: [respawnEnemy(groundEnemy('staticsock', 480, 400, 660)), respawnEnemy(groundEnemy('bladebeetle', 200, 150, 380))],
   }),
 
-  // ── World 4: The Landfill Core (final) ───────────────────────────────
+  // ── World 4: The Landfill Core ───────────────────────────────────────
   {
     id: '4-1', theme: 'landfill', width: 4900, flagX: 4500,
     groundSegments: [{ x0: 0, x1: 720 }, { x0: 900, x1: 1550 }, { x0: 1720, x1: 2400 }, { x0: 2580, x1: 3200 }, { x0: 3380, x1: 4900 }],
@@ -177,5 +179,55 @@ export const LEVELS = [
     ],
     buttons: buttonLine(420, GROUND_Y - 90, 3),
     enemies: [respawnEnemy(groundEnemy('pebblegolem', 350, 300, 460)), respawnEnemy(bobEnemy('bubblefish', 650, GROUND_Y - 180))],
+  }),
+
+  // ── World 5: The Under-the-Bed Deep (final) ───────────────────────────
+  {
+    id: '5-1', theme: 'underbed', width: 5200, flagX: 4800,
+    groundSegments: [
+      { x0: 0, x1: 700 }, { x0: 860, x1: 1500 }, { x0: 1680, x1: 2300 },
+      { x0: 2480, x1: 3100 }, { x0: 3280, x1: 3900 }, { x0: 4080, x1: 5200 },
+    ],
+    blocks: [
+      ...brickRow(280, GROUND_Y - 170, ['brick', 'question:button', 'brick']),
+      ...brickRow(950, GROUND_Y - 210, ['question:star']),
+      ...brickRow(1450, GROUND_Y - 160, ['brick', 'question:button', 'brick', 'question:heart']),
+      ...brickRow(2100, GROUND_Y - 220, ['question:button']),
+      ...brickRow(2700, GROUND_Y - 170, ['question:1up', 'brick', 'question:button']),
+      ...brickRow(3450, GROUND_Y - 200, ['question:button', 'question:heart']),
+      ...brickRow(4200, GROUND_Y - 190, ['brick', 'question:button', 'brick']),
+    ],
+    enemies: [
+      // Whirlwind Wisp (Gust) shows up twice — it's the newest power and
+      // the last one you can find, so it gets two chances instead of one.
+      flyEnemy('whirlwindwisp', 500, 420, 750),
+      groundEnemy('bedspring', 1050, 980, 1250, 1.3),
+      erraticEnemy('sockpuppet', 1350, 1280, 1550),
+      flyEnemy('lintghost', 1900, 1780, 2250),
+      flyEnemy('whirlwindwisp', 2550, 2480, 2950),
+      erraticEnemy('glitchblob', 3050, 2950, 3300),
+      groundEnemy('bedspring', 3500, 3430, 3850, 1.4),
+      flyEnemy('lintghost', 4150, 4080, 4700),
+      erraticEnemy('sockpuppet', 4500, 4420, 4850),
+    ],
+    buttons: [
+      ...buttonLine(720, GROUND_Y - 90, 3), ...buttonLine(1520, GROUND_Y - 90, 3),
+      ...buttonLine(2320, GROUND_Y - 90, 3), ...buttonLine(3120, GROUND_Y - 260, 4),
+      ...buttonLine(3920, GROUND_Y - 90, 3),
+    ],
+  },
+  bossLevel('5-2', 'underbed', makeBoss(1100, 20, 1.6, 280, false, 'lurker'), {
+    blocks: [
+      ...brickRow(200, GROUND_Y - 160, ['brick', 'question:heart', 'brick']),
+      ...brickRow(500, GROUND_Y - 160, ['brick', 'question:1up', 'brick']),
+      ...brickRow(780, GROUND_Y - 160, ['brick', 'question:heart', 'brick']),
+    ],
+    buttons: buttonLine(420, GROUND_Y - 90, 3),
+    // A little of everything within reach for a last stand — including a
+    // fresh shot at Cyclone Boulder, if Rock's still equipped going in.
+    enemies: [
+      respawnEnemy(flyEnemy('whirlwindwisp', 300, 220, 500)),
+      respawnEnemy(groundEnemy('pebblegolem', 650, 580, 800)),
+    ],
   }),
 ]

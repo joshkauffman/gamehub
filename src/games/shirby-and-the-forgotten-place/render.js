@@ -1,7 +1,7 @@
 // ── Shirby and the Forgotten Place — rendering ────────────────────────
 // Pure canvas drawing. Reads state produced by engine.js; never mutates it.
 
-import { W, H, GROUND_Y, THEMES, ENEMY_DEFS, MEGA_POWERS, getPowerDisplay } from './constants.js'
+import { W, H, GROUND_Y, THEMES, ENEMY_DEFS, POWERS, MEGA_POWERS, getPowerDisplay } from './constants.js'
 import { LEVELS } from './levels.js'
 import { currentLevel } from './engine.js'
 
@@ -10,6 +10,7 @@ const BOSS_NAMES = {
   gnome: 'Gnome Gargantuan',
   cabinet: 'Cabinet Colossus',
   lostfound: 'The Lost & Found',
+  lurker: 'The Closet Lurker',
 }
 
 function drawBackground(ctx, theme, camX, frame) {
@@ -55,6 +56,19 @@ function drawBackground(ctx, theme, camX, frame) {
     for (let i = 0; i < 5; i++) {
       const x = ((i * 260 - camX * 0.4) % (W + 200) + (W + 200)) % (W + 200) - 100
       ctx.beginPath(); ctx.arc(x, H - 20, 90, Math.PI, 0); ctx.fill()
+    }
+  }
+  if (theme.eyes) {
+    // pairs of glowing eyes in the dark, blinking in and out — something's
+    // always watching in the Under-the-Bed Deep, never quite where you
+    // just looked.
+    for (let i = 0; i < 6; i++) {
+      const x = ((i * 240 - camX * 0.35) % (W + 200) + (W + 200)) % (W + 200) - 100
+      const y = 90 + (i % 4) * 80
+      if (Math.sin(frame * 0.02 + i * 3) > -0.8) {
+        ctx.fillStyle = '#ffcf60'
+        ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.arc(x + 15, y, 3, 0, Math.PI * 2); ctx.fill()
+      }
     }
   }
 }
@@ -120,6 +134,23 @@ function drawEnemy(ctx, e, camX, frame) {
     ctx.beginPath(); ctx.ellipse(e.w * 0.4, -e.h * 0.5, e.w * 0.32, e.h * 0.4, -0.3, 0, Math.PI * 2); ctx.fill()
     ctx.restore()
     ctx.beginPath(); ctx.ellipse(0, -e.h / 2, e.w * 0.32, e.h / 2, 0, 0, Math.PI * 2); ctx.fill()
+    if (e.type === 'whirlwindwisp') {
+      // a little spinning cyclone swirl, always turning
+      ctx.strokeStyle = 'rgba(255,255,255,0.8)'; ctx.lineWidth = 1.5
+      for (let i = 0; i < 3; i++) {
+        const a = frame * 0.3 + i * 2.1
+        const rr = 6 + i * 4
+        ctx.beginPath(); ctx.arc(0, -e.h / 2, rr, a, a + 3.6); ctx.stroke()
+      }
+    }
+    if (e.type === 'lintghost') {
+      // a fuzzy dust-bunny-like tuft trailing off the body
+      ctx.fillStyle = 'rgba(255,255,255,0.35)'
+      for (let i = 0; i < 4; i++) {
+        const a = i * 1.6 + Math.sin(frame * 0.1 + i) * 0.3
+        ctx.beginPath(); ctx.arc(Math.cos(a) * e.w * 0.3, -e.h / 2 + Math.sin(a) * e.h * 0.35, 3, 0, Math.PI * 2); ctx.fill()
+      }
+    }
   } else if (def.kind === 'bob') {
     ctx.fillStyle = 'rgba(150,220,255,0.25)'
     ctx.beginPath(); ctx.arc(0, -e.h / 2, e.w * 0.75, 0, Math.PI * 2); ctx.fill()
@@ -145,6 +176,15 @@ function drawEnemy(ctx, e, camX, frame) {
     ctx.globalAlpha = 0.7 + Math.random() * 0.3
     ctx.beginPath(); ctx.ellipse(jit(), -e.h / 2 + jit(), e.w / 2, e.h / 2, 0, 0, Math.PI * 2); ctx.fill()
     ctx.globalAlpha = 1
+    if (e.type === 'sockpuppet') {
+      // a floppy toe-end flapping loose off the top, like a sock with a
+      // mind of its own
+      ctx.fillStyle = def.color
+      const flop = Math.sin(frame * 0.3) * 6
+      ctx.beginPath(); ctx.ellipse(flop, -e.h * 0.95, e.w * 0.28, e.h * 0.22, flop * 0.05, 0, Math.PI * 2); ctx.fill()
+      ctx.fillStyle = '#fff'
+      ctx.beginPath(); ctx.ellipse(0, -e.h * 0.15, e.w * 0.3, e.h * 0.12, 0, 0, Math.PI * 2); ctx.fill()
+    }
   } else {
     ctx.fillStyle = def.color
     ctx.beginPath(); ctx.ellipse(0, -e.h / 2, e.w / 2, e.h / 2, 0, 0, Math.PI * 2); ctx.fill()
@@ -163,6 +203,16 @@ function drawEnemy(ctx, e, camX, frame) {
         ctx.beginPath(); ctx.moveTo(Math.cos(a) * e.w * 0.6, -e.h / 2 + Math.sin(a) * e.h * 0.6); ctx.lineTo(Math.cos(a) * e.w * 0.9, -e.h / 2 + Math.sin(a) * e.h * 0.9); ctx.stroke()
       }
     }
+    if (e.type === 'bedspring') {
+      // a coiled zigzag poking up out of the body, like a mattress spring
+      ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 2
+      ctx.beginPath()
+      for (let i = 0; i <= 4; i++) {
+        const sx = (i % 2 === 0 ? -1 : 1) * e.w * 0.22
+        ctx.lineTo(sx, -e.h * (0.55 + i * 0.16))
+      }
+      ctx.stroke()
+    }
   }
   if (!squished && def.kind !== 'erratic') drawEyes(ctx, 0, -e.h / 2 - e.h * 0.05, e.w * 0.16, 4)
   ctx.restore()
@@ -175,7 +225,10 @@ function drawBoss(ctx, boss, camX, frame) {
   const x = boss.x - camX
   if (x < -120 || x > W + 120) return
   const flash = boss.invincible > 0 && Math.floor(boss.invincible / 4) % 2 === 0
-  const theme = THEMES[boss.shape === 'teddy' ? 'attic' : boss.shape === 'gnome' ? 'garden' : boss.shape === 'cabinet' ? 'arcade' : 'landfill']
+  const theme = THEMES[
+    boss.shape === 'teddy' ? 'attic' : boss.shape === 'gnome' ? 'garden' : boss.shape === 'cabinet' ? 'arcade'
+      : boss.shape === 'lurker' ? 'underbed' : 'landfill'
+  ]
   ctx.save()
   ctx.translate(x + boss.w / 2, boss.y + boss.h)
   ctx.fillStyle = flash ? '#ffffff' : theme.groundTop
@@ -205,9 +258,26 @@ function drawBoss(ctx, boss, camX, frame) {
     ctx.closePath(); ctx.fill()
     ctx.fillStyle = '#1a1408'
     ctx.beginPath(); ctx.ellipse(0, -boss.h * 0.55, boss.w * 0.3, boss.h * 0.18, 0, 0, Math.PI); ctx.fill()
+  } else if (boss.shape === 'lurker') {
+    // a ragged dark cloak-shape looming up out of the closet, with far too
+    // many eyes for one thing to reasonably have
+    ctx.fillStyle = flash ? '#eee' : '#140a1e'
+    ctx.beginPath()
+    ctx.moveTo(-boss.w * 0.52, -boss.h * 0.75)
+    ctx.lineTo(-boss.w * 0.42, -boss.h * 1.35); ctx.lineTo(-boss.w * 0.2, -boss.h * 1.1)
+    ctx.lineTo(0, -boss.h * 1.5); ctx.lineTo(boss.w * 0.2, -boss.h * 1.1)
+    ctx.lineTo(boss.w * 0.42, -boss.h * 1.35); ctx.lineTo(boss.w * 0.52, -boss.h * 0.75)
+    ctx.closePath(); ctx.fill()
+    if (!flash) {
+      ctx.fillStyle = '#ffcf60'
+      const extraEyes = [[-0.28, -0.9], [0.3, -0.95], [-0.14, -1.15], [0.16, -1.12]]
+      for (const [ex, ey] of extraEyes) {
+        ctx.beginPath(); ctx.arc(boss.w * ex, boss.h * ey, 2.4, 0, Math.PI * 2); ctx.fill()
+      }
+    }
   }
 
-  drawEyes(ctx, 0, -boss.h * 0.58, boss.w * 0.16, boss.shape === 'lostfound' ? 6 : 5)
+  drawEyes(ctx, 0, -boss.h * 0.58, boss.w * 0.16, boss.shape === 'lostfound' || boss.shape === 'lurker' ? 6 : 5)
   ctx.restore()
 }
 
@@ -237,14 +307,51 @@ function drawProjectile(ctx, pr, camX, frame) {
     ctx.fillStyle = '#a04ad0'
     ctx.beginPath(); ctx.arc(0, 0, 7, 0, Math.PI * 2); ctx.fill()
   } else if (pr.kind === 'mega') {
+    // Each projectile "family" (see pshape in megaFireProjectile, engine.js)
+    // gets a genuinely different silhouette, not just a recolored orb.
     const r = pr.big ? 12 : 8
     ctx.fillStyle = pr.color
-    ctx.globalAlpha = 0.35
-    ctx.beginPath(); ctx.arc(0, 0, r * 1.8, 0, Math.PI * 2); ctx.fill()
-    ctx.globalAlpha = 1
-    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill()
-    ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5
-    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke()
+    if (pr.pshape === 'pierce') {
+      // an elongated streak, oriented along its actual flight direction
+      const ang = Math.atan2(pr.vy, pr.vx)
+      ctx.rotate(ang)
+      ctx.globalAlpha = 0.4
+      ctx.beginPath(); ctx.ellipse(0, 0, r * 2.6, r * 0.7, 0, 0, Math.PI * 2); ctx.fill()
+      ctx.globalAlpha = 1
+      ctx.beginPath(); ctx.ellipse(0, 0, r * 1.6, r * 0.5, 0, 0, Math.PI * 2); ctx.fill()
+    } else if (pr.pshape === 'bounce') {
+      // a core dot plus a trailing comic-swoosh arc, like a ball with spin
+      ctx.beginPath(); ctx.arc(0, 0, r * 0.8, 0, Math.PI * 2); ctx.fill()
+      ctx.strokeStyle = pr.color; ctx.lineWidth = 2; ctx.globalAlpha = 0.6
+      ctx.beginPath(); ctx.arc(-r * 0.3, 0, r * 1.6, 0.3, 2.2); ctx.stroke()
+      ctx.globalAlpha = 1
+    } else if (pr.pshape === 'burst') {
+      // a core with a wide, faint pulsing danger-ring around it
+      const pulse = 1 + Math.sin(frame * 0.3) * 0.15
+      ctx.globalAlpha = 0.25
+      ctx.beginPath(); ctx.arc(0, 0, r * 2.4 * pulse, 0, Math.PI * 2); ctx.fill()
+      ctx.globalAlpha = 1
+      ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill()
+    } else if (pr.pshape === 'fall') {
+      // a heavy teardrop with a short trail, falling-rock silhouette
+      ctx.beginPath()
+      ctx.moveTo(0, -r * 1.6)
+      ctx.quadraticCurveTo(r * 1.3, 0, 0, r * 1.1)
+      ctx.quadraticCurveTo(-r * 1.3, 0, 0, -r * 1.6)
+      ctx.fill()
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.2
+      ctx.beginPath(); ctx.arc(0, 0, r * 0.5, 0, Math.PI * 2); ctx.stroke()
+    } else if (pr.pshape === 'spread') {
+      // a small plain dot — already reads as distinct by arriving in 3s
+      ctx.beginPath(); ctx.arc(0, 0, r * 0.7, 0, Math.PI * 2); ctx.fill()
+    } else {
+      ctx.globalAlpha = 0.35
+      ctx.beginPath(); ctx.arc(0, 0, r * 1.8, 0, Math.PI * 2); ctx.fill()
+      ctx.globalAlpha = 1
+      ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill()
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5
+      ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke()
+    }
   }
   ctx.restore()
 }
@@ -277,7 +384,11 @@ function drawParticles(ctx, particles, camX) {
 // POWERS[...].hatColor), same "cosmetic overlay on a shared body" idea as
 // the Mario knockoff's cape/shield, just built into the one body here.
 export function drawPlayer(ctx, p, camX, frame) {
-  if (p.invincible > 0 && Math.floor(p.invincible / 4) % 2 === 0 && !p.dead) return
+  // A Forgotten Star keeps p.invincible topped up for its whole duration
+  // (see stepGame) — without this guard that would read as Shirby just
+  // endlessly blinking out instead of a deliberate sparkly-invincible
+  // window, so the hit-flicker is suppressed for as long as it's running.
+  if (p.invincible > 0 && p.starTimer <= 0 && Math.floor(p.invincible / 4) % 2 === 0 && !p.dead) return
   const x = p.x - camX
   const w = p.w, h = p.h
   ctx.save()
@@ -326,11 +437,45 @@ export function drawPlayer(ctx, p, camX, frame) {
     ctx.beginPath(); ctx.arc(w * 0.28, h * 0.12, w * 0.08, 0.15, Math.PI - 0.5); ctx.stroke()
   }
 
-  // hat, if a power is equipped — a mega combo gets the same hat shape in
-  // a color blended from both of its parts, plus a little spike on top so
-  // it reads as "upgraded" at a glance.
+  // hat, if a power is equipped. A mega combo gets a genuinely different
+  // look from any base power or any other combo — not just a different
+  // color: a two-tone hat split between its two parents' actual colors
+  // (never blended into a muddy average), a silhouette that varies by
+  // tier (heavy = tall and broad, fast = short and sleek, balanced = the
+  // standard wedge), and its own unique emoji worn on top. Three
+  // independent signals, so no two of the 15 combos read the same.
   const powDisplay = getPowerDisplay(p.power)
-  if (powDisplay) {
+  if (powDisplay?.mega) {
+    const [aId, bId] = p.power.split('+')
+    const a = POWERS[aId], b = POWERS[bId]
+    const atk = MEGA_POWERS[p.power].attack
+    const peakH = atk.tier === 'heavy' ? 0.85 : atk.tier === 'fast' ? 0.58 : 0.7
+    const baseW = atk.tier === 'heavy' ? 0.36 : atk.tier === 'fast' ? 0.24 : 0.3
+    ctx.fillStyle = a.hatColor
+    ctx.beginPath()
+    ctx.moveTo(-w * baseW, -h * 0.32); ctx.lineTo(0, -h * 0.32)
+    ctx.lineTo(0, -h * peakH); ctx.lineTo(-w * baseW * 0.4, -h * (peakH - 0.06))
+    ctx.closePath(); ctx.fill()
+    ctx.fillStyle = b.hatColor
+    ctx.beginPath()
+    ctx.moveTo(0, -h * 0.32); ctx.lineTo(w * baseW, -h * 0.32)
+    ctx.lineTo(w * baseW * 0.4, -h * (peakH - 0.06)); ctx.lineTo(0, -h * peakH)
+    ctx.closePath(); ctx.fill()
+    ctx.fillStyle = a.accent
+    ctx.fillRect(-w * baseW - w * 0.02, -h * 0.36, w * baseW + w * 0.02, h * 0.08)
+    ctx.fillStyle = b.accent
+    ctx.fillRect(0, -h * 0.36, w * baseW + w * 0.02, h * 0.08)
+    // The combo's own emoji, worn on top — un-mirror it (via a second
+    // facing-scale that cancels the body's own ctx.scale(p.facing, 1)
+    // from earlier) so it never reads backwards facing left.
+    ctx.save()
+    ctx.translate(0, -h * peakH - h * 0.2)
+    ctx.scale(p.facing, 1)
+    ctx.font = `${Math.round(w * 0.55)}px sans-serif`
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+    ctx.fillText(powDisplay.emoji, 0, 0)
+    ctx.restore()
+  } else if (powDisplay) {
     ctx.fillStyle = powDisplay.hatColor
     ctx.beginPath()
     ctx.moveTo(-w * 0.3, -h * 0.32)
@@ -340,12 +485,6 @@ export function drawPlayer(ctx, p, camX, frame) {
     ctx.closePath(); ctx.fill()
     ctx.fillStyle = powDisplay.accent
     ctx.fillRect(-w * 0.32, -h * 0.36, w * 0.64, h * 0.08)
-    if (powDisplay.mega) {
-      ctx.fillStyle = '#ffffff'
-      ctx.beginPath()
-      ctx.moveTo(-w * 0.06, -h * 0.7); ctx.lineTo(w * 0.06, -h * 0.7); ctx.lineTo(0, -h * 0.92)
-      ctx.closePath(); ctx.fill()
-    }
   }
 
   // an in-progress power attack gets a quick visual flourish — a mega's
@@ -364,6 +503,17 @@ export function drawPlayer(ctx, p, camX, frame) {
         ctx.beginPath(); ctx.arc(0, 0, w * (0.6 + i * 0.35) * (p.attackTimer / 20), 0, Math.PI * 2); ctx.stroke()
       }
       ctx.globalAlpha = 1
+    } else if (megaAtk?.shape === 'dash') {
+      // three motion-streak lines trailing behind the dash, instead of a
+      // ring — the attack IS the movement here, so the flourish should
+      // read as "fast," not "a shape drawn around Shirby."
+      ctx.strokeStyle = megaAtk.color; ctx.lineWidth = 3
+      for (let i = 0; i < 3; i++) {
+        ctx.globalAlpha = 0.7 - i * 0.2
+        const yy = (i - 1) * h * 0.28
+        ctx.beginPath(); ctx.moveTo(-w * 0.5, yy); ctx.lineTo(-w * (1.1 + i * 0.35), yy); ctx.stroke()
+      }
+      ctx.globalAlpha = 1
     } else if (megaAtk) {
       ctx.strokeStyle = megaAtk.color; ctx.lineWidth = 4
       ctx.beginPath(); ctx.arc(0, 0, w * 1.4 * (1 - p.attackTimer / 16), 0, Math.PI * 2); ctx.stroke()
@@ -376,6 +526,14 @@ export function drawPlayer(ctx, p, camX, frame) {
     } else if (p.power === 'rock') {
       ctx.strokeStyle = 'rgba(168,152,120,0.7)'; ctx.lineWidth = 3
       ctx.beginPath(); ctx.arc(0, h * 0.4, w * 1.1 * (1 - p.attackTimer / 14), 0, Math.PI * 2); ctx.stroke()
+    } else if (p.power === 'gust') {
+      ctx.strokeStyle = 'rgba(216,240,255,0.75)'; ctx.lineWidth = 3
+      for (let i = 0; i < 3; i++) {
+        ctx.globalAlpha = 0.7 - i * 0.2
+        const yy = (i - 1) * h * 0.26
+        ctx.beginPath(); ctx.moveTo(-w * 0.45, yy); ctx.lineTo(-w * (1.0 + i * 0.3), yy); ctx.stroke()
+      }
+      ctx.globalAlpha = 1
     }
   }
   if (p.power === 'ember' && p.emberTick > 0) {
@@ -385,6 +543,26 @@ export function drawPlayer(ctx, p, camX, frame) {
   if (p.power === 'zap') {
     ctx.strokeStyle = 'rgba(245,224,80,0.35)'; ctx.lineWidth = 2
     ctx.beginPath(); ctx.arc(0, 0, w * 0.62, 0, Math.PI * 2); ctx.stroke()
+  }
+  if (p.starTimer > 0) {
+    // a ring of little orbiting sparkles instead of the plain hit-flicker
+    // this invincibility window would otherwise reuse — Forgotten Star is
+    // a pickup, not damage, so it should look celebratory, not hurt.
+    const n = 5
+    for (let i = 0; i < n; i++) {
+      const a = frame * 0.12 + (i / n) * Math.PI * 2
+      const sx = Math.cos(a) * w * 0.85, sy = Math.sin(a) * h * 0.55
+      ctx.fillStyle = i % 2 === 0 ? '#ffe873' : '#ffffff'
+      ctx.save(); ctx.translate(sx, sy); ctx.rotate(a * 2)
+      ctx.beginPath()
+      for (let k = 0; k < 5; k++) {
+        const a1 = (k / 5) * Math.PI * 2 - Math.PI / 2, a2 = a1 + Math.PI / 5
+        ctx.lineTo(Math.cos(a1) * 4, Math.sin(a1) * 4)
+        ctx.lineTo(Math.cos(a2) * 1.8, Math.sin(a2) * 1.8)
+      }
+      ctx.closePath(); ctx.fill()
+      ctx.restore()
+    }
   }
 
   ctx.restore()
