@@ -27,69 +27,69 @@ const EMPTY_RECTS = []
 // Crawler Max's indoor-building floors 6-18, though both story arcs
 // converge on the same shadowy figure behind the whole show.
 export const DUNGEON_THEMES = [
-  { name: 'The Snack Cellar', wallColor: '#6b4a30', floorColor: '#4a3222', accent: '#e0b060', monsterPool: ['slime', 'rat', 'fly'], boss: 'gummyking' },
-  { name: 'Sock Puppet Hallway', wallColor: '#4a3a6b', floorColor: '#3a2b52', accent: '#b39dff', monsterPool: ['sock', 'bunny', 'rat'], boss: 'lintlord' },
+  { name: 'The Slime Pits', wallColor: '#6b4a30', floorColor: '#4a3222', accent: '#e0b060', monsterPool: ['slime', 'rat', 'fly'], boss: 'oozeking' },
+  { name: 'The Goblin Den', wallColor: '#4a3a6b', floorColor: '#3a2b52', accent: '#b39dff', monsterPool: ['goblin', 'kobold', 'rat'], boss: 'goblinking' },
   { name: 'The Bat Belfry', wallColor: '#333d5c', floorColor: '#232c47', accent: '#7fa6ff', monsterPool: ['bat', 'spider', 'fly'], boss: 'bartholomew' },
-  { name: 'Skeleton Crew Break Room', wallColor: '#4a4a4a', floorColor: '#333333', accent: '#e8dcb8', monsterPool: ['skeleton', 'ghost', 'bunny'], boss: 'bonesmcgee' },
-  { name: "The Landlord's Office", wallColor: '#6b3050', floorColor: '#451a35', accent: '#ff9fcf', monsterPool: ['skeleton', 'sock', 'bat', 'ghost'], boss: 'landlord' },
-  { name: 'Bumper Cart Arena', wallColor: '#5c2a3a', floorColor: '#3a1a26', accent: '#ff6b8a', monsterPool: ['bumperbot', 'rat', 'fly'], boss: 'crashoverride' },
-  { name: 'Funhouse Mirror Maze', wallColor: '#3a4a6b', floorColor: '#232f47', accent: '#9fd6ff', monsterPool: ['mirrorwisp', 'bat', 'ghost'], boss: 'mirrormirage' },
-  { name: 'Cotton Candy Factory', wallColor: '#6b3a6b', floorColor: '#452a45', accent: '#ffb3ec', monsterPool: ['gumdrop', 'slime', 'bunny'], boss: 'sugarbaron' },
-  { name: 'Ferris Wheel Graveyard', wallColor: '#4a4a3a', floorColor: '#2f2f22', accent: '#d4c07a', monsterPool: ['rustwheel', 'skeleton', 'spider'], boss: 'rustywraith' },
-  { name: 'Aquarium Wing', wallColor: '#1a4a5c', floorColor: '#0f2f3a', accent: '#5cd6e8', monsterPool: ['fingerling', 'fly', 'bunny'], boss: 'krakennephew' },
-  { name: 'Go-Kart Speedway', wallColor: '#3a3a3a', floorColor: '#232323', accent: '#ffcf40', monsterPool: ['kart', 'rat', 'bumperbot'], boss: 'turbotumbleweed' },
-  { name: 'Haunted Hayride Barn', wallColor: '#4a3020', floorColor: '#2f1e14', accent: '#ff9a4d', monsterPool: ['scarecrow', 'ghost', 'skeleton'], boss: 'scarecrowsovereign' },
-  { name: 'Fireworks Warehouse', wallColor: '#2a2a4a', floorColor: '#1a1a2f', accent: '#ffe45c', monsterPool: ['sparkler', 'bat', 'gumdrop'], boss: 'captainsparkline' },
-  { name: 'Photo Booth Dimension', wallColor: '#5c2a5c', floorColor: '#3a1a3a', accent: '#ff5cf0', monsterPool: ['flashbulb', 'spider', 'mirrorwisp'], boss: 'flashbulbfred' },
-  { name: 'Cereal Mascot Stadium', wallColor: '#3a5c2a', floorColor: '#233a1a', accent: '#c8ff5c', monsterPool: ['mascot', 'sock', 'gumdrop'], boss: 'colonelcrunch' },
-  { name: 'Trophy Vault', wallColor: '#5c4a1a', floorColor: '#3a2f0f', accent: '#ffd700', monsterPool: ['trophybot', 'skeleton', 'rustwheel'], boss: 'runnerup' },
-  { name: 'Broadcast Control Tower', wallColor: '#1a2a3a', floorColor: '#0f1a24', accent: '#5c9aff', monsterPool: ['camera', 'ghost', 'flashbulb'], boss: 'directorscut' },
-  { name: 'The Grand Finale Stage', wallColor: '#3a1a4a', floorColor: '#24102f', accent: '#ffffff', monsterPool: ['camera', 'trophybot', 'mascot'], boss: 'executiveproducer' },
+  { name: 'The Bone Crypts', wallColor: '#4a4a4a', floorColor: '#333333', accent: '#e8dcb8', monsterPool: ['skeleton', 'ghost', 'kobold'], boss: 'bonesmcgee' },
+  { name: "The Ogre's Hold", wallColor: '#6b3050', floorColor: '#451a35', accent: '#ff9fcf', monsterPool: ['skeleton', 'goblin', 'bat', 'ghost'], boss: 'ogrewarlord' },
+  { name: 'The Beast Pit', wallColor: '#5c2a3a', floorColor: '#3a1a26', accent: '#ff6b8a', monsterPool: ['boar', 'rat', 'fly'], boss: 'boarchampion' },
+  { name: 'The Hall of Mirrors', wallColor: '#3a4a6b', floorColor: '#232f47', accent: '#9fd6ff', monsterPool: ['mirrorwraith', 'bat', 'ghost'], boss: 'mirrorqueen' },
+  { name: 'The Crystal Grotto', wallColor: '#6b3a6b', floorColor: '#452a45', accent: '#ffb3ec', monsterPool: ['crystalsprite', 'slime', 'kobold'], boss: 'crystalwarden' },
+  { name: 'The Rusted Battlements', wallColor: '#4a4a3a', floorColor: '#2f2f22', accent: '#d4c07a', monsterPool: ['ironwheel', 'skeleton', 'spider'], boss: 'ironwraith' },
+  { name: 'The Sunken Grotto', wallColor: '#1a4a5c', floorColor: '#0f2f3a', accent: '#5cd6e8', monsterPool: ['reefsprite', 'fly', 'kobold'], boss: 'krakenspawn' },
+  { name: 'The Stampede Flats', wallColor: '#3a3a3a', floorColor: '#232323', accent: '#ffcf40', monsterPool: ['wildcharger', 'rat', 'boar'], boss: 'brambleroller' },
+  { name: 'The Haunted Hayride', wallColor: '#4a3020', floorColor: '#2f1e14', accent: '#ff9a4d', monsterPool: ['scarecrow', 'ghost', 'skeleton'], boss: 'scarecrowsovereign' },
+  { name: 'The Ember Vault', wallColor: '#2a2a4a', floorColor: '#1a1a2f', accent: '#ffe45c', monsterPool: ['sparkimp', 'bat', 'crystalsprite'], boss: 'emberwarden' },
+  { name: 'The Hall of Shattered Glass', wallColor: '#5c2a5c', floorColor: '#3a1a3a', accent: '#ff5cf0', monsterPool: ['glarewisp', 'spider', 'mirrorwraith'], boss: 'glarewraith' },
+  { name: "The Beastmaster's Arena", wallColor: '#3a5c2a', floorColor: '#233a1a', accent: '#c8ff5c', monsterPool: ['arenabeast', 'goblin', 'crystalsprite'], boss: 'arenachampion' },
+  { name: 'The Vault of Champions', wallColor: '#5c4a1a', floorColor: '#3a2f0f', accent: '#ffd700', monsterPool: ['guardianstatue', 'skeleton', 'ironwheel'], boss: 'silverguardian' },
+  { name: "The Watcher's Spire", wallColor: '#1a2a3a', floorColor: '#0f1a24', accent: '#5c9aff', monsterPool: ['spyingeye', 'ghost', 'glarewisp'], boss: 'allseeingeye' },
+  { name: "The World Serpent's Lair", wallColor: '#3a1a4a', floorColor: '#24102f', accent: '#ffffff', monsterPool: ['spyingeye', 'guardianstatue', 'arenabeast'], boss: 'worldserpent' },
 ]
 
 export const MONSTER_DEFS = {
-  slime: { name: 'Wobblin', emoji: '🫠', r: 0.7, hp: 16, atk: 3, speed: 2.4, xp: 8 },
-  rat: { name: 'Rat Burglar', emoji: '🐀', r: 0.6, hp: 12, atk: 2, speed: 4.2, xp: 7 },
-  fly: { name: 'Dust Fly', emoji: '🪰', r: 0.5, hp: 9, atk: 2, speed: 3.6, xp: 6 },
-  sock: { name: 'Sock Puppet', emoji: '🧦', r: 0.7, hp: 20, atk: 4, speed: 2.6, xp: 10 },
-  bunny: { name: 'Dust Bunny', emoji: '🐇', r: 0.6, hp: 11, atk: 2, speed: 4.6, xp: 6 },
-  bat: { name: 'Belfry Bat', emoji: '🦇', r: 0.6, hp: 14, atk: 3, speed: 5.0, xp: 9 },
-  spider: { name: 'Corner Spider', emoji: '🕷️', r: 0.6, hp: 13, atk: 3, speed: 3.2, xp: 8 },
-  skeleton: { name: 'Skeleton Intern', emoji: '💀', r: 0.75, hp: 24, atk: 5, speed: 2.3, xp: 12 },
-  ghost: { name: 'Office Ghost', emoji: '👻', r: 0.7, hp: 18, atk: 4, speed: 2.8, xp: 10 },
-  bumperbot: { name: 'Bumper Bot', emoji: '🚗', r: 0.7, hp: 18, atk: 4, speed: 4.0, xp: 9 },
-  mirrorwisp: { name: 'Mirror Wisp', emoji: '🪞', r: 0.6, hp: 14, atk: 3, speed: 3.4, xp: 8 },
-  gumdrop: { name: 'Gumdrop Golem', emoji: '🍬', r: 0.6, hp: 15, atk: 3, speed: 3.0, xp: 9 },
-  rustwheel: { name: 'Rust Wheel', emoji: '⚙️', r: 0.75, hp: 22, atk: 4, speed: 2.2, xp: 10 },
-  fingerling: { name: 'Fingerling', emoji: '🐠', r: 0.5, hp: 11, atk: 2, speed: 4.4, xp: 7 },
-  kart: { name: 'Runaway Kart', emoji: '🏎️', r: 0.7, hp: 19, atk: 4, speed: 5.2, xp: 10 },
-  scarecrow: { name: 'Loose Scarecrow', emoji: '🎃', r: 0.75, hp: 23, atk: 5, speed: 2.4, xp: 11 },
-  sparkler: { name: 'Loose Sparkler', emoji: '✨', r: 0.6, hp: 16, atk: 4, speed: 3.6, xp: 10 },
-  flashbulb: { name: 'Flashbulb Sprite', emoji: '📸', r: 0.55, hp: 14, atk: 3, speed: 4.0, xp: 9 },
-  mascot: { name: 'Rogue Mascot', emoji: '🥣', r: 0.8, hp: 25, atk: 5, speed: 2.6, xp: 12 },
-  trophybot: { name: 'Trophy Bot', emoji: '🏆', r: 0.75, hp: 23, atk: 5, speed: 2.5, xp: 12 },
-  camera: { name: 'Roving Camera', emoji: '📹', r: 0.6, hp: 17, atk: 4, speed: 3.2, xp: 10 },
+  slime: { name: 'Slime', kind: 'ooze', color: '#6BE86B', accent: '#2E7D32', r: 0.7, hp: 16, atk: 3, speed: 2.4, xp: 8 },
+  rat: { name: 'Giant Rat', kind: 'beast', color: '#8a7460', accent: '#3a2f26', r: 0.6, hp: 12, atk: 2, speed: 4.2, xp: 7 },
+  fly: { name: 'Carrion Fly', kind: 'flyer', variant: 'insect', color: '#4a4a5a', accent: '#9ad1ff', r: 0.5, hp: 9, atk: 2, speed: 3.6, xp: 6 },
+  goblin: { name: 'Goblin', kind: 'humanoid', variant: 'goblin', color: '#5fae4a', accent: '#2f5c26', r: 0.7, hp: 20, atk: 4, speed: 2.6, xp: 10 },
+  kobold: { name: 'Kobold', kind: 'humanoid', variant: 'small', color: '#b0603e', accent: '#6e3620', r: 0.6, hp: 11, atk: 2, speed: 4.6, xp: 6 },
+  bat: { name: 'Cave Bat', kind: 'flyer', variant: 'bat', color: '#4a3a5a', accent: '#c9a6ff', r: 0.6, hp: 14, atk: 3, speed: 5.0, xp: 9 },
+  spider: { name: 'Giant Spider', kind: 'arachnid', color: '#2a1f30', accent: '#ff5566', r: 0.6, hp: 13, atk: 3, speed: 3.2, xp: 8 },
+  skeleton: { name: 'Skeleton Warrior', kind: 'humanoid', variant: 'bone', color: '#e8dcc0', accent: '#2a2a2a', r: 0.75, hp: 24, atk: 5, speed: 2.3, xp: 12 },
+  ghost: { name: 'Restless Spirit', kind: 'spectral', color: '#cfe8ff', accent: '#7fa6ff', r: 0.7, hp: 18, atk: 4, speed: 2.8, xp: 10 },
+  boar: { name: 'Wild Boar', kind: 'beast', variant: 'boar', color: '#7a5238', accent: '#e8e8e8', r: 0.7, hp: 18, atk: 4, speed: 4.0, xp: 9 },
+  mirrorwraith: { name: 'Mirror Wraith', kind: 'spectral', variant: 'mirror', color: '#cfe0ff', accent: '#ffffff', r: 0.6, hp: 14, atk: 3, speed: 3.4, xp: 8 },
+  crystalsprite: { name: 'Crystal Sprite', kind: 'orb', color: '#ff9fe0', accent: '#ffffff', r: 0.6, hp: 15, atk: 3, speed: 3.0, xp: 9 },
+  ironwheel: { name: 'Iron Wheel Construct', kind: 'golem', variant: 'rust', color: '#a05a30', accent: '#ffcf80', r: 0.75, hp: 22, atk: 4, speed: 2.2, xp: 10 },
+  reefsprite: { name: 'Reef Sprite', kind: 'flyer', variant: 'insect', color: '#2a8fa0', accent: '#bff5ff', r: 0.5, hp: 11, atk: 2, speed: 4.4, xp: 7 },
+  wildcharger: { name: 'Wild Charger', kind: 'beast', variant: 'wolf', color: '#4a4a52', accent: '#e8e8e8', r: 0.7, hp: 19, atk: 4, speed: 5.2, xp: 10 },
+  scarecrow: { name: 'Animated Scarecrow', kind: 'humanoid', variant: 'scarecrow', color: '#c9a860', accent: '#8a5a30', r: 0.75, hp: 23, atk: 5, speed: 2.4, xp: 11 },
+  sparkimp: { name: 'Spark Imp', kind: 'imp', variant: 'fire', color: '#ff6b4a', accent: '#ffd34d', r: 0.6, hp: 16, atk: 4, speed: 3.6, xp: 10 },
+  glarewisp: { name: 'Glare Wisp', kind: 'orb', color: '#c96bff', accent: '#ffffff', r: 0.55, hp: 14, atk: 3, speed: 4.0, xp: 9 },
+  arenabeast: { name: 'Arena Beast', kind: 'beast', color: '#c08a3a', accent: '#5a3a1a', r: 0.8, hp: 25, atk: 5, speed: 2.6, xp: 12 },
+  guardianstatue: { name: 'Guardian Statue', kind: 'golem', color: '#8a8a8a', accent: '#ffd700', r: 0.75, hp: 23, atk: 5, speed: 2.5, xp: 12 },
+  spyingeye: { name: 'Spying Eye', kind: 'orb', variant: 'eye', color: '#5c9aff', accent: '#ffffff', r: 0.6, hp: 17, atk: 4, speed: 3.2, xp: 10 },
 }
 
 export const BOSS_DEFS = {
-  gummyking: { name: 'Gordo the Gummy King', emoji: '🍮', r: 1.5, hp: 120, atk: 7, speed: 2.0, xp: 70 },
-  lintlord: { name: 'The Lint Lord', emoji: '🧦', r: 1.5, hp: 160, atk: 9, speed: 2.3, xp: 110 },
-  bartholomew: { name: 'Bartholomew the Belfry Bat', emoji: '🦇', r: 1.5, hp: 190, atk: 10, speed: 3.6, xp: 150 },
-  bonesmcgee: { name: 'Bones McGee, Shift Supervisor', emoji: '💀', r: 1.6, hp: 220, atk: 12, speed: 2.4, xp: 190 },
-  landlord: { name: 'The Landlord', emoji: '👹', r: 1.7, hp: 300, atk: 15, speed: 2.6, xp: 300 },
-  crashoverride: { name: 'Crash Override', emoji: '🚗', r: 1.5, hp: 345, atk: 17, speed: 3.8, xp: 207 },
-  mirrormirage: { name: 'Mirror Mirage', emoji: '🪞', r: 1.5, hp: 390, atk: 19, speed: 2.6, xp: 234 },
-  sugarbaron: { name: 'The Sugar Baron', emoji: '🍬', r: 1.6, hp: 435, atk: 21, speed: 2.2, xp: 261 },
-  rustywraith: { name: 'Rusty the Wheel Wraith', emoji: '⚙️', r: 1.7, hp: 480, atk: 23, speed: 2.0, xp: 288 },
-  krakennephew: { name: "The Kraken's Nephew", emoji: '🐙', r: 1.6, hp: 525, atk: 25, speed: 2.8, xp: 315 },
-  turbotumbleweed: { name: 'Turbo Tumbleweed', emoji: '🏎️', r: 1.5, hp: 570, atk: 27, speed: 4.2, xp: 342 },
-  scarecrowsovereign: { name: 'The Scarecrow Sovereign', emoji: '🎃', r: 1.7, hp: 615, atk: 29, speed: 2.4, xp: 369 },
-  captainsparkline: { name: 'Captain Sparkline', emoji: '🎆', r: 1.6, hp: 660, atk: 31, speed: 3.0, xp: 396 },
-  flashbulbfred: { name: 'Flashbulb Fred', emoji: '📸', r: 1.6, hp: 705, atk: 33, speed: 3.2, xp: 423 },
-  colonelcrunch: { name: 'Colonel Crunch', emoji: '🥣', r: 1.8, hp: 750, atk: 35, speed: 2.4, xp: 450 },
-  runnerup: { name: 'The Runner-Up', emoji: '🥈', r: 1.7, hp: 795, atk: 37, speed: 2.6, xp: 477 },
-  directorscut: { name: "The Director's Cut", emoji: '🎬', r: 1.7, hp: 840, atk: 39, speed: 2.8, xp: 504 },
-  executiveproducer: { name: 'The Executive Producer', emoji: '🕴️', r: 2.0, hp: 1700, atk: 55, speed: 3.0, xp: 950 },
+  oozeking: { name: 'Glutton, the Ooze King', kind: 'ooze', color: '#6BE86B', accent: '#FFD34D', crown: true, r: 1.5, hp: 120, atk: 7, speed: 2.0, xp: 70 },
+  goblinking: { name: 'The Goblin King', kind: 'humanoid', variant: 'goblin', color: '#4a8f3a', accent: '#FFD34D', crown: true, r: 1.5, hp: 160, atk: 9, speed: 2.3, xp: 110 },
+  bartholomew: { name: 'Bartholomew, the Elder Bat', kind: 'flyer', variant: 'bat', color: '#3a2a4a', accent: '#c9a6ff', r: 1.5, hp: 190, atk: 10, speed: 3.6, xp: 150 },
+  bonesmcgee: { name: 'Bones McGee, the Bone Reaper', kind: 'humanoid', variant: 'bone', color: '#e8dcc0', accent: '#2a2a2a', scythe: true, r: 1.6, hp: 220, atk: 12, speed: 2.4, xp: 190 },
+  ogrewarlord: { name: 'The Ogre Warlord', kind: 'humanoid', variant: 'ogre', color: '#6a7a4a', accent: '#2f3a20', bulky: true, r: 1.7, hp: 300, atk: 15, speed: 2.6, xp: 300 },
+  boarchampion: { name: 'The Tusked Champion', kind: 'beast', variant: 'boar', color: '#7a5238', accent: '#ffffff', r: 1.5, hp: 345, atk: 17, speed: 3.8, xp: 207 },
+  mirrorqueen: { name: 'The Shattered Reflection', kind: 'humanoid', variant: 'shadow', color: '#cfe0ff', accent: '#ffffff', crown: true, r: 1.5, hp: 390, atk: 19, speed: 2.6, xp: 234 },
+  crystalwarden: { name: 'The Crystal Warden', kind: 'golem', variant: 'crystal', color: '#e08fd0', accent: '#ffffff', r: 1.6, hp: 435, atk: 21, speed: 2.2, xp: 261 },
+  ironwraith: { name: 'The Iron Wraith', kind: 'golem', variant: 'rust', color: '#8a5a2a', accent: '#ffcf80', r: 1.7, hp: 480, atk: 23, speed: 2.0, xp: 288 },
+  krakenspawn: { name: 'The Kraken Spawn', kind: 'serpent', heads: 4, color: '#1a6b7a', accent: '#8fe8ff', r: 1.6, hp: 525, atk: 25, speed: 2.8, xp: 315 },
+  brambleroller: { name: 'The Bramble Roller', kind: 'plant', variant: 'tumbleweed', color: '#8a6a30', accent: '#c8ff5c', r: 1.5, hp: 570, atk: 27, speed: 4.2, xp: 342 },
+  scarecrowsovereign: { name: 'The Scarecrow Sovereign', kind: 'humanoid', variant: 'scarecrow', color: '#c9a860', accent: '#8a5a30', bulky: true, r: 1.7, hp: 615, atk: 29, speed: 2.4, xp: 369 },
+  emberwarden: { name: 'The Ember Warden', kind: 'imp', variant: 'fire', demon: true, color: '#ff5533', accent: '#ffd34d', r: 1.6, hp: 660, atk: 31, speed: 3.0, xp: 396 },
+  glarewraith: { name: 'The Glare Wraith', kind: 'orb', variant: 'eye', color: '#c96bff', accent: '#ffffff', r: 1.6, hp: 705, atk: 33, speed: 3.2, xp: 423 },
+  arenachampion: { name: 'The Arena Champion', kind: 'beast', variant: 'wolf', chimera: true, color: '#c08a3a', accent: '#5a3a1a', r: 1.8, hp: 750, atk: 35, speed: 2.4, xp: 450 },
+  silverguardian: { name: 'The Silver Guardian', kind: 'golem', variant: 'gold', color: '#9a9aa5', accent: '#cfe8ff', r: 1.7, hp: 795, atk: 37, speed: 2.6, xp: 477 },
+  allseeingeye: { name: 'The All-Seeing Eye', kind: 'orb', variant: 'eye', color: '#5c9aff', accent: '#ffffff', r: 1.7, hp: 840, atk: 39, speed: 2.8, xp: 504 },
+  worldserpent: { name: 'The World Serpent', kind: 'serpent', heads: 5, color: '#6b2ab8', accent: '#ff5566', r: 2.0, hp: 1700, atk: 55, speed: 3.0, xp: 950 },
 }
 
 export const WEAPONS = [
@@ -161,7 +161,7 @@ export const ACHIEVEMENTS = [
   { id: 'contestant', name: 'Chosen Contestant', desc: 'Step into the world.' },
   { id: 'firstblood', name: 'Slime Time', desc: 'Defeat your first monster.' },
   { id: 'lootgoblin', name: 'Loot Goblin', desc: 'Open 5 chests.' },
-  { id: 'sockit', name: 'Sock It To Me', desc: 'Defeat a Sock Puppet.' },
+  { id: 'goblinslayer', name: 'Goblin Slayer', desc: 'Defeat a Goblin.' },
   { id: 'snackbreak', name: 'Snack Break', desc: 'Drink a potion.' },
   { id: 'bossbeat1', name: 'Big Boss Energy', desc: 'Defeat a dungeon boss.' },
   { id: 'geared', name: 'Fashionably Equipped', desc: 'Equip a weapon and armor.' },
@@ -220,7 +220,8 @@ export function boundsCenterXZ(b) { return { x: (b.x0 + b.x1) / 2, z: (b.z0 + b.
 function createMonster(type, x, z, tierMult, id) {
   const def = MONSTER_DEFS[type]
   return {
-    id, type, name: def.name, emoji: def.emoji, x, z, r: def.r,
+    id, type, name: def.name, kind: def.kind, variant: def.variant || null,
+    color: def.color, accent: def.accent, x, z, r: def.r,
     hp: Math.round(def.hp * tierMult), maxHp: Math.round(def.hp * tierMult),
     atk: Math.round(def.atk * tierMult), speed: def.speed, xp: Math.round(def.xp * tierMult),
     wanderDir: { x: 0, z: 0 }, wanderTimer: 0, atkCooldown: 0,
@@ -232,7 +233,10 @@ function createMonster(type, x, z, tierMult, id) {
 function createBoss(bossId, x, z, id) {
   const def = BOSS_DEFS[bossId]
   return {
-    id, type: bossId, name: def.name, emoji: def.emoji, x, z, r: def.r,
+    id, type: bossId, name: def.name, kind: def.kind, variant: def.variant || null,
+    color: def.color, accent: def.accent, x, z, r: def.r,
+    crown: !!def.crown, bulky: !!def.bulky, chimera: !!def.chimera,
+    heads: def.heads || 1, demon: !!def.demon, scythe: !!def.scythe,
     hp: def.hp, maxHp: def.hp, atk: def.atk, speed: def.speed, xp: def.xp,
     wanderDir: { x: 0, z: 0 }, wanderTimer: 0, atkCooldown: 0,
     knockX: 0, knockZ: 0, knockTimer: 0, slowMult: 1, slowTimer: 0,
@@ -391,7 +395,7 @@ function pointInsideAnySafeZone(x, z, safeZones, margin) {
 
 function generateOverworldMobs(sites, safeZones) {
   const mobs = []
-  const pool = ['slime', 'rat', 'bunny', 'fly']
+  const pool = ['slime', 'rat', 'kobold', 'fly']
   for (let i = 0; i < OVERWORLD_MOB_COUNT; i++) {
     let x = 0, z = 0, tries = 0
     do {
@@ -424,7 +428,7 @@ function mkPlayer() {
   }
 }
 
-export function mkInitialState() {
+export function mkInitialState(twoPlayer = true) {
   const sites = generateWorld()
   let nextId = 0
   for (const s of sites) for (const m of s.monsters) m.id = nextId++
@@ -432,15 +436,17 @@ export function mkInitialState() {
   const overworldMobs = generateOverworldMobs(sites, safeZones)
   for (const m of overworldMobs) m.id = nextId++
 
-  // Player 2 is fully independent (own HP/level/inventory/spells) and
-  // always exists, spawned a step away from Player 1 — a second person
-  // can pick up the arrow-key cluster at any time and start playing.
+  // Player 2 object always exists (keeps every player2-touching helper
+  // below free of null checks) but only actively moves/fights/renders
+  // when twoPlayer is true — see players()/nearestPlayer() and the
+  // `if (state.twoPlayer)` guards in update() below. A second person can
+  // pick up the arrow-key cluster at any time once 2-player is chosen.
   const player = mkPlayer()
   const player2 = mkPlayer()
   player2.x = 1.2
 
   return {
-    sites, overworldMobs, player, player2, safeZones, inSafeZone: false,
+    sites, overworldMobs, player, player2, twoPlayer, safeZones, inSafeZone: false,
     mode: 'overworld', activeSite: null, justTeleported: null, teleportFlash: 0,
     projectiles: [],
     distinctSitesEntered: new Set(), pendingClassPick: false,
@@ -453,9 +459,12 @@ export function mkInitialState() {
 }
 
 // Both active players, in a fixed order — used anywhere two-player-aware
-// logic needs to check or reposition both at once.
-export function players(state) { return [state.player, state.player2] }
+// logic needs to check or reposition both at once. In solo mode Player 2
+// is inert (never moved, never rendered), so every one of these call
+// sites should only ever see Player 1.
+export function players(state) { return state.twoPlayer ? [state.player, state.player2] : [state.player] }
 function nearestPlayer(state, m) {
+  if (!state.twoPlayer) return state.player
   const p1 = state.player, p2 = state.player2
   const d1 = Math.hypot(p1.x - m.x, p1.z - m.z)
   const d2 = Math.hypot(p2.x - m.x, p2.z - m.z)
@@ -553,7 +562,7 @@ function onMonsterDeath(state, player, m, helpers) {
   p.xp += m.xp
   p.gold += Math.round(rand(m.xp * 0.6, m.xp * 1.3) * p.goldMult)
   if (!state.achievements.has('firstblood')) grantAchievement(state, 'firstblood')
-  if (m.type === 'sock') grantAchievement(state, 'sockit')
+  if (m.type === 'goblin') grantAchievement(state, 'goblinslayer')
   if (Math.random() < 0.1) { p.potions = Math.min(5, p.potions + 1); pushBanner(state, '🧃', 'A snack potion fell out!', '#7CFF6B') }
   if (m.isBoss) {
     const site = state.sites[m.siteIndex]
@@ -765,8 +774,7 @@ function enterSite(state, index) {
   state.activeSite = index
   state.player.x = site.entrance.x
   state.player.z = site.entrance.z
-  state.player2.x = site.entrance.x + 1
-  state.player2.z = site.entrance.z
+  if (state.twoPlayer) { state.player2.x = site.entrance.x + 1; state.player2.z = site.entrance.z }
   state.yaw = 0
   state.teleportFlash = TELEPORT_FLASH_TIME
   state.justTeleported = 'in'
@@ -786,8 +794,7 @@ function exitSite(state) {
   const pushDist = DOOR_TRIGGER_R + 1.5
   state.player.x = site.doorX + site.doorDirX * pushDist
   state.player.z = site.doorZ + site.doorDirZ * pushDist
-  state.player2.x = state.player.x + 1
-  state.player2.z = state.player.z
+  if (state.twoPlayer) { state.player2.x = state.player.x + 1; state.player2.z = state.player.z }
   // Face back toward the building (not away from it) — the chase camera
   // sits behind the player, so facing away would put the camera inside
   // the solid building mesh.
@@ -953,31 +960,34 @@ export function update(state, input1, input2, dt, helpers) {
     else moveAgainstBuildings(state.sites, player, dx, dz)
   }
 
-  const player2 = state.player2
-  const rx = Math.cos(state.yaw), rz = -Math.sin(state.yaw)
-  let p2fwd = 0, p2str = 0
-  if (input2.forward) p2fwd += 1
-  if (input2.back) p2fwd -= 1
-  if (input2.right) p2str += 1
-  if (input2.left) p2str -= 1
-  if (p2fwd !== 0 || p2str !== 0) {
-    let mx = fx * p2fwd + rx * p2str, mz = fz * p2fwd + rz * p2str
-    const len = Math.hypot(mx, mz) || 1
-    mx /= len; mz /= len
-    player2.facing = { x: mx, z: mz }
-    const dx = mx * MOVE_SPEED * player2.speedMult * dt, dz = mz * MOVE_SPEED * player2.speedMult * dt
-    if (state.mode === 'dungeon') tryMoveEntity(state.sites[state.activeSite].wallRects, player2, dx, dz)
-    else moveAgainstBuildings(state.sites, player2, dx, dz)
+  if (state.twoPlayer) {
+    const player2 = state.player2
+    const rx = Math.cos(state.yaw), rz = -Math.sin(state.yaw)
+    let p2fwd = 0, p2str = 0
+    if (input2.forward) p2fwd += 1
+    if (input2.back) p2fwd -= 1
+    if (input2.right) p2str += 1
+    if (input2.left) p2str -= 1
+    if (p2fwd !== 0 || p2str !== 0) {
+      let mx = fx * p2fwd + rx * p2str, mz = fz * p2fwd + rz * p2str
+      const len = Math.hypot(mx, mz) || 1
+      mx /= len; mz /= len
+      player2.facing = { x: mx, z: mz }
+      const dx = mx * MOVE_SPEED * player2.speedMult * dt, dz = mz * MOVE_SPEED * player2.speedMult * dt
+      if (state.mode === 'dungeon') tryMoveEntity(state.sites[state.activeSite].wallRects, player2, dx, dz)
+      else moveAgainstBuildings(state.sites, player2, dx, dz)
+    }
+    updatePlayerCombat(state, player2, input2, dt, helpers)
   }
 
   updatePlayerCombat(state, player, input1, dt, helpers)
-  updatePlayerCombat(state, player2, input2, dt, helpers)
 
   if (state.mode === 'overworld') updateOverworld(state, dt)
   else updateDungeon(state, dt, helpers)
 
   state.inSafeZone = state.mode === 'overworld' &&
-    (isInSafeZone(player.x, player.z, state.safeZones) || isInSafeZone(player2.x, player2.z, state.safeZones))
+    (isInSafeZone(player.x, player.z, state.safeZones) ||
+      (state.twoPlayer && isInSafeZone(state.player2.x, state.player2.z, state.safeZones)))
 
   const activeWalls = state.mode === 'dungeon' ? state.sites[state.activeSite].wallRects : EMPTY_RECTS
   for (const pr of state.projectiles) {

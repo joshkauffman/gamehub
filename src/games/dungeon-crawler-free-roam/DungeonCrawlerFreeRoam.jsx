@@ -17,8 +17,8 @@ import {
 // to a building's door teleports you into that dungeon's own interior
 // map (rooms, corridors, monsters, boss); reaching the exit disc inside
 // teleports you back out to the door you entered from. Follows this
-// hub's existing 3D-open-world convention (loot-and-scoot, dog-man-dash,
-// gravity-falls): engine/component split, tank-turn keyboard controls
+// hub's existing 3D-open-world convention (loot-and-scoot, dog-man-dash):
+// engine/component split, tank-turn keyboard controls
 // with optional pointer-lock mouse-look, third-person chase camera with
 // an anti-clip raycast, AABB/circle collision against plain data. Player,
 // pet, monsters, boss, chests are canvas-emoji billboard sprites — reuses
@@ -73,18 +73,456 @@ const sharedShadowGeom = new THREE.CircleGeometry(0.6, 16)
 sharedShadowGeom.rotateX(-Math.PI / 2)
 const sharedShadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.32, depthWrite: false })
 
-function makeMover(emoji, worldScale) {
+function makeMoverFromTexture(tex, worldScale) {
   const group = new THREE.Group()
   const shadow = new THREE.Mesh(sharedShadowGeom, sharedShadowMat)
   shadow.position.y = 0.02
   shadow.scale.setScalar(worldScale * 0.6)
   group.add(shadow)
-  const sprite = makeEmojiSprite(emoji)
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false })
+  const sprite = new THREE.Sprite(mat)
   sprite.scale.set(worldScale, worldScale, 1)
   sprite.position.y = worldScale / 2 + 0.05
   group.add(sprite)
   group.userData.sprite = sprite
   return group
+}
+function makeMover(emoji, worldScale) {
+  return makeMoverFromTexture(getEmojiTexture(emoji), worldScale)
+}
+
+// ── Creature & player sprite factory (procedural fantasy-monster icons
+// drawn to an offscreen canvas, cached by visual signature, then used as
+// a billboard sprite texture) — same drawing language as Dungeon Crawler
+// Max's 2D canvas renderer, ported to a single static icon per signature
+// since these are billboards (always face the camera) rather than a
+// live per-frame canvas draw. No emoji glyphs involved. ─────────────────
+function creatureDrawEyes(ctx, cx, cy, gap, rad, pupilColor) {
+  for (const s of [-1, 1]) {
+    ctx.beginPath(); ctx.arc(cx + s * gap, cy, rad, 0, Math.PI * 2)
+    ctx.fillStyle = '#fff'; ctx.fill()
+    ctx.beginPath(); ctx.arc(cx + s * gap, cy, rad * 0.55, 0, Math.PI * 2)
+    ctx.fillStyle = pupilColor; ctx.fill()
+  }
+}
+function creatureGlowEyes(ctx, cx, cy, gap, rad, color) {
+  ctx.fillStyle = color
+  for (const s of [-1, 1]) { ctx.beginPath(); ctx.arc(cx + s * gap, cy, rad, 0, Math.PI * 2); ctx.fill() }
+}
+function creatureCrown(ctx, cy, w) {
+  ctx.fillStyle = '#FFD34D'
+  ctx.beginPath()
+  ctx.moveTo(-w, cy); ctx.lineTo(-w, cy - w * 0.5)
+  ctx.lineTo(-w * 0.5, cy - w * 0.1); ctx.lineTo(0, cy - w * 0.7)
+  ctx.lineTo(w * 0.5, cy - w * 0.1); ctx.lineTo(w, cy - w * 0.5)
+  ctx.lineTo(w, cy); ctx.closePath(); ctx.fill()
+}
+
+const creatureTextureCache = new Map()
+function getCreatureTexture(m) {
+  const key = [m.kind, m.variant || '', m.color, m.accent, m.crown ? 1 : 0, m.bulky ? 1 : 0, m.chimera ? 1 : 0, m.heads || 1, m.demon ? 1 : 0, m.scythe ? 1 : 0].join('|')
+  let tex = creatureTextureCache.get(key)
+  if (tex) return tex
+  const size = 160
+  const canvas = document.createElement('canvas')
+  canvas.width = size; canvas.height = size
+  const ctx = canvas.getContext('2d')
+  ctx.translate(size / 2, size / 2)
+  const r = 62
+  const color = m.color, accent = m.accent, variant = m.variant || ''
+
+  switch (m.kind) {
+    case 'ooze': {
+      const wob = r * 0.05
+      ctx.beginPath()
+      ctx.moveTo(-r, r * 0.6)
+      ctx.quadraticCurveTo(-r - wob, -r * 0.15, -r * 0.5, -r * 0.75)
+      ctx.quadraticCurveTo(0, -r * 0.95, r * 0.5, -r * 0.75)
+      ctx.quadraticCurveTo(r + wob, -r * 0.15, r, r * 0.6)
+      ctx.quadraticCurveTo(0, r * 0.85, -r, r * 0.6)
+      ctx.closePath()
+      ctx.globalAlpha = 0.85; ctx.fillStyle = color; ctx.fill()
+      ctx.globalAlpha = 1; ctx.strokeStyle = accent; ctx.lineWidth = 2; ctx.stroke()
+      creatureDrawEyes(ctx, 0, -r * 0.1, r * 0.28, r * 0.14, '#1a1a1a')
+      if (m.crown) creatureCrown(ctx, -r * 0.85, r * 0.35)
+      break
+    }
+    case 'beast': {
+      ctx.fillStyle = color
+      ctx.beginPath(); ctx.ellipse(0, r * 0.15, r * 0.85, r * 0.55, 0, 0, Math.PI * 2); ctx.fill()
+      ctx.strokeStyle = color; ctx.lineWidth = r * 0.18
+      for (const s of [-1, 1]) {
+        ctx.beginPath(); ctx.moveTo(s * r * 0.5, r * 0.5); ctx.lineTo(s * r * 0.55, r * 0.98); ctx.stroke()
+        ctx.beginPath(); ctx.moveTo(s * r * 0.1, r * 0.55); ctx.lineTo(s * r * 0.15, r * 1.02); ctx.stroke()
+      }
+      ctx.strokeStyle = color; ctx.lineWidth = r * 0.14
+      ctx.beginPath(); ctx.moveTo(-r * 0.8, r * 0.1); ctx.quadraticCurveTo(-r * 1.35, -r * 0.15, -r * 1.15, -r * 0.55); ctx.stroke()
+      ctx.beginPath(); ctx.arc(r * 0.68, -r * 0.2, r * 0.42, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill()
+      ctx.beginPath(); ctx.moveTo(r * 0.5, -r * 0.55); ctx.lineTo(r * 0.62, -r * 0.9); ctx.lineTo(r * 0.78, -r * 0.55); ctx.closePath(); ctx.fill()
+      creatureDrawEyes(ctx, r * 0.75, -r * 0.25, r * 0.14, r * 0.08, '#1a1a1a')
+      if (variant === 'wolf') {
+        ctx.fillStyle = '#fff'
+        ctx.beginPath(); ctx.moveTo(r * 0.55, r * 0.02); ctx.lineTo(r * 0.6, r * 0.18); ctx.lineTo(r * 0.65, r * 0.02); ctx.closePath(); ctx.fill()
+      }
+      if (variant === 'boar') {
+        ctx.fillStyle = '#fff'
+        ctx.beginPath(); ctx.moveTo(r * 0.5, r * 0.05); ctx.lineTo(r * 0.62, r * 0.15); ctx.lineTo(r * 0.52, r * 0.18); ctx.closePath(); ctx.fill()
+        ctx.beginPath(); ctx.moveTo(r * 0.85, -r * 0.05); ctx.lineTo(r * 0.98, r * 0.02); ctx.lineTo(r * 0.88, r * 0.08); ctx.closePath(); ctx.fill()
+      }
+      if (m.chimera) {
+        ctx.strokeStyle = accent; ctx.lineWidth = r * 0.09
+        ctx.beginPath(); ctx.moveTo(-r * 0.35, -r * 0.5); ctx.lineTo(-r * 0.55, -r * 0.85); ctx.stroke()
+        ctx.beginPath(); ctx.moveTo(-r * 0.05, -r * 0.55); ctx.lineTo(0, -r * 0.92); ctx.stroke()
+        ctx.fillStyle = accent
+        ctx.beginPath(); ctx.arc(-r * 1.05, -r * 0.35, r * 0.2, 0, Math.PI * 2); ctx.fill()
+      }
+      break
+    }
+    case 'flyer': {
+      const flap = 0.85
+      ctx.fillStyle = color
+      for (const s of [-1, 1]) {
+        ctx.save(); ctx.scale(s, 1)
+        ctx.beginPath()
+        ctx.moveTo(r * 0.15, 0)
+        ctx.quadraticCurveTo(r * 1.3, -r * (0.5 + flap * 0.5), r * 1.5, r * 0.1)
+        ctx.quadraticCurveTo(r * 0.8, r * 0.15, r * 0.15, r * 0.3)
+        ctx.closePath(); ctx.fill()
+        ctx.restore()
+      }
+      ctx.beginPath(); ctx.ellipse(0, r * 0.1, r * 0.5, r * 0.4, 0, 0, Math.PI * 2)
+      ctx.fillStyle = color; ctx.fill()
+      if (variant === 'harpy') {
+        ctx.beginPath(); ctx.arc(0, -r * 0.35, r * 0.32, 0, Math.PI * 2); ctx.fillStyle = accent; ctx.fill()
+        creatureDrawEyes(ctx, 0, -r * 0.4, r * 0.13, r * 0.07, '#1a1a1a')
+        ctx.fillStyle = '#e8c060'
+        ctx.beginPath(); ctx.moveTo(0, -r * 0.3); ctx.lineTo(r * 0.15, -r * 0.15); ctx.lineTo(-r * 0.02, -r * 0.12); ctx.closePath(); ctx.fill()
+      } else if (variant === 'bat') {
+        creatureGlowEyes(ctx, 0, -r * 0.05, r * 0.16, r * 0.09, accent)
+        ctx.fillStyle = '#fff'
+        ctx.beginPath(); ctx.moveTo(-r * 0.1, r * 0.2); ctx.lineTo(-r * 0.15, r * 0.35); ctx.lineTo(-r * 0.02, r * 0.22); ctx.closePath(); ctx.fill()
+        ctx.beginPath(); ctx.moveTo(r * 0.1, r * 0.2); ctx.lineTo(r * 0.15, r * 0.35); ctx.lineTo(r * 0.02, r * 0.22); ctx.closePath(); ctx.fill()
+      } else {
+        creatureDrawEyes(ctx, 0, r * 0.05, r * 0.2, r * 0.14, '#1a1a1a')
+      }
+      if (m.crown) creatureCrown(ctx, -r * 0.65, r * 0.3)
+      break
+    }
+    case 'humanoid': {
+      const bulky = m.bulky || variant === 'ogre' || variant === 'ice'
+      const w = bulky ? r * 0.95 : r * 0.6
+      ctx.fillStyle = color
+      ctx.beginPath(); ctx.moveTo(-w * 0.55, r * 0.9); ctx.lineTo(-w * 0.4, -r * 0.1)
+      ctx.lineTo(w * 0.4, -r * 0.1); ctx.lineTo(w * 0.55, r * 0.9); ctx.closePath(); ctx.fill()
+      ctx.strokeStyle = color; ctx.lineWidth = r * (bulky ? 0.24 : 0.16)
+      for (const s of [-1, 1]) { ctx.beginPath(); ctx.moveTo(s * w * 0.3, r * 0.9); ctx.lineTo(s * w * 0.32, r * 1.3); ctx.stroke() }
+      for (const s of [-1, 1]) { ctx.beginPath(); ctx.moveTo(s * w * 0.5, r * 0.05); ctx.lineTo(s * w * 0.85, r * 0.45); ctx.stroke() }
+      ctx.beginPath(); ctx.arc(0, -r * 0.4, r * (bulky ? 0.55 : 0.42), 0, Math.PI * 2)
+      ctx.fillStyle = color; ctx.fill()
+      if (variant === 'bone') {
+        ctx.fillStyle = '#1a1a1a'
+        ctx.beginPath(); ctx.arc(-r * 0.15, -r * 0.42, r * 0.09, 0, Math.PI * 2); ctx.fill()
+        ctx.beginPath(); ctx.arc(r * 0.15, -r * 0.42, r * 0.09, 0, Math.PI * 2); ctx.fill()
+        ctx.fillRect(-r * 0.12, -r * 0.22, r * 0.24, r * 0.08)
+        ctx.strokeStyle = accent; ctx.lineWidth = 1.5
+        for (let i = -1; i <= 1; i++) { ctx.beginPath(); ctx.moveTo(i * r * 0.18, r * 0.05); ctx.lineTo(i * r * 0.18, r * 0.55); ctx.stroke() }
+      } else if (variant === 'shadow') {
+        ctx.globalAlpha = 0.75
+        creatureGlowEyes(ctx, 0, -r * 0.42, r * 0.16, r * 0.09, accent)
+        ctx.globalAlpha = 1
+      } else if (variant === 'scarecrow') {
+        creatureDrawEyes(ctx, 0, -r * 0.42, r * 0.15, r * 0.08, '#3a2a10')
+        ctx.strokeStyle = '#3a2a10'; ctx.lineWidth = 2
+        ctx.beginPath(); ctx.moveTo(-r * 0.12, -r * 0.22); ctx.lineTo(r * 0.12, -r * 0.1)
+        ctx.moveTo(r * 0.12, -r * 0.22); ctx.lineTo(-r * 0.12, -r * 0.1); ctx.stroke()
+        ctx.strokeStyle = accent; ctx.lineWidth = 2
+        for (const s of [-1, 1]) {
+          for (let i = 0; i < 3; i++) {
+            ctx.beginPath(); ctx.moveTo(s * r * 0.4, -r * 0.5 + i * r * 0.08); ctx.lineTo(s * (r * 0.4 + r * 0.25), -r * 0.55 + i * r * 0.1); ctx.stroke()
+          }
+        }
+      } else {
+        creatureDrawEyes(ctx, 0, -r * 0.42, r * 0.15, r * 0.08, '#1a1a1a')
+        if (variant === 'goblin' || !variant) {
+          ctx.fillStyle = accent
+          ctx.beginPath(); ctx.moveTo(-r * 0.5, -r * 0.55); ctx.lineTo(-r * 0.65, -r * 0.85); ctx.lineTo(-r * 0.35, -r * 0.65); ctx.closePath(); ctx.fill()
+          ctx.beginPath(); ctx.moveTo(r * 0.5, -r * 0.55); ctx.lineTo(r * 0.65, -r * 0.85); ctx.lineTo(r * 0.35, -r * 0.65); ctx.closePath(); ctx.fill()
+        }
+      }
+      ctx.strokeStyle = m.scythe ? '#c9c9c9' : (accent || '#c9c9c9')
+      ctx.lineWidth = r * 0.12
+      ctx.beginPath(); ctx.moveTo(w * 0.7, r * 0.1); ctx.lineTo(w * (m.scythe ? 1.3 : 1.05), -r * (m.scythe ? 0.8 : 0.5)); ctx.stroke()
+      if (m.crown) creatureCrown(ctx, -r * 0.85, r * 0.3)
+      break
+    }
+    case 'arachnid': {
+      ctx.strokeStyle = color; ctx.lineWidth = r * 0.1
+      for (let i = 0; i < 4; i++) {
+        const ang = -0.5 + i * 0.35
+        for (const s of [-1, 1]) {
+          ctx.beginPath(); ctx.moveTo(0, 0)
+          ctx.quadraticCurveTo(s * r * Math.cos(ang) * 0.8, r * 0.1, s * r * (0.9 + i * 0.1), r * (0.5 - i * 0.15))
+          ctx.stroke()
+        }
+      }
+      ctx.beginPath(); ctx.ellipse(0, r * 0.15, r * 0.55, r * 0.45, 0, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill()
+      ctx.beginPath(); ctx.arc(0, -r * 0.35, r * 0.32, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill()
+      creatureGlowEyes(ctx, 0, -r * 0.4, r * 0.15, r * 0.06, accent)
+      creatureGlowEyes(ctx, 0, -r * 0.28, r * 0.09, r * 0.045, accent)
+      break
+    }
+    case 'spectral': {
+      const wob = r * 0.06
+      ctx.globalAlpha = 0.75
+      ctx.beginPath()
+      ctx.moveTo(-r * 0.7, r * 0.4)
+      ctx.quadraticCurveTo(-r * 0.9, -r * 0.5, 0, -r * 0.85)
+      ctx.quadraticCurveTo(r * 0.9, -r * 0.5, r * 0.7, r * 0.4)
+      ctx.quadraticCurveTo(r * 0.4 + wob, r * 0.75, r * 0.15, r * 0.5)
+      ctx.quadraticCurveTo(0, r * 0.7, -r * 0.15, r * 0.5)
+      ctx.quadraticCurveTo(-r * 0.4 - wob, r * 0.75, -r * 0.7, r * 0.4)
+      ctx.closePath()
+      ctx.fillStyle = color; ctx.fill()
+      ctx.globalAlpha = 1
+      if (variant === 'banshee') {
+        ctx.strokeStyle = accent; ctx.lineWidth = 1.5
+        ctx.beginPath(); ctx.moveTo(-r * 0.35, -r * 0.6); ctx.quadraticCurveTo(-r * 0.6, -r * 0.2, -r * 0.5, r * 0.2); ctx.stroke()
+        ctx.beginPath(); ctx.moveTo(r * 0.35, -r * 0.6); ctx.quadraticCurveTo(r * 0.6, -r * 0.2, r * 0.5, r * 0.2); ctx.stroke()
+        ctx.fillStyle = '#3a2030'
+        ctx.beginPath(); ctx.ellipse(0, r * 0.05, r * 0.14, r * 0.2, 0, 0, Math.PI * 2); ctx.fill()
+      } else if (variant === 'mirror') {
+        ctx.strokeStyle = accent; ctx.lineWidth = 1.5
+        for (let i = -1; i <= 1; i++) { ctx.beginPath(); ctx.moveTo(i * r * 0.3, -r * 0.7); ctx.lineTo(i * r * 0.3 + r * 0.1, r * 0.3); ctx.stroke() }
+        ctx.fillStyle = 'rgba(255,255,255,0.35)'
+        ctx.beginPath(); ctx.moveTo(-r * 0.2, -r * 0.3); ctx.lineTo(r * 0.1, -r * 0.5); ctx.lineTo(r * 0.05, 0); ctx.closePath(); ctx.fill()
+      }
+      creatureGlowEyes(ctx, 0, -r * 0.35, r * 0.18, r * 0.09, accent)
+      if (m.crown) creatureCrown(ctx, -r * 0.75, r * 0.3)
+      break
+    }
+    case 'golem': {
+      ctx.fillStyle = color
+      ctx.fillRect(-r * 0.75, -r * 0.15, r * 1.5, r * 1.0)
+      ctx.fillRect(-r * 0.4, -r * 0.75, r * 0.8, r * 0.65)
+      for (const s of [-1, 1]) ctx.fillRect(s > 0 ? r * 0.85 : -r * 1.1, -r * 0.05, r * 0.25, r * 0.55)
+      ctx.strokeStyle = accent; ctx.lineWidth = 2
+      ctx.beginPath(); ctx.moveTo(-r * 0.3, -r * 0.1); ctx.lineTo(0, r * 0.3); ctx.lineTo(r * 0.3, -r * 0.05); ctx.stroke()
+      creatureGlowEyes(ctx, 0, -r * 0.45, r * 0.14, r * 0.08, accent)
+      break
+    }
+    case 'serpent': {
+      const heads = m.heads || 1
+      ctx.strokeStyle = color; ctx.lineWidth = r * 0.5; ctx.lineCap = 'round'
+      const spread = heads > 1 ? r * 0.45 : 0
+      for (let h = 0; h < heads; h++) {
+        const off = heads > 1 ? (h - (heads - 1) / 2) * spread : 0
+        ctx.beginPath()
+        ctx.moveTo(0, r * 0.7)
+        ctx.quadraticCurveTo(off * 0.6, r * 0.1, off, -r * 0.6)
+        ctx.stroke()
+        ctx.beginPath(); ctx.arc(off, -r * 0.65, r * 0.3, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill()
+        creatureGlowEyes(ctx, off, -r * 0.7, r * 0.11, r * 0.055, accent)
+      }
+      ctx.lineCap = 'butt'
+      break
+    }
+    case 'orb': {
+      const pulse = 1.05
+      ctx.save(); ctx.scale(pulse, pulse)
+      ctx.globalAlpha = 0.3
+      ctx.beginPath(); ctx.arc(0, 0, r * 1.3, 0, Math.PI * 2); ctx.fillStyle = accent; ctx.fill()
+      ctx.globalAlpha = 1
+      ctx.beginPath(); ctx.arc(0, 0, r * 0.75, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill()
+      ctx.beginPath(); ctx.arc(0, 0, r * 0.4, 0, Math.PI * 2); ctx.fillStyle = accent; ctx.fill()
+      ctx.beginPath(); ctx.arc(-r * 0.12, -r * 0.1, r * 0.16, 0, Math.PI * 2); ctx.fillStyle = '#1a1a1a'; ctx.fill()
+      ctx.restore()
+      break
+    }
+    case 'plant': {
+      if (variant === 'tumbleweed') {
+        ctx.strokeStyle = color; ctx.lineWidth = r * 0.08
+        for (let i = 0; i < 7; i++) {
+          const ang = i * (Math.PI / 3.3)
+          ctx.beginPath()
+          ctx.moveTo(0, 0)
+          ctx.quadraticCurveTo(Math.cos(ang) * r * 0.5, Math.sin(ang) * r * 0.5 - r * 0.1, Math.cos(ang) * r * 0.85, Math.sin(ang) * r * 0.85 - r * 0.15)
+          ctx.stroke()
+        }
+        ctx.strokeStyle = accent; ctx.lineWidth = r * 0.05
+        ctx.beginPath(); ctx.arc(0, -r * 0.15, r * 0.55, 0, Math.PI * 2); ctx.stroke()
+        creatureGlowEyes(ctx, 0, -r * 0.15, r * 0.16, r * 0.08, '#ffffff')
+        break
+      }
+      ctx.strokeStyle = color; ctx.lineWidth = r * 0.22
+      const sway = r * 0.1
+      ctx.beginPath(); ctx.moveTo(0, r * 0.9); ctx.quadraticCurveTo(sway, 0, 0, -r * 0.6); ctx.stroke()
+      for (const s of [-1, 1]) {
+        ctx.beginPath(); ctx.moveTo(0, r * 0.3); ctx.quadraticCurveTo(s * r * 0.7, r * 0.1, s * r * 0.9 + sway * 0.5, -r * 0.3); ctx.stroke()
+      }
+      ctx.beginPath(); ctx.arc(0, -r * 0.65, r * 0.4, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill()
+      ctx.fillStyle = accent
+      ctx.beginPath(); ctx.moveTo(-r * 0.3, -r * 0.55); ctx.quadraticCurveTo(0, -r * 0.25, r * 0.3, -r * 0.55); ctx.quadraticCurveTo(0, -r * 0.4, -r * 0.3, -r * 0.55); ctx.fill()
+      creatureGlowEyes(ctx, 0, -r * 0.85, r * 0.14, r * 0.07, '#ffffff')
+      break
+    }
+    case 'imp': {
+      ctx.fillStyle = color
+      ctx.beginPath(); ctx.moveTo(-r * 0.4, r * 0.8); ctx.lineTo(-r * 0.35, -r * 0.05); ctx.lineTo(r * 0.35, -r * 0.05); ctx.lineTo(r * 0.4, r * 0.8); ctx.closePath(); ctx.fill()
+      ctx.beginPath(); ctx.arc(0, -r * 0.4, r * 0.4, 0, Math.PI * 2); ctx.fill()
+      ctx.beginPath(); ctx.moveTo(-r * 0.3, -r * 0.65); ctx.lineTo(-r * 0.45, -r * 1.0); ctx.lineTo(-r * 0.12, -r * 0.75); ctx.closePath(); ctx.fill()
+      ctx.beginPath(); ctx.moveTo(r * 0.3, -r * 0.65); ctx.lineTo(r * 0.45, -r * 1.0); ctx.lineTo(r * 0.12, -r * 0.75); ctx.closePath(); ctx.fill()
+      const flap = 0.9
+      ctx.fillStyle = accent
+      for (const s of [-1, 1]) {
+        ctx.save(); ctx.scale(s, 1)
+        ctx.beginPath(); ctx.moveTo(r * 0.3, -r * 0.1)
+        ctx.quadraticCurveTo(r * 1.0, -r * 0.2 * flap, r * 0.9, r * 0.4)
+        ctx.quadraticCurveTo(r * 0.5, r * 0.2, r * 0.3, r * 0.15)
+        ctx.closePath(); ctx.fill()
+        ctx.restore()
+      }
+      creatureGlowEyes(ctx, 0, -r * 0.42, r * 0.14, r * 0.07, variant === 'frost' ? '#ffffff' : '#ffe08a')
+      if (m.demon) {
+        ctx.strokeStyle = accent; ctx.lineWidth = r * 0.1
+        ctx.beginPath(); ctx.moveTo(0, r * 0.75); ctx.quadraticCurveTo(r * 0.3, r * 1.1, r * 0.15, r * 1.35); ctx.stroke()
+      }
+      break
+    }
+    case 'mimic': {
+      ctx.fillStyle = color
+      ctx.fillRect(-r * 0.9, -r * 0.1, r * 1.8, r * 0.85)
+      ctx.beginPath(); ctx.moveTo(-r * 0.9, -r * 0.1); ctx.quadraticCurveTo(0, -r * 0.7, r * 0.9, -r * 0.1); ctx.closePath(); ctx.fill()
+      ctx.strokeStyle = accent; ctx.lineWidth = 2
+      ctx.strokeRect(-r * 0.9, -r * 0.1, r * 1.8, r * 0.85)
+      const bite = 0.6
+      ctx.fillStyle = '#2a1a10'
+      ctx.beginPath(); ctx.ellipse(0, r * 0.1, r * 0.55, r * 0.12 + bite * r * 0.08, 0, 0, Math.PI * 2); ctx.fill()
+      ctx.fillStyle = '#fff'
+      for (let i = -2; i <= 2; i++) {
+        ctx.beginPath(); ctx.moveTo(i * r * 0.18, r * 0.02); ctx.lineTo(i * r * 0.18 + r * 0.06, r * 0.02); ctx.lineTo(i * r * 0.12, r * 0.14); ctx.closePath(); ctx.fill()
+      }
+      creatureGlowEyes(ctx, 0, -r * 0.35, r * 0.2, r * 0.08, accent)
+      break
+    }
+    case 'dragon': {
+      const flap = 0.9
+      ctx.fillStyle = color
+      for (const s of [-1, 1]) {
+        ctx.save(); ctx.scale(s, 1)
+        ctx.beginPath()
+        ctx.moveTo(r * 0.1, -r * 0.1)
+        ctx.quadraticCurveTo(r * 1.4, -r * (0.6 + flap * 0.5), r * 1.7, r * 0.15)
+        ctx.quadraticCurveTo(r * 1.0, r * 0.25, r * 0.5, r * 0.1)
+        ctx.quadraticCurveTo(r * 0.9, -r * 0.05, r * 1.15, r * (0.15 + flap * 0.3))
+        ctx.quadraticCurveTo(r * 0.6, r * 0.35, r * 0.1, r * 0.15)
+        ctx.closePath(); ctx.fill()
+        ctx.restore()
+      }
+      ctx.strokeStyle = color; ctx.lineWidth = r * 0.28
+      ctx.beginPath(); ctx.moveTo(-r * 0.3, r * 0.5); ctx.quadraticCurveTo(-r * 1.1, r * 0.7, -r * 1.4, r * 0.2); ctx.stroke()
+      ctx.beginPath(); ctx.ellipse(0, r * 0.25, r * 0.65, r * 0.5, 0, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill()
+      ctx.beginPath(); ctx.ellipse(0, -r * 0.35, r * 0.4, r * 0.32, 0, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill()
+      ctx.fillStyle = accent
+      ctx.beginPath(); ctx.moveTo(-r * 0.15, -r * 0.6); ctx.lineTo(-r * 0.25, -r * 0.95); ctx.lineTo(0, -r * 0.7); ctx.closePath(); ctx.fill()
+      ctx.beginPath(); ctx.moveTo(r * 0.15, -r * 0.6); ctx.lineTo(r * 0.25, -r * 0.95); ctx.lineTo(0, -r * 0.7); ctx.closePath(); ctx.fill()
+      creatureGlowEyes(ctx, 0, -r * 0.4, r * 0.16, r * 0.08, accent)
+      ctx.fillStyle = accent
+      ctx.beginPath(); ctx.moveTo(r * 0.3, -r * 0.25); ctx.lineTo(r * 0.6, -r * 0.15); ctx.lineTo(r * 0.3, -r * 0.05); ctx.closePath(); ctx.fill()
+      break
+    }
+    default: {
+      ctx.beginPath(); ctx.arc(0, 0, r * 0.7, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill()
+      creatureDrawEyes(ctx, 0, -r * 0.1, r * 0.2, r * 0.1, '#1a1a1a')
+    }
+  }
+
+  tex = new THREE.CanvasTexture(canvas)
+  creatureTextureCache.set(key, tex)
+  return tex
+}
+function makeCreatureMover(m, worldScale) {
+  return makeMoverFromTexture(getCreatureTexture(m), worldScale)
+}
+
+const playerTextureCache = new Map()
+function getPlayerTexture(classId, raceId) {
+  const key = `${classId || 'none'}|${raceId || 'none'}`
+  let tex = playerTextureCache.get(key)
+  if (tex) return tex
+  const cls = CLASSES.find(c => c.id === classId)
+  const race = RACES.find(rc => rc.id === raceId)
+  const bodyColors = { warrior: '#8a5a3a', mage: '#6b4aa8', rogue: '#2f4a3a', cleric: '#e8dcc0' }
+  const bodyColor = cls ? bodyColors[cls.id] : '#3a7a4a'
+  const skinColor = race?.id === 'hamsterkin' ? '#d9a860' : '#e8c090'
+  const size = 160
+  const canvas = document.createElement('canvas')
+  canvas.width = size; canvas.height = size
+  const ctx = canvas.getContext('2d')
+  ctx.translate(size / 2, size / 2 + 12)
+  const r = 60
+
+  ctx.strokeStyle = '#3a2a20'; ctx.lineWidth = r * 0.22
+  for (const s of [-1, 1]) { ctx.beginPath(); ctx.moveTo(s * r * 0.25, r * 0.6); ctx.lineTo(s * r * 0.3, r * 1.15); ctx.stroke() }
+
+  ctx.fillStyle = bodyColor
+  ctx.beginPath()
+  ctx.moveTo(-r * 0.5, r * 0.7); ctx.lineTo(-r * 0.45, -r * 0.15)
+  ctx.lineTo(r * 0.45, -r * 0.15); ctx.lineTo(r * 0.5, r * 0.7); ctx.closePath(); ctx.fill()
+
+  ctx.strokeStyle = bodyColor; ctx.lineWidth = r * 0.2
+  for (const s of [-1, 1]) { ctx.beginPath(); ctx.moveTo(s * r * 0.5, r * 0.05); ctx.lineTo(s * r * 0.8, r * 0.4); ctx.stroke() }
+
+  ctx.beginPath(); ctx.arc(0, -r * 0.55, r * 0.45, 0, Math.PI * 2); ctx.fillStyle = skinColor; ctx.fill()
+
+  if (race?.id === 'elf') {
+    ctx.fillStyle = skinColor
+    ctx.beginPath(); ctx.moveTo(-r * 0.4, -r * 0.6); ctx.lineTo(-r * 0.65, -r * 0.7); ctx.lineTo(-r * 0.35, -r * 0.45); ctx.closePath(); ctx.fill()
+    ctx.beginPath(); ctx.moveTo(r * 0.4, -r * 0.6); ctx.lineTo(r * 0.65, -r * 0.7); ctx.lineTo(r * 0.35, -r * 0.45); ctx.closePath(); ctx.fill()
+  }
+  if (race?.id === 'dwarf') {
+    ctx.fillStyle = '#a06a3a'
+    ctx.beginPath()
+    ctx.moveTo(-r * 0.32, -r * 0.4); ctx.lineTo(-r * 0.3, r * 0.05); ctx.lineTo(0, r * 0.15)
+    ctx.lineTo(r * 0.3, r * 0.05); ctx.lineTo(r * 0.32, -r * 0.4); ctx.closePath(); ctx.fill()
+  }
+  if (race?.id === 'hamsterkin') {
+    ctx.fillStyle = skinColor
+    for (const s of [-1, 1]) { ctx.beginPath(); ctx.arc(s * r * 0.35, -r * 0.9, r * 0.2, 0, Math.PI * 2); ctx.fill() }
+    ctx.strokeStyle = skinColor; ctx.lineWidth = 2
+    ctx.beginPath(); ctx.moveTo(-r * 0.5, r * 0.7); ctx.quadraticCurveTo(-r * 0.8, r * 0.6, -r * 0.7, r * 0.35); ctx.stroke()
+  }
+
+  ctx.fillStyle = '#2a1a10'
+  ctx.beginPath(); ctx.arc(-r * 0.15, -r * 0.55, r * 0.07, 0, Math.PI * 2); ctx.fill()
+  ctx.beginPath(); ctx.arc(r * 0.15, -r * 0.55, r * 0.07, 0, Math.PI * 2); ctx.fill()
+
+  if (cls?.id === 'mage') {
+    ctx.fillStyle = bodyColor
+    ctx.beginPath(); ctx.moveTo(-r * 0.5, -r * 0.75); ctx.lineTo(0, -r * 1.5); ctx.lineTo(r * 0.5, -r * 0.75); ctx.closePath(); ctx.fill()
+  } else if (cls?.id === 'rogue') {
+    ctx.fillStyle = bodyColor
+    ctx.beginPath(); ctx.arc(0, -r * 0.65, r * 0.5, Math.PI, Math.PI * 2); ctx.fill()
+  } else if (cls?.id === 'cleric') {
+    ctx.fillStyle = '#ffd34d'
+    ctx.beginPath(); ctx.arc(0, -r * 1.05, r * 0.12, 0, Math.PI * 2); ctx.fill()
+  } else if (cls?.id === 'warrior') {
+    ctx.fillStyle = '#c9c9c9'
+    ctx.fillRect(-r * 0.5, -r * 0.85, r, r * 0.2)
+  }
+
+  ctx.strokeStyle = '#c9c9c9'; ctx.lineWidth = r * 0.16
+  ctx.beginPath(); ctx.moveTo(r * 0.75, r * 0.35); ctx.lineTo(r * 1.15, -r * 0.55); ctx.stroke()
+  if (cls?.id === 'mage') {
+    ctx.fillStyle = '#c9a6ff'
+    ctx.beginPath(); ctx.arc(r * 1.15, -r * 0.55, r * 0.14, 0, Math.PI * 2); ctx.fill()
+  }
+
+  tex = new THREE.CanvasTexture(canvas)
+  playerTextureCache.set(key, tex)
+  return tex
+}
+function makePlayerMover(classId, raceId, worldScale) {
+  return makeMoverFromTexture(getPlayerTexture(classId, raceId), worldScale)
 }
 
 function makeGrassTexture() {
@@ -193,6 +631,7 @@ export default function DungeonCrawlerFreeRoam() {
   const [phase, setPhaseState] = useState('intro')
   const phaseRef = useRef('intro')
   const [winStats, setWinStats] = useState(null)
+  const [twoPlayer, setTwoPlayer] = useState(true)
   const mountRef = useRef(null)
   const stateRef = useRef(null)
   const rafRef = useRef(null)
@@ -274,9 +713,10 @@ export default function DungeonCrawlerFreeRoam() {
   }
   function confirmClassRace() {
     const { p1, p2 } = classPick
-    if (!p1.classId || !p1.raceId || !p2.classId || !p2.raceId) return
+    const solo = !stateRef.current.twoPlayer
+    if (!p1.classId || !p1.raceId || (!solo && (!p2.classId || !p2.raceId))) return
     chooseClassRace(stateRef.current, stateRef.current.player, p1.classId, p1.raceId)
-    chooseClassRace(stateRef.current, stateRef.current.player2, p2.classId, p2.raceId)
+    if (!solo) chooseClassRace(stateRef.current, stateRef.current.player2, p2.classId, p2.raceId)
     setModal(null)
   }
 
@@ -401,10 +841,14 @@ export default function DungeonCrawlerFreeRoam() {
         label.position.set(zone.x, 2.4, zone.z)
         overworldGroup.add(label)
       }
-      playerGroup = makeMover('🧒', 1.6)
+      playerGroup = makePlayerMover(null, null, 1.6)
+      playerGroup.userData.appearanceKey = 'none|none'
       scene.add(playerGroup)
-      player2Group = makeMover('👦', 1.6)
-      scene.add(player2Group)
+      if (state.twoPlayer) {
+        player2Group = makePlayerMover(null, null, 1.6)
+        player2Group.userData.appearanceKey = 'none|none'
+        scene.add(player2Group)
+      }
     }
 
     function buildInterior(site) {
@@ -497,7 +941,7 @@ export default function DungeonCrawlerFreeRoam() {
         seen.add(m.id)
         let grp = moverMap.get(m.id)
         if (!grp) {
-          grp = makeMover(m.emoji, m.isBoss ? 3.0 : 1.3)
+          grp = makeCreatureMover(m, m.isBoss ? 3.0 : 1.3)
           if (m.isBoss) {
             const label = makeLabelSprite(m.name, '#ffffff')
             label.position.y = 3.6
@@ -630,15 +1074,17 @@ export default function DungeonCrawlerFreeRoam() {
       if (goldTextRef.current) goldTextRef.current.textContent = `🪙 ${p.gold}`
       if (potionTextRef.current) potionTextRef.current.textContent = `🧃 x${p.potions}`
 
-      const p2 = state.player2
-      if (hpFillRef2.current) hpFillRef2.current.style.width = `${Math.max(0, (p2.hp / p2.maxHp) * 100)}%`
-      if (hpTextRef2.current) hpTextRef2.current.textContent = `❤️ ${Math.max(0, Math.ceil(p2.hp))}/${p2.maxHp}`
-      if (xpFillRef2.current) xpFillRef2.current.style.width = `${Math.max(0, Math.min(1, p2.xp / p2.xpNext)) * 100}%`
-      if (manaFillRef2.current) manaFillRef2.current.style.width = `${Math.max(0, (p2.mana / p2.maxMana) * 100)}%`
-      if (manaTextRef2.current) manaTextRef2.current.textContent = `🔮 ${Math.floor(p2.mana)}/${p2.maxMana}`
-      if (levelTextRef2.current) levelTextRef2.current.textContent = `Lv.${p2.level}`
-      if (goldTextRef2.current) goldTextRef2.current.textContent = `🪙 ${p2.gold}`
-      if (potionTextRef2.current) potionTextRef2.current.textContent = `🧃 x${p2.potions}`
+      if (state.twoPlayer) {
+        const p2 = state.player2
+        if (hpFillRef2.current) hpFillRef2.current.style.width = `${Math.max(0, (p2.hp / p2.maxHp) * 100)}%`
+        if (hpTextRef2.current) hpTextRef2.current.textContent = `❤️ ${Math.max(0, Math.ceil(p2.hp))}/${p2.maxHp}`
+        if (xpFillRef2.current) xpFillRef2.current.style.width = `${Math.max(0, Math.min(1, p2.xp / p2.xpNext)) * 100}%`
+        if (manaFillRef2.current) manaFillRef2.current.style.width = `${Math.max(0, (p2.mana / p2.maxMana) * 100)}%`
+        if (manaTextRef2.current) manaTextRef2.current.textContent = `🔮 ${Math.floor(p2.mana)}/${p2.maxMana}`
+        if (levelTextRef2.current) levelTextRef2.current.textContent = `Lv.${p2.level}`
+        if (goldTextRef2.current) goldTextRef2.current.textContent = `🪙 ${p2.gold}`
+        if (potionTextRef2.current) potionTextRef2.current.textContent = `🧃 x${p2.potions}`
+      }
 
       if (bannerRef.current) {
         if (state.banner) {
@@ -708,11 +1154,23 @@ export default function DungeonCrawlerFreeRoam() {
           playerGroup.position.set(state.player.x, 0, state.player.z)
           const flicker = state.player.invuln > 0 && Math.floor(state.player.invuln * 10) % 2 === 0
           playerGroup.userData.sprite.material.opacity = flicker ? 0.35 : 1
+          const pKey = `${state.player.classId || 'none'}|${state.player.raceId || 'none'}`
+          if (playerGroup.userData.appearanceKey !== pKey) {
+            playerGroup.userData.appearanceKey = pKey
+            playerGroup.userData.sprite.material.map = getPlayerTexture(state.player.classId, state.player.raceId)
+            playerGroup.userData.sprite.material.needsUpdate = true
+          }
         }
         if (player2Group) {
           player2Group.position.set(state.player2.x, 0, state.player2.z)
           const flicker2 = state.player2.invuln > 0 && Math.floor(state.player2.invuln * 10) % 2 === 0
           player2Group.userData.sprite.material.opacity = flicker2 ? 0.35 : 1
+          const p2Key = `${state.player2.classId || 'none'}|${state.player2.raceId || 'none'}`
+          if (player2Group.userData.appearanceKey !== p2Key) {
+            player2Group.userData.appearanceKey = p2Key
+            player2Group.userData.sprite.material.map = getPlayerTexture(state.player2.classId, state.player2.raceId)
+            player2Group.userData.sprite.material.needsUpdate = true
+          }
         }
         syncMovers(state)
         syncChests()
@@ -744,7 +1202,7 @@ export default function DungeonCrawlerFreeRoam() {
   }, [])
 
   function startGame() {
-    const state = mkInitialState()
+    const state = mkInitialState(twoPlayer)
     stateRef.current = state
     markContestant(state)
     const mount = mountRef.current
@@ -768,7 +1226,7 @@ export default function DungeonCrawlerFreeRoam() {
           <div ref={teleportFlashRef} className={styles.teleportFlash} />
           <div className={styles.crosshair} />
           <div className={styles.statsPanel}>
-            <span className={styles.playerTag}>P1</span>
+            {twoPlayer && <span className={styles.playerTag}>P1</span>}
             <div className={styles.hpBar}><div ref={hpFillRef} className={styles.hpFill} /></div>
             <div ref={hpTextRef} className={styles.hpText}>❤️ 40/40</div>
             <div className={styles.xpBar}><div ref={xpFillRef} className={styles.xpFill} /></div>
@@ -781,19 +1239,21 @@ export default function DungeonCrawlerFreeRoam() {
             </div>
           </div>
 
-          <div className={`${styles.statsPanel} ${styles.statsPanel2}`}>
-            <span className={styles.playerTag}>P2</span>
-            <div className={styles.hpBar}><div ref={hpFillRef2} className={styles.hpFill} /></div>
-            <div ref={hpTextRef2} className={styles.hpText}>❤️ 40/40</div>
-            <div className={styles.xpBar}><div ref={xpFillRef2} className={styles.xpFill} /></div>
-            <div className={styles.manaBar}><div ref={manaFillRef2} className={styles.manaFill} /></div>
-            <div ref={manaTextRef2} className={styles.manaText}>🔮 40/40</div>
-            <div ref={levelTextRef2} className={styles.levelText}>Lv.1</div>
-            <div className={styles.row}>
-              <span ref={goldTextRef2}>🪙 0</span>
-              <span ref={potionTextRef2}>🧃 x1</span>
+          {twoPlayer && (
+            <div className={`${styles.statsPanel} ${styles.statsPanel2}`}>
+              <span className={styles.playerTag}>P2</span>
+              <div className={styles.hpBar}><div ref={hpFillRef2} className={styles.hpFill} /></div>
+              <div ref={hpTextRef2} className={styles.hpText}>❤️ 40/40</div>
+              <div className={styles.xpBar}><div ref={xpFillRef2} className={styles.xpFill} /></div>
+              <div className={styles.manaBar}><div ref={manaFillRef2} className={styles.manaFill} /></div>
+              <div ref={manaTextRef2} className={styles.manaText}>🔮 40/40</div>
+              <div ref={levelTextRef2} className={styles.levelText}>Lv.1</div>
+              <div className={styles.row}>
+                <span ref={goldTextRef2}>🪙 0</span>
+                <span ref={potionTextRef2}>🧃 x1</span>
+              </div>
             </div>
-          </div>
+          )}
 
           <div ref={compassRef} className={styles.compass}>
             <div ref={compassArrowRef} className={styles.compassArrow}>▲</div>
@@ -810,7 +1270,9 @@ export default function DungeonCrawlerFreeRoam() {
           <div ref={bannerRef} className={styles.banner} />
           <div ref={announcerRef} className={styles.announcer} />
           <div ref={controlsHintRef} className={styles.controlsHint}>
-            P1: W/S move · A/D turn · click to mouse-look · Space attack · F magic · E potion — P2: Arrows move · / attack · . magic · , potion — I gear
+            {twoPlayer
+              ? 'P1: W/S move · A/D turn · click to mouse-look · Space attack · F magic · E potion — P2: Arrows move · / attack · . magic · , potion — I gear'
+              : 'W/S move · A/D turn · click to mouse-look · Space attack · F magic · E potion — I gear'}
           </div>
         </div>
       )}
@@ -823,10 +1285,12 @@ export default function DungeonCrawlerFreeRoam() {
               <h1 className={styles.title}>🎒 Gear</h1>
               <p className={styles.tagline}>Pick your own weapon, armor, and spell — press I or click outside to close.</p>
 
-              <div className={styles.gearTabs}>
-                <button className={`${styles.gearTabBtn} ${gearTab === 'p1' ? styles.gearTabActive : ''}`} onClick={() => setGearTab('p1')}>Player 1</button>
-                <button className={`${styles.gearTabBtn} ${gearTab === 'p2' ? styles.gearTabActive : ''}`} onClick={() => setGearTab('p2')}>Player 2</button>
-              </div>
+              {twoPlayer && (
+                <div className={styles.gearTabs}>
+                  <button className={`${styles.gearTabBtn} ${gearTab === 'p1' ? styles.gearTabActive : ''}`} onClick={() => setGearTab('p1')}>Player 1</button>
+                  <button className={`${styles.gearTabBtn} ${gearTab === 'p2' ? styles.gearTabActive : ''}`} onClick={() => setGearTab('p2')}>Player 2</button>
+                </div>
+              )}
 
               <div className={styles.gearSection}>
                 <h2 className={styles.gearHeading}>Weapons</h2>
@@ -892,11 +1356,13 @@ export default function DungeonCrawlerFreeRoam() {
         <div className={styles.overlay}>
           <div className={styles.card}>
             <h1 className={styles.title}>✨ Choose Your Path</h1>
-            <p className={styles.tagline}>Three dungeons in — time for both players to specialize. Pick one of each, permanently.</p>
+            <p className={styles.tagline}>
+              {twoPlayer ? 'Three dungeons in — time for both players to specialize. Pick one of each, permanently.' : 'Three dungeons in — time to specialize. Pick one of each, permanently.'}
+            </p>
 
-            {[['p1', 'Player 1'], ['p2', 'Player 2']].map(([key, label]) => (
+            {(twoPlayer ? [['p1', 'Player 1'], ['p2', 'Player 2']] : [['p1', null]]).map(([key, label]) => (
               <div key={key} className={styles.pickPlayerBlock}>
-                <h2 className={styles.pickPlayerHeading}>{label}</h2>
+                {label && <h2 className={styles.pickPlayerHeading}>{label}</h2>}
                 <p className={styles.pickLabel}>Class</p>
                 <div className={styles.pickRow}>
                   {CLASSES.map(c => (
@@ -930,7 +1396,7 @@ export default function DungeonCrawlerFreeRoam() {
 
             <button
               className={styles.startButton}
-              disabled={!classPick.p1.classId || !classPick.p1.raceId || !classPick.p2.classId || !classPick.p2.raceId}
+              disabled={!classPick.p1.classId || !classPick.p1.raceId || (twoPlayer && (!classPick.p2.classId || !classPick.p2.raceId))}
               onClick={confirmClassRace}
             >
               Confirm →
@@ -942,35 +1408,55 @@ export default function DungeonCrawlerFreeRoam() {
       {phase === 'intro' && (
         <div className={styles.overlay}>
           <div className={styles.card}>
-            <div className={styles.emojiRow}>🧒 👦 🔮</div>
+            <div className={styles.emojiRow}>{twoPlayer ? '🧒 👦 🔮' : '🧒 🔮'}</div>
             <h1 className={styles.title}>Dungeon Crawler Max: Free Roam</h1>
             <p className={styles.tagline}>The Game Show Goes Open World!</p>
             <p className={styles.story}>
-              Same game show, bigger stage — and now it's a two-player affair! Grab a second person
-              for the keyboard, because you're both free to roam a whole wide-open world together —
+              {twoPlayer
+                ? "Same game show, bigger stage — and it's a two-player affair! Grab a second person for the keyboard, because you're both free to roam a whole wide-open world together — "
+                : "Same game show, bigger stage — now a whole wide-open world to roam solo — "}
               eighteen dungeon buildings are scattered around the map, each guarded by its own boss,
-              building toward whoever's really running this show. Walk up to a door and you'll both be
+              building toward whoever's really running this show. Walk up to a door and you'll{twoPlayer ? ' both ' : ' '}be
               teleported straight inside; find the exit to teleport back out. Floating host MC Marv is
               narrating from somewhere overhead. Fighting isn't just fists anymore — swing whatever's
               in your hands, or fling one of five spells you find as scrolls and level up over time.
-              Chests also drop weapons and armor you pick from and equip yourself in the Gear menu —
-              each player keeps their own stash. Three dungeons in, you'll both pick a class and race
-              that permanently shape your stats. Feeling outmatched? Home Base and several Rest Stops
-              scattered across the field are safe zones — no monster can follow you in. Explore, fight,
-              loot, and clear every dungeon to win the show. Getting knocked out is still just a free
-              respawn — this game show has excellent insurance.
+              Chests also drop weapons and armor you pick from and equip yourself in the Gear menu
+              {twoPlayer ? ' — each player keeps their own stash' : ''}. Three dungeons in, you'll{twoPlayer ? ' both ' : ' '}
+              pick a class and race that permanently shape your stats. Feeling outmatched? Home Base and
+              several Rest Stops scattered across the field are safe zones — no monster can follow you in.
+              Explore, fight, loot, and clear every dungeon to win the show. Getting knocked out is still
+              just a free respawn — this game show has excellent insurance.
             </p>
+            <p className={styles.pickLabel}>Players</p>
+            <div className={styles.pickRow}>
+              <button
+                className={`${styles.pickCard} ${!twoPlayer ? styles.pickCardActive : ''}`}
+                onClick={() => setTwoPlayer(false)}
+              >
+                <span className={styles.pickCardEmoji}>🧍</span>
+                <span className={styles.pickCardName}>1 Player</span>
+                <span className={styles.pickCardDesc}>Just you, WASD + mouse-look.</span>
+              </button>
+              <button
+                className={`${styles.pickCard} ${twoPlayer ? styles.pickCardActive : ''}`}
+                onClick={() => setTwoPlayer(true)}
+              >
+                <span className={styles.pickCardEmoji}>🧑‍🤝‍🧑</span>
+                <span className={styles.pickCardName}>2 Player</span>
+                <span className={styles.pickCardDesc}>Share the keyboard — P2 takes the arrow-key cluster.</span>
+              </button>
+            </div>
             <div className={styles.controls}>
-              <span><b>P1 Move</b> — W / S</span>
-              <span><b>P1 Turn</b> — A / D</span>
-              <span><b>P1 Look</b> — click + mouse</span>
-              <span><b>P1 Attack</b> — Space</span>
-              <span><b>P1 Magic</b> — F</span>
-              <span><b>P1 Potion</b> — E</span>
-              <span><b>P2 Move</b> — Arrow keys</span>
-              <span><b>P2 Attack</b> — /</span>
-              <span><b>P2 Magic</b> — .</span>
-              <span><b>P2 Potion</b> — ,</span>
+              <span><b>{twoPlayer ? 'P1 Move' : 'Move'}</b> — W / S</span>
+              <span><b>{twoPlayer ? 'P1 Turn' : 'Turn'}</b> — A / D</span>
+              <span><b>{twoPlayer ? 'P1 Look' : 'Look'}</b> — click + mouse</span>
+              <span><b>{twoPlayer ? 'P1 Attack' : 'Attack'}</b> — Space</span>
+              <span><b>{twoPlayer ? 'P1 Magic' : 'Magic'}</b> — F</span>
+              <span><b>{twoPlayer ? 'P1 Potion' : 'Potion'}</b> — E</span>
+              {twoPlayer && <span><b>P2 Move</b> — Arrow keys</span>}
+              {twoPlayer && <span><b>P2 Attack</b> — /</span>}
+              {twoPlayer && <span><b>P2 Magic</b> — .</span>}
+              {twoPlayer && <span><b>P2 Potion</b> — ,</span>}
               <span><b>Gear</b> — I</span>
             </div>
             <button className={styles.startButton} onClick={startGame}>Step Into The World →</button>
