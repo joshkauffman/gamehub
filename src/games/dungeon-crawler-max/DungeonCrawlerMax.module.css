@@ -188,8 +188,49 @@
   padding: 2px 8px;
   border-radius: 10px;
 }
+.gearTabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.gearTabBtn {
+  flex: 1;
+  font-family: Arial, sans-serif;
+  font-size: 13px;
+  font-weight: bold;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  color: #cbb8ec;
+  cursor: pointer;
+}
+.gearTabBtn:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+.gearTabActive {
+  border-color: #ffd34d;
+  background: rgba(255, 211, 77, 0.14);
+  color: #ffd34d;
+}
 
 /* ── Class/Race picker ───────────────────────────────────────────── */
+.pickPlayerBlock {
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  padding-top: 14px;
+  margin-top: 14px;
+}
+.pickPlayerBlock:first-of-type {
+  border-top: none;
+  padding-top: 0;
+  margin-top: 0;
+}
+.pickPlayerHeading {
+  text-align: left;
+  margin: 0 0 10px;
+  font-size: 17px;
+  color: #c9a6ff;
+}
 .pickLabel {
   text-align: left;
   margin: 0 0 8px;

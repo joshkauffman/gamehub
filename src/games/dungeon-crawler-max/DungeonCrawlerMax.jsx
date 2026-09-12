@@ -36,69 +36,69 @@ const MAX_SPELL_LEVEL = 5
 
 // ── Content ──────────────────────────────────────────────────────────
 const FLOOR_THEMES = [
-  { name: 'The Snack Cellar', wallColor: '#2b1810', floorColor: '#4a3222', accent: '#e0b060', monsterPool: ['slime', 'rat', 'fly'], boss: 'gummyking' },
-  { name: 'Sock Puppet Hallway', wallColor: '#241a35', floorColor: '#3a2b52', accent: '#b39dff', monsterPool: ['sock', 'bunny', 'rat'], boss: 'lintlord' },
+  { name: 'The Slime Pits', wallColor: '#2b1810', floorColor: '#4a3222', accent: '#e0b060', monsterPool: ['slime', 'rat', 'fly'], boss: 'oozeking' },
+  { name: 'The Goblin Den', wallColor: '#241a35', floorColor: '#3a2b52', accent: '#b39dff', monsterPool: ['goblin', 'kobold', 'rat'], boss: 'goblinking' },
   { name: 'The Bat Belfry', wallColor: '#161b2b', floorColor: '#232c47', accent: '#7fa6ff', monsterPool: ['bat', 'spider', 'fly'], boss: 'bartholomew' },
-  { name: 'Skeleton Crew Break Room', wallColor: '#1c1c1c', floorColor: '#333333', accent: '#e8dcb8', monsterPool: ['skeleton', 'ghost', 'bunny'], boss: 'bonesmcgee' },
-  { name: "The Landlord's Office", wallColor: '#2a1020', floorColor: '#451a35', accent: '#ff9fcf', monsterPool: ['skeleton', 'sock', 'bat', 'ghost'], boss: 'landlord' },
-  { name: 'The Vending Machine Vault', wallColor: '#2a2a1c', floorColor: '#3a3a26', accent: '#f0c040', monsterPool: ['vendbot', 'rat', 'slime'], boss: 'coinsmasher' },
-  { name: 'Laundry Level Nightmare', wallColor: '#1c2a2a', floorColor: '#243a3a', accent: '#8fe0e0', monsterPool: ['lintworm', 'sock', 'bunny'], boss: 'spincycle' },
-  { name: 'The Arcade Basement', wallColor: '#150f2a', floorColor: '#221a3f', accent: '#ff5fd1', monsterPool: ['pixelbug', 'fly', 'rat'], boss: 'highscorehog' },
-  { name: 'Greenhouse of Gnashing', wallColor: '#132015', floorColor: '#1f3322', accent: '#7fe08a', monsterPool: ['vine', 'spider', 'bunny'], boss: 'manfern' },
-  { name: 'The Ice Cream Parlor Freezer', wallColor: '#1a2430', floorColor: '#28394a', accent: '#bfe8ff', monsterPool: ['scoopling', 'ghost', 'fly'], boss: 'frostbite' },
-  { name: 'Garage Sale Gauntlet', wallColor: '#2a2018', floorColor: '#3d2f22', accent: '#e0a060', monsterPool: ['junkbot', 'rat', 'skeleton'], boss: 'rustyrecliner' },
-  { name: 'Rooftop Pigeon Coliseum', wallColor: '#1a2438', floorColor: '#28374f', accent: '#cfe0ff', monsterPool: ['pigeon', 'bat', 'fly'], boss: 'biggulliver' },
-  { name: 'Boiler Room Blues', wallColor: '#241414', floorColor: '#3a2020', accent: '#ff9a6b', monsterPool: ['steamimp', 'ghost', 'spider'], boss: 'steamsalot' },
-  { name: 'The Petting Zoo of Doom', wallColor: '#22200f', floorColor: '#39351c', accent: '#ffe08a', monsterPool: ['alpaca', 'bunny', 'sock'], boss: 'nibbles' },
-  { name: 'Library of Overdue Books', wallColor: '#1a1610', floorColor: '#2b2418', accent: '#d8c090', monsterPool: ['bookworm', 'ghost', 'bat'], boss: 'lastlibrarian' },
-  { name: 'Talent Show Backstage', wallColor: '#2a1428', floorColor: '#3f1f3d', accent: '#ff9fe0', monsterPool: ['costume', 'skeleton', 'sock'], boss: 'understudy' },
-  { name: 'VIP Green Room', wallColor: '#141f18', floorColor: '#1f3527', accent: '#8affc0', monsterPool: ['fan', 'ghost', 'skeleton'], boss: 'divadeluxe' },
-  { name: "The Producer's Penthouse", wallColor: '#0c0c14', floorColor: '#181824', accent: '#ffd34d', monsterPool: ['fan', 'costume', 'skeleton'], boss: 'producer' },
+  { name: 'The Bone Crypts', wallColor: '#1c1c1c', floorColor: '#333333', accent: '#e8dcb8', monsterPool: ['skeleton', 'ghost', 'kobold'], boss: 'bonesmcgee' },
+  { name: "The Ogre's Hold", wallColor: '#2a1020', floorColor: '#451a35', accent: '#ff9fcf', monsterPool: ['skeleton', 'goblin', 'bat', 'ghost'], boss: 'ogrewarlord' },
+  { name: 'The Treasure Vault', wallColor: '#2a2a1c', floorColor: '#3a3a26', accent: '#f0c040', monsterPool: ['golem', 'rat', 'slime'], boss: 'coinsmasher' },
+  { name: 'The Sewer Depths', wallColor: '#1c2a2a', floorColor: '#243a3a', accent: '#8fe0e0', monsterPool: ['sewerworm', 'goblin', 'kobold'], boss: 'spincycle' },
+  { name: 'The Arcane Ruins', wallColor: '#150f2a', floorColor: '#221a3f', accent: '#ff5fd1', monsterPool: ['wisp', 'fly', 'rat'], boss: 'highscorehog' },
+  { name: 'The Overgrown Grove', wallColor: '#132015', floorColor: '#1f3322', accent: '#7fe08a', monsterPool: ['vine', 'spider', 'kobold'], boss: 'manfern' },
+  { name: 'The Frozen Caverns', wallColor: '#1a2430', floorColor: '#28394a', accent: '#bfe8ff', monsterPool: ['frostimp', 'ghost', 'fly'], boss: 'frostbite' },
+  { name: 'The Golem Scrapyard', wallColor: '#2a2018', floorColor: '#3d2f22', accent: '#e0a060', monsterPool: ['scrapgolem', 'rat', 'skeleton'], boss: 'rustyrecliner' },
+  { name: 'The Harpy Cliffs', wallColor: '#1a2438', floorColor: '#28374f', accent: '#cfe0ff', monsterPool: ['harpy', 'bat', 'fly'], boss: 'biggulliver' },
+  { name: 'The Molten Forge', wallColor: '#241414', floorColor: '#3a2020', accent: '#ff9a6b', monsterPool: ['fireimp', 'ghost', 'spider'], boss: 'steamsalot' },
+  { name: "The Beastmaster's Menagerie", wallColor: '#22200f', floorColor: '#39351c', accent: '#ffe08a', monsterPool: ['direwolf', 'kobold', 'goblin'], boss: 'nibbles' },
+  { name: 'The Mimic Archive', wallColor: '#1a1610', floorColor: '#2b2418', accent: '#d8c090', monsterPool: ['mimic', 'ghost', 'bat'], boss: 'lastlibrarian' },
+  { name: 'The Shade Theater', wallColor: '#2a1428', floorColor: '#3f1f3d', accent: '#ff9fe0', monsterPool: ['doppelganger', 'skeleton', 'goblin'], boss: 'understudy' },
+  { name: 'The Banshee Court', wallColor: '#141f18', floorColor: '#1f3527', accent: '#8affc0', monsterPool: ['banshee', 'ghost', 'skeleton'], boss: 'divadeluxe' },
+  { name: "The Dragon's Spire", wallColor: '#0c0c14', floorColor: '#181824', accent: '#ffd34d', monsterPool: ['banshee', 'doppelganger', 'skeleton'], boss: 'producer' },
 ]
 
 const MONSTER_DEFS = {
-  slime: { name: 'Wobblin', emoji: '🫠', r: 15, hp: 16, atk: 3, speed: 1.6, xp: 8 },
-  rat: { name: 'Rat Burglar', emoji: '🐀', r: 13, hp: 12, atk: 2, speed: 2.6, xp: 7 },
-  fly: { name: 'Dust Fly', emoji: '🪰', r: 11, hp: 9, atk: 2, speed: 2.2, xp: 6 },
-  sock: { name: 'Sock Puppet', emoji: '🧦', r: 15, hp: 20, atk: 4, speed: 1.7, xp: 10 },
-  bunny: { name: 'Dust Bunny', emoji: '🐇', r: 13, hp: 11, atk: 2, speed: 2.8, xp: 6 },
-  bat: { name: 'Belfry Bat', emoji: '🦇', r: 13, hp: 14, atk: 3, speed: 3.0, xp: 9 },
-  spider: { name: 'Corner Spider', emoji: '🕷️', r: 13, hp: 13, atk: 3, speed: 2.0, xp: 8 },
-  skeleton: { name: 'Skeleton Intern', emoji: '💀', r: 16, hp: 24, atk: 5, speed: 1.5, xp: 12 },
-  ghost: { name: 'Office Ghost', emoji: '👻', r: 15, hp: 18, atk: 4, speed: 1.8, xp: 10 },
-  vendbot: { name: 'Vendbot', emoji: '🥤', r: 16, hp: 22, atk: 4, speed: 1.4, xp: 9 },
-  lintworm: { name: 'Lint Worm', emoji: '🧵', r: 12, hp: 14, atk: 3, speed: 2.0, xp: 8 },
-  pixelbug: { name: 'Pixel Bug', emoji: '👾', r: 12, hp: 13, atk: 3, speed: 3.2, xp: 9 },
-  vine: { name: 'Grasping Vine', emoji: '🌿', r: 14, hp: 19, atk: 4, speed: 1.2, xp: 10 },
-  scoopling: { name: 'Scoopling', emoji: '🍦', r: 13, hp: 15, atk: 3, speed: 2.4, xp: 9 },
-  junkbot: { name: 'Junkbot', emoji: '🔧', r: 16, hp: 23, atk: 5, speed: 1.6, xp: 11 },
-  pigeon: { name: 'Rooftop Pigeon', emoji: '🐦', r: 11, hp: 12, atk: 2, speed: 3.6, xp: 8 },
-  steamimp: { name: 'Steam Imp', emoji: '💨', r: 13, hp: 17, atk: 4, speed: 2.6, xp: 10 },
-  alpaca: { name: 'Grumpy Alpaca', emoji: '🦙', r: 15, hp: 20, atk: 4, speed: 2.2, xp: 10 },
-  bookworm: { name: 'Bookworm', emoji: '📖', r: 12, hp: 16, atk: 3, speed: 1.8, xp: 9 },
-  costume: { name: 'Loose Costume', emoji: '🎭', r: 15, hp: 21, atk: 5, speed: 2.0, xp: 11 },
-  fan: { name: 'Overzealous Fan', emoji: '💅', r: 13, hp: 18, atk: 4, speed: 3.0, xp: 10 },
+  slime: { name: 'Slime', kind: 'ooze', color: '#6BE86B', accent: '#2E7D32', r: 15, hp: 16, atk: 3, speed: 1.6, xp: 8 },
+  rat: { name: 'Giant Rat', kind: 'beast', color: '#8a7460', accent: '#3a2f26', r: 13, hp: 12, atk: 2, speed: 2.6, xp: 7 },
+  fly: { name: 'Carrion Fly', kind: 'flyer', variant: 'insect', color: '#4a4a5a', accent: '#9ad1ff', r: 11, hp: 9, atk: 2, speed: 2.2, xp: 6 },
+  goblin: { name: 'Goblin', kind: 'humanoid', variant: 'goblin', color: '#5fae4a', accent: '#2f5c26', r: 15, hp: 20, atk: 4, speed: 1.7, xp: 10 },
+  kobold: { name: 'Kobold', kind: 'humanoid', variant: 'small', color: '#b0603e', accent: '#6e3620', r: 13, hp: 11, atk: 2, speed: 2.8, xp: 6 },
+  bat: { name: 'Cave Bat', kind: 'flyer', variant: 'bat', color: '#4a3a5a', accent: '#c9a6ff', r: 13, hp: 14, atk: 3, speed: 3.0, xp: 9 },
+  spider: { name: 'Giant Spider', kind: 'arachnid', color: '#2a1f30', accent: '#ff5566', r: 13, hp: 13, atk: 3, speed: 2.0, xp: 8 },
+  skeleton: { name: 'Skeleton Warrior', kind: 'humanoid', variant: 'bone', color: '#e8dcc0', accent: '#2a2a2a', r: 16, hp: 24, atk: 5, speed: 1.5, xp: 12 },
+  ghost: { name: 'Restless Spirit', kind: 'spectral', color: '#cfe8ff', accent: '#7fa6ff', r: 15, hp: 18, atk: 4, speed: 1.8, xp: 10 },
+  golem: { name: 'Stone Golem', kind: 'golem', color: '#8a8a8a', accent: '#8fd3ff', r: 16, hp: 22, atk: 4, speed: 1.4, xp: 9 },
+  sewerworm: { name: 'Giant Worm', kind: 'serpent', color: '#7a9a5a', accent: '#3d4f2c', r: 12, hp: 14, atk: 3, speed: 2.0, xp: 8 },
+  wisp: { name: "Will-o'-Wisp", kind: 'orb', color: '#8fd3ff', accent: '#ffffff', r: 12, hp: 13, atk: 3, speed: 3.2, xp: 9 },
+  vine: { name: 'Grasping Vine', kind: 'plant', color: '#3f7a3f', accent: '#8fe08a', r: 14, hp: 19, atk: 4, speed: 1.2, xp: 10 },
+  frostimp: { name: 'Frost Imp', kind: 'imp', variant: 'frost', color: '#7fd0ff', accent: '#eaffff', r: 13, hp: 15, atk: 3, speed: 2.4, xp: 9 },
+  scrapgolem: { name: 'Rust Golem', kind: 'golem', variant: 'rust', color: '#a05a30', accent: '#ffcf80', r: 16, hp: 23, atk: 5, speed: 1.6, xp: 11 },
+  harpy: { name: 'Harpy', kind: 'flyer', variant: 'harpy', color: '#a08050', accent: '#e0c090', r: 11, hp: 12, atk: 2, speed: 3.6, xp: 8 },
+  fireimp: { name: 'Fire Imp', kind: 'imp', variant: 'fire', color: '#ff6b4a', accent: '#ffd34d', r: 13, hp: 17, atk: 4, speed: 2.6, xp: 10 },
+  direwolf: { name: 'Dire Wolf', kind: 'beast', variant: 'wolf', color: '#4a4a52', accent: '#e8e8e8', r: 15, hp: 20, atk: 4, speed: 2.2, xp: 10 },
+  mimic: { name: 'Mimic', kind: 'mimic', color: '#7a4a2a', accent: '#ffe08a', r: 13, hp: 16, atk: 3, speed: 1.8, xp: 9 },
+  doppelganger: { name: 'Doppelganger', kind: 'humanoid', variant: 'shadow', color: '#3a2a4a', accent: '#c9a6ff', r: 15, hp: 21, atk: 5, speed: 2.0, xp: 11 },
+  banshee: { name: 'Banshee', kind: 'spectral', variant: 'banshee', color: '#d8e8ff', accent: '#8fd3ff', r: 13, hp: 18, atk: 4, speed: 3.0, xp: 10 },
 }
 
 const BOSS_DEFS = {
-  gummyking: { name: 'Gordo the Gummy King', emoji: '🍮', r: 30, hp: 120, atk: 7, speed: 1.3, xp: 70 },
-  lintlord: { name: 'The Lint Lord', emoji: '🧦', r: 30, hp: 160, atk: 9, speed: 1.5, xp: 110 },
-  bartholomew: { name: 'Bartholomew the Belfry Bat', emoji: '🦇', r: 30, hp: 190, atk: 10, speed: 2.4, xp: 150 },
-  bonesmcgee: { name: 'Bones McGee, Shift Supervisor', emoji: '💀', r: 32, hp: 220, atk: 12, speed: 1.6, xp: 190 },
-  landlord: { name: 'The Landlord', emoji: '👹', r: 34, hp: 300, atk: 15, speed: 1.7, xp: 300 },
-  coinsmasher: { name: 'Coinsmasher 3000', emoji: '🥤', r: 32, hp: 345, atk: 17, speed: 1.4, xp: 207 },
-  spincycle: { name: 'The Spin Cycle', emoji: '🧺', r: 32, hp: 390, atk: 19, speed: 2.0, xp: 234 },
-  highscorehog: { name: 'The High Score Hog', emoji: '👾', r: 32, hp: 435, atk: 21, speed: 2.6, xp: 261 },
-  manfern: { name: 'The Man-Eating Fern', emoji: '🌿', r: 33, hp: 480, atk: 23, speed: 1.2, xp: 288 },
-  frostbite: { name: 'General Frostbite', emoji: '🍦', r: 33, hp: 525, atk: 25, speed: 1.8, xp: 315 },
-  rustyrecliner: { name: 'The Rusty Recliner', emoji: '🛋️', r: 34, hp: 570, atk: 27, speed: 1.3, xp: 342 },
-  biggulliver: { name: 'Big Gulliver', emoji: '🐦', r: 34, hp: 615, atk: 29, speed: 3.0, xp: 369 },
-  steamsalot: { name: 'Sir Steamsalot', emoji: '💨', r: 34, hp: 660, atk: 31, speed: 1.7, xp: 396 },
-  nibbles: { name: 'Nibbles the Alpaca Overlord', emoji: '🦙', r: 35, hp: 705, atk: 33, speed: 2.2, xp: 423 },
-  lastlibrarian: { name: 'The Last Librarian', emoji: '📖', r: 35, hp: 750, atk: 35, speed: 1.6, xp: 450 },
-  understudy: { name: 'Mister Understudy', emoji: '🎭', r: 35, hp: 795, atk: 37, speed: 2.1, xp: 477 },
-  divadeluxe: { name: 'The Diva Deluxe', emoji: '💅', r: 36, hp: 840, atk: 39, speed: 2.4, xp: 504 },
-  producer: { name: 'The Producer', emoji: '🎬', r: 40, hp: 1700, atk: 55, speed: 2.0, xp: 1000 },
+  oozeking: { name: 'Glutton, the Ooze King', kind: 'ooze', color: '#6BE86B', accent: '#FFD34D', crown: true, r: 30, hp: 120, atk: 7, speed: 1.3, xp: 70 },
+  goblinking: { name: 'The Goblin King', kind: 'humanoid', variant: 'goblin', color: '#4a8f3a', accent: '#FFD34D', crown: true, r: 30, hp: 160, atk: 9, speed: 1.5, xp: 110 },
+  bartholomew: { name: 'Bartholomew, the Elder Bat', kind: 'flyer', variant: 'bat', color: '#3a2a4a', accent: '#c9a6ff', r: 30, hp: 190, atk: 10, speed: 2.4, xp: 150 },
+  bonesmcgee: { name: 'Bones McGee, the Bone Reaper', kind: 'humanoid', variant: 'bone', color: '#e8dcc0', accent: '#2a2a2a', scythe: true, r: 32, hp: 220, atk: 12, speed: 1.6, xp: 190 },
+  ogrewarlord: { name: 'The Ogre Warlord', kind: 'humanoid', variant: 'ogre', color: '#6a7a4a', accent: '#2f3a20', bulky: true, r: 34, hp: 300, atk: 15, speed: 1.7, xp: 300 },
+  coinsmasher: { name: 'Coinsmasher, the Vault Golem', kind: 'golem', variant: 'gold', color: '#9a9a9a', accent: '#FFD34D', r: 32, hp: 345, atk: 17, speed: 1.4, xp: 207 },
+  spincycle: { name: 'The Sewer Hydra', kind: 'serpent', heads: 3, color: '#5a7a3a', accent: '#c9e08a', r: 32, hp: 390, atk: 19, speed: 2.0, xp: 234 },
+  highscorehog: { name: 'The Arcane Eye', kind: 'orb', variant: 'eye', color: '#c96bff', accent: '#ffffff', r: 32, hp: 435, atk: 21, speed: 2.6, xp: 261 },
+  manfern: { name: 'The Bramble Horror', kind: 'plant', color: '#2f5c2f', accent: '#ff5566', r: 33, hp: 480, atk: 23, speed: 1.2, xp: 288 },
+  frostbite: { name: 'Frostbite, the Ice Troll', kind: 'humanoid', variant: 'ice', color: '#9fd8ff', accent: '#e9fbff', bulky: true, r: 33, hp: 525, atk: 25, speed: 1.8, xp: 315 },
+  rustyrecliner: { name: 'The Scrap Titan', kind: 'golem', variant: 'rust', color: '#a05a30', accent: '#ffcf80', r: 34, hp: 570, atk: 27, speed: 1.3, xp: 342 },
+  biggulliver: { name: 'The Harpy Queen', kind: 'flyer', variant: 'harpy', color: '#c09050', accent: '#ffe9b8', crown: true, r: 34, hp: 615, atk: 29, speed: 3.0, xp: 369 },
+  steamsalot: { name: 'The Forge Demon', kind: 'imp', variant: 'fire', demon: true, color: '#ff5533', accent: '#ffd34d', r: 34, hp: 660, atk: 31, speed: 1.7, xp: 396 },
+  nibbles: { name: 'The Chimera', kind: 'beast', variant: 'wolf', chimera: true, color: '#8a6a3a', accent: '#e0c090', r: 35, hp: 705, atk: 33, speed: 2.2, xp: 423 },
+  lastlibrarian: { name: 'The Mimic Lord', kind: 'mimic', color: '#7a4a2a', accent: '#ffe08a', r: 35, hp: 750, atk: 35, speed: 1.6, xp: 450 },
+  understudy: { name: 'The Shade Sovereign', kind: 'humanoid', variant: 'shadow', color: '#2a1a3a', accent: '#c9a6ff', crown: true, r: 35, hp: 795, atk: 37, speed: 2.1, xp: 477 },
+  divadeluxe: { name: 'The Banshee Queen', kind: 'spectral', variant: 'banshee', color: '#e8f0ff', accent: '#8fd3ff', crown: true, r: 36, hp: 840, atk: 39, speed: 2.4, xp: 504 },
+  producer: { name: 'The Dragon King', kind: 'dragon', color: '#6b2ab8', accent: '#ff5566', r: 40, hp: 1700, atk: 55, speed: 2.0, xp: 1000 },
 }
 
 const WEAPONS = [
@@ -166,7 +166,7 @@ const ACHIEVEMENTS = [
   { id: 'contestant', name: 'Chosen Contestant', desc: 'Step into the dungeon.' },
   { id: 'firstblood', name: 'Slime Time', desc: 'Defeat your first monster.' },
   { id: 'lootgoblin', name: 'Loot Goblin', desc: 'Open 5 chests.' },
-  { id: 'sockit', name: 'Sock It To Me', desc: 'Defeat a Sock Puppet.' },
+  { id: 'goblinslayer', name: 'Goblin Slayer', desc: 'Defeat a Goblin.' },
   { id: 'snackbreak', name: 'Snack Break', desc: 'Drink a potion.' },
   { id: 'bossbeat1', name: 'Big Boss Energy', desc: 'Defeat a floor boss.' },
   { id: 'geared', name: 'Fashionably Equipped', desc: 'Equip a weapon and armor.' },
@@ -245,7 +245,8 @@ function createMonster(type, x, y, floorIndex, id) {
   const def = MONSTER_DEFS[type]
   const mult = 1 + floorIndex * 0.35
   return {
-    id, type, name: def.name, emoji: def.emoji, x, y, r: def.r,
+    id, type, name: def.name, kind: def.kind, variant: def.variant || null,
+    color: def.color, accent: def.accent, x, y, r: def.r,
     hp: Math.round(def.hp * mult), maxHp: Math.round(def.hp * mult),
     atk: Math.round(def.atk * mult), speed: def.speed, xp: Math.round(def.xp * mult),
     wanderDir: { x: 0, y: 0 }, wanderTimer: 0, atkCooldown: 0,
@@ -256,7 +257,10 @@ function createMonster(type, x, y, floorIndex, id) {
 function createBoss(bossId, x, y, id) {
   const def = BOSS_DEFS[bossId]
   return {
-    id, type: bossId, name: def.name, emoji: def.emoji, x, y, r: def.r,
+    id, type: bossId, name: def.name, kind: def.kind, variant: def.variant || null,
+    color: def.color, accent: def.accent, x, y, r: def.r,
+    crown: !!def.crown, bulky: !!def.bulky, chimera: !!def.chimera,
+    heads: def.heads || 1, demon: !!def.demon, scythe: !!def.scythe,
     hp: def.hp, maxHp: def.hp, atk: def.atk, speed: def.speed, xp: def.xp,
     wanderDir: { x: 0, y: 0 }, wanderTimer: 0, atkCooldown: 0,
     knockX: 0, knockY: 0, knockTimer: 0, slowMult: 1, slowTimer: 0,
@@ -340,15 +344,19 @@ function mkPlayer(spawn) {
   }
 }
 
-function mkInitialState() {
+function mkInitialState(twoPlayer = false) {
   const floorIndex = 0
   const floor = generateFloor(floorIndex)
   const player = mkPlayer(floor.playerSpawn)
+  // Player 2 object always exists (keeps every player2-touching helper
+  // free of null checks) but only actively moves/fights/renders when
+  // twoPlayer is true — see activePlayers()/nearestPlayer() below.
+  const player2 = mkPlayer({ x: floor.playerSpawn.x + 20, y: floor.playerSpawn.y })
   return {
     floorIndex, theme: floor.theme, tiles: floor.tiles, rooms: floor.rooms,
     bossRoom: floor.bossRoom, monsters: floor.monsters, chests: floor.chests,
     exit: null, bossSpawned: false, bossActive: false, chestsOpened: 0,
-    player, playerSpawn: floor.playerSpawn,
+    player, player2, twoPlayer, playerSpawn: floor.playerSpawn,
     projectiles: [],
     particles: [], bannerQueue: [], banner: null, bannerTimer: 0,
     petText: pick(PET_LINES.intro), petTimer: 260,
@@ -357,7 +365,21 @@ function mkInitialState() {
     camera: { x: floor.playerSpawn.x, y: floor.playerSpawn.y },
     shake: 0, frame: 0,
     attackPressed: false, potionPressed: false, spellPressed: false,
+    attackPressed2: false, potionPressed2: false, spellPressed2: false,
   }
+}
+
+// Active players, in a fixed order — used anywhere co-op-aware logic
+// needs to check or update whichever players actually exist this game.
+// In solo mode Player 2 is inert (never moved, never rendered), so every
+// one of these call sites should only ever see Player 1.
+function activePlayers(g) { return g.twoPlayer ? [g.player, g.player2] : [g.player] }
+function nearestPlayer(g, m) {
+  if (!g.twoPlayer) return g.player
+  const p1 = g.player, p2 = g.player2
+  const d1 = Math.hypot(p1.x - m.x, p1.y - m.y)
+  const d2 = Math.hypot(p2.x - m.x, p2.y - m.y)
+  return d1 <= d2 ? p1 : p2
 }
 
 // ── Event helpers ────────────────────────────────────────────────────
@@ -380,33 +402,33 @@ function computeSpellPower(spellDef, level) {
     heal: spellDef.baseHeal != null ? Math.round(spellDef.baseHeal * mult) : 0,
   }
 }
-function equipSpell(g, id) {
-  if (!g.player.spells.some(s => s.id === id)) return
-  g.player.equippedSpellId = id
+function equipSpell(g, player, id) {
+  if (!player.spells.some(s => s.id === id)) return
+  player.equippedSpellId = id
 }
-function learnOrLevelSpell(g, id) {
+function learnOrLevelSpell(g, player, id) {
   const def = SPELLS.find(s => s.id === id)
-  const known = g.player.spells.find(s => s.id === id)
+  const known = player.spells.find(s => s.id === id)
   if (!known) {
-    g.player.spells.push({ id, level: 1 })
+    player.spells.push({ id, level: 1 })
     pushBanner(g, def.emoji, `Learned a new spell: ${def.name}!`, '#C9A6FF')
-    if (g.player.spells.length === SPELLS.length) grantAchievement(g, 'spellbound')
+    if (player.spells.length === SPELLS.length) grantAchievement(g, 'spellbound')
   } else if (known.level < MAX_SPELL_LEVEL) {
     known.level += 1
     pushBanner(g, def.emoji, `${def.name} leveled up! Now level ${known.level}.`, '#C9A6FF')
     if (known.level === MAX_SPELL_LEVEL) grantAchievement(g, 'archmage')
   } else {
-    const gold = Math.round((20 + known.level * 10) * g.player.goldMult)
-    g.player.gold += gold
+    const gold = Math.round((20 + known.level * 10) * player.goldMult)
+    player.gold += gold
     pushBanner(g, '💰', `Already mastered ${def.name} — sold the spare scroll for ${gold} gold`, '#FFD34D')
   }
 }
-function chooseClassRace(g, classId, raceId) {
-  if (g.player.classId) return
+function chooseClassRace(g, player, classId, raceId) {
+  if (player.classId) return
   const cls = CLASSES.find(c => c.id === classId)
   const race = RACES.find(r => r.id === raceId)
   if (!cls || !race) return
-  const p = g.player
+  const p = player
   p.classId = classId
   p.raceId = raceId
   p.baseAtk += cls.atk + race.atk
@@ -434,40 +456,40 @@ function tryMoveEntity(g, e, dx, dy) {
   if (dy !== 0) { const ny = e.y + dy; if (circleWalkable(g.tiles, e.x, ny, e.r)) e.y = ny }
 }
 
-function knockoutPlayer(g) {
+function knockoutPlayer(g, player) {
   pushBanner(g, '💫', 'Knocked out! Free respawn, contestant!', '#FF9E6B')
   announcerSay(g, 'knockout')
   grantAchievement(g, 'oof')
-  g.player.gold = Math.floor(g.player.gold * 0.8)
-  g.player.x = g.playerSpawn.x
-  g.player.y = g.playerSpawn.y
-  g.player.hp = Math.floor(g.player.maxHp * 0.6)
-  g.player.invuln = KNOCKOUT_INVULN
+  player.gold = Math.floor(player.gold * 0.8)
+  player.x = g.playerSpawn.x
+  player.y = g.playerSpawn.y
+  player.hp = Math.floor(player.maxHp * 0.6)
+  player.invuln = KNOCKOUT_INVULN
 }
 
-function checkLevelUp(g) {
-  while (g.player.xp >= g.player.xpNext) {
-    g.player.xp -= g.player.xpNext
-    g.player.level += 1
-    g.player.maxHp += 8
-    g.player.hp = g.player.maxHp
-    g.player.baseAtk += 1
-    g.player.atk = g.player.baseAtk + g.player.weaponAtk
-    if (g.player.level % 2 === 0) { g.player.baseDef += 1; g.player.def = g.player.baseDef + g.player.armorDef }
-    g.player.xpNext = Math.floor(g.player.xpNext * 1.35) + 10
-    pushBanner(g, '🎉', `Level Up! You are now Level ${g.player.level}`, '#8FD3FF')
+function checkLevelUp(g, player) {
+  while (player.xp >= player.xpNext) {
+    player.xp -= player.xpNext
+    player.level += 1
+    player.maxHp += 8
+    player.hp = player.maxHp
+    player.baseAtk += 1
+    player.atk = player.baseAtk + player.weaponAtk
+    if (player.level % 2 === 0) { player.baseDef += 1; player.def = player.baseDef + player.armorDef }
+    player.xpNext = Math.floor(player.xpNext * 1.35) + 10
+    pushBanner(g, '🎉', `Level Up! You are now Level ${player.level}`, '#8FD3FF')
     announcerSay(g, 'levelUp')
     petSay(g, 'levelUp')
   }
 }
 
-function onMonsterDeath(g, m) {
+function onMonsterDeath(g, player, m) {
   spawnBurst(g, m.x, m.y, m.isBoss ? 26 : 12, ['#FFD34D', '#FF8FD3', '#8FD3FF', '#B6FF6B'])
-  g.player.xp += m.xp
-  g.player.gold += Math.round(rand(m.xp * 0.6, m.xp * 1.3) * g.player.goldMult)
+  player.xp += m.xp
+  player.gold += Math.round(rand(m.xp * 0.6, m.xp * 1.3) * player.goldMult)
   if (!g.achievements.has('firstblood')) grantAchievement(g, 'firstblood')
-  if (m.type === 'sock') grantAchievement(g, 'sockit')
-  if (Math.random() < 0.1) { g.player.potions = Math.min(5, g.player.potions + 1); pushBanner(g, '🧃', 'A snack potion fell out!', '#7CFF6B') }
+  if (m.type === 'goblin') grantAchievement(g, 'goblinslayer')
+  if (Math.random() < 0.1) { player.potions = Math.min(5, player.potions + 1); pushBanner(g, '🧃', 'A snack potion fell out!', '#7CFF6B') }
   if (m.isBoss) {
     grantAchievement(g, 'bossbeat1')
     pushBanner(g, '🏆', `${m.name} defeated!`, '#FFD34D')
@@ -476,17 +498,17 @@ function onMonsterDeath(g, m) {
     g.bossActive = false
     g.exit = { x: m.x, y: m.y }
   }
-  if (g.player.gold >= 200) grantAchievement(g, 'richkid')
-  checkLevelUp(g)
+  if (player.gold >= 200) grantAchievement(g, 'richkid')
+  checkLevelUp(g, player)
   m.removeMe = true
 }
 
-function damageMonster(g, m, dmg) {
+function damageMonster(g, player, m, dmg) {
   m.hp -= dmg
-  if (m.hp <= 0 && !m.dead) { m.dead = true; onMonsterDeath(g, m) }
+  if (m.hp <= 0 && !m.dead) { m.dead = true; onMonsterDeath(g, player, m) }
 }
 
-function openChest(g, c) {
+function openChest(g, player, c) {
   c.opened = true
   spawnBurst(g, c.x, c.y, 10, ['#FFD34D', '#FFE9B8'])
   g.chestsOpened += 1
@@ -494,42 +516,42 @@ function openChest(g, c) {
   const roll = Math.random()
   const rollDepth = g.floorIndex + 1 + Math.floor(Math.random() * 2)
   if (roll < 0.3) {
-    const amt = Math.round((8 + Math.floor(Math.random() * 10) * (g.floorIndex + 1)) * g.player.goldMult)
-    g.player.gold += amt
+    const amt = Math.round((8 + Math.floor(Math.random() * 10) * (g.floorIndex + 1)) * player.goldMult)
+    player.gold += amt
     pushBanner(g, '🪙', `Found ${amt} gold!`, '#FFD34D')
   } else if (roll < 0.5) {
-    g.player.potions = Math.min(5, g.player.potions + 1)
+    player.potions = Math.min(5, player.potions + 1)
     pushBanner(g, '🧃', 'Found a snack potion!', '#7CFF6B')
   } else if (roll < 0.65) {
     const tier = Math.min(WEAPONS.length - 1, rollDepth)
     const w = WEAPONS[tier]
-    if (w.atk > g.player.weaponAtk) {
-      g.player.weaponAtk = w.atk; g.player.weaponName = w.name
-      g.player.atk = g.player.baseAtk + g.player.weaponAtk
+    if (w.atk > player.weaponAtk) {
+      player.weaponAtk = w.atk; player.weaponName = w.name
+      player.atk = player.baseAtk + player.weaponAtk
       pushBanner(g, w.emoji, `Equipped ${w.name}! (+${w.atk} ATK)`, '#8FD3FF')
-      if (g.player.weaponName && g.player.armorName) grantAchievement(g, 'geared')
+      if (player.weaponName && player.armorName) grantAchievement(g, 'geared')
     } else {
-      const gold = Math.round(w.atk * 3 * g.player.goldMult)
-      g.player.gold += gold
+      const gold = Math.round(w.atk * 3 * player.goldMult)
+      player.gold += gold
       pushBanner(g, '💰', `Found ${w.name}, sold for ${gold} gold`, '#FFD34D')
     }
   } else if (roll < 0.8) {
     const tier = Math.min(ARMORS.length - 1, rollDepth)
     const a = ARMORS[tier]
-    if (a.def > g.player.armorDef) {
-      g.player.armorDef = a.def; g.player.armorName = a.name
-      g.player.def = g.player.baseDef + g.player.armorDef
+    if (a.def > player.armorDef) {
+      player.armorDef = a.def; player.armorName = a.name
+      player.def = player.baseDef + player.armorDef
       pushBanner(g, a.emoji, `Equipped ${a.name}! (+${a.def} DEF)`, '#8FD3FF')
-      if (g.player.weaponName && g.player.armorName) grantAchievement(g, 'geared')
+      if (player.weaponName && player.armorName) grantAchievement(g, 'geared')
     } else {
-      const gold = Math.round(a.def * 3 * g.player.goldMult)
-      g.player.gold += gold
+      const gold = Math.round(a.def * 3 * player.goldMult)
+      player.gold += gold
       pushBanner(g, '💰', `Found ${a.name}, sold for ${gold} gold`, '#FFD34D')
     }
   } else {
-    learnOrLevelSpell(g, pick(SPELLS).id)
+    learnOrLevelSpell(g, player, pick(SPELLS).id)
   }
-  if (g.player.gold >= 200) grantAchievement(g, 'richkid')
+  if (player.gold >= 200) grantAchievement(g, 'richkid')
 }
 
 function spawnBoss(g) {
@@ -548,17 +570,18 @@ function updateMonsterAI(g, m) {
   if (m.slowTimer > 0) m.slowTimer -= 1
   const spd = m.speed * (m.slowTimer > 0 ? m.slowMult : 1)
   if (m.knockTimer > 0) { tryMoveEntity(g, m, m.knockX, m.knockY); m.knockTimer -= 1; return }
-  const dx0 = g.player.x - m.x, dy0 = g.player.y - m.y
+  const target = nearestPlayer(g, m)
+  const dx0 = target.x - m.x, dy0 = target.y - m.y
   const d = Math.hypot(dx0, dy0)
   const aggro = m.isBoss ? 999999 : 230
   if (d < aggro && d > 0.001) {
     tryMoveEntity(g, m, (dx0 / d) * spd, (dy0 / d) * spd)
-    if (d < m.r + PLAYER_R + 8 && m.atkCooldown <= 0 && g.player.invuln <= 0) {
-      g.player.hp -= m.atk
-      g.player.invuln = INVULN_FRAMES
+    if (d < m.r + PLAYER_R + 8 && m.atkCooldown <= 0 && target.invuln <= 0) {
+      target.hp -= m.atk
+      target.invuln = INVULN_FRAMES
       shakeCamera(g, 5)
       m.atkCooldown = 55
-      if (g.player.hp <= 0) knockoutPlayer(g)
+      if (target.hp <= 0) knockoutPlayer(g, target)
     }
   } else {
     m.wanderTimer -= 1
@@ -598,6 +621,10 @@ function advanceFloor(g, helpers) {
   g.bossActive = false
   g.player.x = floor.playerSpawn.x
   g.player.y = floor.playerSpawn.y
+  if (g.twoPlayer) {
+    g.player2.x = floor.playerSpawn.x + 20
+    g.player2.y = floor.playerSpawn.y
+  }
   g.playerSpawn = floor.playerSpawn
   g.camera.x = floor.playerSpawn.x
   g.camera.y = floor.playerSpawn.y
@@ -609,90 +636,108 @@ function advanceFloor(g, helpers) {
 }
 
 // ── Per-frame update ─────────────────────────────────────────────────
-function update(g, keys, helpers) {
-  g.frame += 1
-
+function movePlayerFromKeys(g, player, keys, up, down, left, right) {
   let mx = 0, my = 0
-  if (keys['KeyW'] || keys['ArrowUp']) my -= 1
-  if (keys['KeyS'] || keys['ArrowDown']) my += 1
-  if (keys['KeyA'] || keys['ArrowLeft']) mx -= 1
-  if (keys['KeyD'] || keys['ArrowRight']) mx += 1
+  if (keys[up]) my -= 1
+  if (keys[down]) my += 1
+  if (keys[left]) mx -= 1
+  if (keys[right]) mx += 1
   if (mx !== 0 || my !== 0) {
     const len = Math.hypot(mx, my)
     mx /= len; my /= len
-    g.player.facing = { x: mx, y: my }
-    tryMoveEntity(g, g.player, mx * PLAYER_SPEED * g.player.speedMult, my * PLAYER_SPEED * g.player.speedMult)
+    player.facing = { x: mx, y: my }
+    tryMoveEntity(g, player, mx * PLAYER_SPEED * player.speedMult, my * PLAYER_SPEED * player.speedMult)
   }
+}
 
-  if (g.player.attackCooldown > 0) g.player.attackCooldown -= 1
-  if (g.attackPressed && g.player.attackCooldown <= 0) {
-    g.player.attackCooldown = ATTACK_COOLDOWN
-    g.player.attackTimer = ATTACK_DURATION
-    g.player.hitIds = new Set()
+function updatePlayerActions(g, player, pressed) {
+  if (player.attackCooldown > 0) player.attackCooldown -= 1
+  if (pressed.attack && player.attackCooldown <= 0) {
+    player.attackCooldown = ATTACK_COOLDOWN
+    player.attackTimer = ATTACK_DURATION
+    player.hitIds = new Set()
   }
-  g.attackPressed = false
-  if (g.player.attackTimer > 0) {
-    g.player.attackTimer -= 1
-    const hbx = g.player.x + g.player.facing.x * ATTACK_REACH
-    const hby = g.player.y + g.player.facing.y * ATTACK_REACH
+  if (player.attackTimer > 0) {
+    player.attackTimer -= 1
+    const hbx = player.x + player.facing.x * ATTACK_REACH
+    const hby = player.y + player.facing.y * ATTACK_REACH
     for (const m of g.monsters) {
-      if (m.dead || g.player.hitIds.has(m.id)) continue
+      if (m.dead || player.hitIds.has(m.id)) continue
       const dd = (hbx - m.x) ** 2 + (hby - m.y) ** 2
       if (dd < (ATTACK_ARC_R + m.r) ** 2) {
-        g.player.hitIds.add(m.id)
-        const dmg = Math.max(1, g.player.atk + Math.floor(rand(-1, 2)))
-        damageMonster(g, m, dmg)
+        player.hitIds.add(m.id)
+        const dmg = Math.max(1, player.atk + Math.floor(rand(-1, 2)))
+        damageMonster(g, player, m, dmg)
         spawnBurst(g, m.x, m.y, 5, ['#ffffff', '#ffe9b8'])
-        const kl = Math.hypot(m.x - g.player.x, m.y - g.player.y) || 1
-        m.knockX = ((m.x - g.player.x) / kl) * 6
-        m.knockY = ((m.y - g.player.y) / kl) * 6
+        const kl = Math.hypot(m.x - player.x, m.y - player.y) || 1
+        m.knockX = ((m.x - player.x) / kl) * 6
+        m.knockY = ((m.y - player.y) / kl) * 6
         m.knockTimer = 8
       }
     }
   }
 
-  if (g.player.spellCooldown > 0) g.player.spellCooldown -= 1
-  g.player.mana = Math.min(g.player.maxMana, g.player.mana + MANA_REGEN)
-  if (g.spellPressed) {
-    g.spellPressed = false
-    const spellDef = SPELLS.find(s => s.id === g.player.equippedSpellId)
-    const known = g.player.spells.find(s => s.id === g.player.equippedSpellId)
-    if (spellDef && known && g.player.spellCooldown <= 0) {
+  if (player.spellCooldown > 0) player.spellCooldown -= 1
+  player.mana = Math.min(player.maxMana, player.mana + MANA_REGEN)
+  if (pressed.spell) {
+    const spellDef = SPELLS.find(s => s.id === player.equippedSpellId)
+    const known = player.spells.find(s => s.id === player.equippedSpellId)
+    if (spellDef && known && player.spellCooldown <= 0) {
       const power = computeSpellPower(spellDef, known.level)
-      if (g.player.mana >= power.cost) {
-        g.player.spellCooldown = spellDef.cooldown
-        g.player.mana -= power.cost
+      if (player.mana >= power.cost) {
+        player.spellCooldown = spellDef.cooldown
+        player.mana -= power.cost
         grantAchievement(g, 'spellcaster')
         if (spellDef.kind === 'heal') {
-          g.player.hp = Math.min(g.player.maxHp, g.player.hp + power.heal)
+          player.hp = Math.min(player.maxHp, player.hp + power.heal)
           pushBanner(g, spellDef.emoji, `${spellDef.name}! HP restored.`, '#7CFF6B')
         } else {
           g.projectiles.push({
-            x: g.player.x + g.player.facing.x * 20, y: g.player.y + g.player.facing.y * 20,
-            vx: g.player.facing.x * SPELL_SPEED, vy: g.player.facing.y * SPELL_SPEED,
+            x: player.x + player.facing.x * 20, y: player.y + player.facing.y * 20,
+            vx: player.facing.x * SPELL_SPEED, vy: player.facing.y * SPELL_SPEED,
             life: 90, dmg: power.damage, splash: spellDef.splash || 0,
             slowMult: spellDef.slowMult, slowFrames: spellDef.slowFrames,
-            emoji: spellDef.emoji, hitIds: new Set(), dead: false,
+            emoji: spellDef.emoji, hitIds: new Set(), dead: false, owner: player,
           })
         }
       }
     }
   }
 
-  if (g.player.potionCooldown > 0) g.player.potionCooldown -= 1
-  if (g.potionPressed) {
-    g.potionPressed = false
-    if (g.player.potionCooldown <= 0 && g.player.potions > 0 && g.player.hp < g.player.maxHp) {
-      g.player.potionCooldown = POTION_COOLDOWN
-      g.player.potions -= 1
-      g.player.hp = Math.min(g.player.maxHp, g.player.hp + Math.floor(g.player.maxHp * 0.4))
+  if (player.potionCooldown > 0) player.potionCooldown -= 1
+  if (pressed.potion) {
+    if (player.potionCooldown <= 0 && player.potions > 0 && player.hp < player.maxHp) {
+      player.potionCooldown = POTION_COOLDOWN
+      player.potions -= 1
+      player.hp = Math.min(player.maxHp, player.hp + Math.floor(player.maxHp * 0.4))
       pushBanner(g, '🧃', 'Snack break! HP restored.', '#7CFF6B')
       grantAchievement(g, 'snackbreak')
     }
   }
 
-  if (g.player.invuln > 0) g.player.invuln -= 1
-  if (g.player.hp < g.player.maxHp * 0.25 && g.frame % 240 === 0) petSay(g, 'lowHp')
+  if (player.invuln > 0) player.invuln -= 1
+}
+
+function update(g, keys, helpers) {
+  g.frame += 1
+
+  movePlayerFromKeys(g, g.player, keys, 'KeyW', 'KeyS', 'KeyA', 'KeyD')
+  if (g.twoPlayer) {
+    movePlayerFromKeys(g, g.player2, keys, 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight')
+  } else {
+    // Solo play: Arrow keys are a free alias for the same single player,
+    // matching this game's original (pre-co-op) controls.
+    movePlayerFromKeys(g, g.player, keys, 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight')
+  }
+
+  updatePlayerActions(g, g.player, { attack: g.attackPressed, spell: g.spellPressed, potion: g.potionPressed })
+  g.attackPressed = false; g.spellPressed = false; g.potionPressed = false
+  if (g.twoPlayer) {
+    updatePlayerActions(g, g.player2, { attack: g.attackPressed2, spell: g.spellPressed2, potion: g.potionPressed2 })
+    g.attackPressed2 = false; g.spellPressed2 = false; g.potionPressed2 = false
+  }
+
+  if (g.frame % 240 === 0 && activePlayers(g).some(p => p.hp < p.maxHp * 0.25)) petSay(g, 'lowHp')
 
   for (const m of g.monsters) { if (!m.dead) updateMonsterAI(g, m) }
   g.monsters = g.monsters.filter(m => !m.removeMe)
@@ -711,7 +756,7 @@ function update(g, keys, helpers) {
           if (m2.dead) continue
           const dd2 = (pr.x - m2.x) ** 2 + (pr.y - m2.y) ** 2
           if (dd2 < (splashR + m2.r) ** 2) {
-            damageMonster(g, m2, pr.dmg)
+            damageMonster(g, pr.owner, m2, pr.dmg)
             spawnBurst(g, m2.x, m2.y, 5, ['#c9a6ff', '#8fd3ff', '#ffffff'])
             if (pr.slowMult) { m2.slowMult = pr.slowMult; m2.slowTimer = pr.slowFrames }
           }
@@ -725,15 +770,15 @@ function update(g, keys, helpers) {
 
   for (const c of g.chests) {
     if (c.opened) continue
-    const dd = (g.player.x - c.x) ** 2 + (g.player.y - c.y) ** 2
-    if (dd < (PLAYER_R + 18) ** 2) openChest(g, c)
+    const opener = activePlayers(g).find(p => (p.x - c.x) ** 2 + (p.y - c.y) ** 2 < (PLAYER_R + 18) ** 2)
+    if (opener) openChest(g, opener, c)
   }
 
-  if (g.bossRoom && !g.bossSpawned && pointInBounds(g.player.x, g.player.y, g.bossRoom)) spawnBoss(g)
+  if (g.bossRoom && !g.bossSpawned && activePlayers(g).some(p => pointInBounds(p.x, p.y, g.bossRoom))) spawnBoss(g)
 
   if (g.exit) {
-    const dd = (g.player.x - g.exit.x) ** 2 + (g.player.y - g.exit.y) ** 2
-    if (dd < (PLAYER_R + 20) ** 2) { const ex = g.exit; g.exit = null; advanceFloor(g, helpers); if (ex) return }
+    const reached = activePlayers(g).some(p => (p.x - g.exit.x) ** 2 + (p.y - g.exit.y) ** 2 < (PLAYER_R + 20) ** 2)
+    if (reached) { g.exit = null; advanceFloor(g, helpers); return }
   }
 
   for (const p of g.particles) { p.x += p.vx; p.y += p.vy; p.vy += 0.05; p.life -= 1 }
@@ -749,8 +794,389 @@ function update(g, keys, helpers) {
   if (g.announcerTimer <= 0 && Math.random() < 0.0015) announcerSay(g, 'idle')
 
   const mapW = COLS * TILE, mapH = ROWS * TILE
-  g.camera.x += (g.player.x - g.camera.x) * 0.15
-  g.camera.y += (g.player.y - g.camera.y) * 0.15
+  const camTargetX = g.twoPlayer ? (g.player.x + g.player2.x) / 2 : g.player.x
+  const camTargetY = g.twoPlayer ? (g.player.y + g.player2.y) / 2 : g.player.y
+  g.camera.x += (camTargetX - g.camera.x) * 0.15
+  g.camera.y += (camTargetY - g.camera.y) * 0.15
+}
+
+// ── Monster & player sprite rendering (procedural shapes, no emoji) ──
+function drawEyes(ctx, cx, cy, gap, rad, pupilColor) {
+  for (const s of [-1, 1]) {
+    ctx.beginPath(); ctx.arc(cx + s * gap, cy, rad, 0, Math.PI * 2)
+    ctx.fillStyle = '#fff'; ctx.fill()
+    ctx.beginPath(); ctx.arc(cx + s * gap, cy, rad * 0.55, 0, Math.PI * 2)
+    ctx.fillStyle = pupilColor; ctx.fill()
+  }
+}
+function drawGlowEyes(ctx, cx, cy, gap, rad, color) {
+  ctx.fillStyle = color
+  for (const s of [-1, 1]) { ctx.beginPath(); ctx.arc(cx + s * gap, cy, rad, 0, Math.PI * 2); ctx.fill() }
+}
+function drawCrown(ctx, cy, w) {
+  ctx.fillStyle = '#FFD34D'
+  ctx.beginPath()
+  ctx.moveTo(-w, cy); ctx.lineTo(-w, cy - w * 0.5)
+  ctx.lineTo(-w * 0.5, cy - w * 0.1); ctx.lineTo(0, cy - w * 0.7)
+  ctx.lineTo(w * 0.5, cy - w * 0.1); ctx.lineTo(w, cy - w * 0.5)
+  ctx.lineTo(w, cy); ctx.closePath(); ctx.fill()
+}
+
+function drawCreature(ctx, m, t) {
+  const r = m.r, color = m.color, accent = m.accent, variant = m.variant || ''
+  const bob = Math.sin(t * 0.08 + m.id * 0.9) * (m.isBoss ? 1.5 : 2)
+  ctx.save()
+  ctx.translate(m.x, m.y + bob)
+
+  if (m.isBoss) {
+    ctx.save()
+    ctx.globalAlpha = 0.3 + 0.15 * Math.sin(t * 0.1 + m.id)
+    ctx.beginPath(); ctx.arc(0, 0, r + 10, 0, Math.PI * 2)
+    ctx.fillStyle = accent; ctx.fill()
+    ctx.restore()
+  }
+
+  switch (m.kind) {
+    case 'ooze': {
+      const wob = Math.sin(t * 0.12 + m.id) * r * 0.08
+      ctx.beginPath()
+      ctx.moveTo(-r, r * 0.6)
+      ctx.quadraticCurveTo(-r - wob, -r * 0.15, -r * 0.5, -r * 0.75)
+      ctx.quadraticCurveTo(0, -r * 0.95, r * 0.5, -r * 0.75)
+      ctx.quadraticCurveTo(r + wob, -r * 0.15, r, r * 0.6)
+      ctx.quadraticCurveTo(0, r * 0.85, -r, r * 0.6)
+      ctx.closePath()
+      ctx.globalAlpha = 0.85; ctx.fillStyle = color; ctx.fill()
+      ctx.globalAlpha = 1; ctx.strokeStyle = accent; ctx.lineWidth = 2; ctx.stroke()
+      drawEyes(ctx, 0, -r * 0.1, r * 0.28, r * 0.14, '#1a1a1a')
+      if (m.crown) drawCrown(ctx, -r * 0.85, r * 0.35)
+      break
+    }
+    case 'beast': {
+      ctx.fillStyle = color
+      ctx.beginPath(); ctx.ellipse(0, r * 0.15, r * 0.85, r * 0.55, 0, 0, Math.PI * 2); ctx.fill()
+      ctx.strokeStyle = color; ctx.lineWidth = r * 0.18
+      for (const s of [-1, 1]) {
+        ctx.beginPath(); ctx.moveTo(s * r * 0.5, r * 0.5); ctx.lineTo(s * r * 0.55, r * 0.98); ctx.stroke()
+        ctx.beginPath(); ctx.moveTo(s * r * 0.1, r * 0.55); ctx.lineTo(s * r * 0.15, r * 1.02); ctx.stroke()
+      }
+      ctx.strokeStyle = color; ctx.lineWidth = r * 0.14
+      ctx.beginPath(); ctx.moveTo(-r * 0.8, r * 0.1); ctx.quadraticCurveTo(-r * 1.35, -r * 0.15, -r * 1.15, -r * 0.55); ctx.stroke()
+      ctx.beginPath(); ctx.arc(r * 0.68, -r * 0.2, r * 0.42, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill()
+      ctx.beginPath(); ctx.moveTo(r * 0.5, -r * 0.55); ctx.lineTo(r * 0.62, -r * 0.9); ctx.lineTo(r * 0.78, -r * 0.55); ctx.closePath(); ctx.fill()
+      drawEyes(ctx, r * 0.75, -r * 0.25, r * 0.14, r * 0.08, '#1a1a1a')
+      if (variant === 'wolf') {
+        ctx.fillStyle = '#fff'
+        ctx.beginPath(); ctx.moveTo(r * 0.55, r * 0.02); ctx.lineTo(r * 0.6, r * 0.18); ctx.lineTo(r * 0.65, r * 0.02); ctx.closePath(); ctx.fill()
+      }
+      if (m.chimera) {
+        ctx.strokeStyle = accent; ctx.lineWidth = r * 0.09
+        ctx.beginPath(); ctx.moveTo(-r * 0.35, -r * 0.5); ctx.lineTo(-r * 0.55, -r * 0.85); ctx.stroke()
+        ctx.beginPath(); ctx.moveTo(-r * 0.05, -r * 0.55); ctx.lineTo(0, -r * 0.92); ctx.stroke()
+        ctx.fillStyle = accent
+        ctx.beginPath(); ctx.arc(-r * 1.05, -r * 0.35, r * 0.2, 0, Math.PI * 2); ctx.fill()
+      }
+      break
+    }
+    case 'flyer': {
+      const flap = Math.sin(t * 0.4 + m.id) * 0.5 + 0.5
+      ctx.fillStyle = color
+      for (const s of [-1, 1]) {
+        ctx.save(); ctx.scale(s, 1)
+        ctx.beginPath()
+        ctx.moveTo(r * 0.15, 0)
+        ctx.quadraticCurveTo(r * 1.3, -r * (0.5 + flap * 0.5), r * 1.5, r * 0.1)
+        ctx.quadraticCurveTo(r * 0.8, r * 0.15, r * 0.15, r * 0.3)
+        ctx.closePath(); ctx.fill()
+        ctx.restore()
+      }
+      ctx.beginPath(); ctx.ellipse(0, r * 0.1, r * 0.5, r * 0.4, 0, 0, Math.PI * 2)
+      ctx.fillStyle = color; ctx.fill()
+      if (variant === 'harpy') {
+        ctx.beginPath(); ctx.arc(0, -r * 0.35, r * 0.32, 0, Math.PI * 2); ctx.fillStyle = accent; ctx.fill()
+        drawEyes(ctx, 0, -r * 0.4, r * 0.13, r * 0.07, '#1a1a1a')
+        ctx.fillStyle = '#e8c060'
+        ctx.beginPath(); ctx.moveTo(0, -r * 0.3); ctx.lineTo(r * 0.15, -r * 0.15); ctx.lineTo(-r * 0.02, -r * 0.12); ctx.closePath(); ctx.fill()
+      } else if (variant === 'bat') {
+        drawGlowEyes(ctx, 0, -r * 0.05, r * 0.16, r * 0.09, accent)
+        ctx.fillStyle = '#fff'
+        ctx.beginPath(); ctx.moveTo(-r * 0.1, r * 0.2); ctx.lineTo(-r * 0.15, r * 0.35); ctx.lineTo(-r * 0.02, r * 0.22); ctx.closePath(); ctx.fill()
+        ctx.beginPath(); ctx.moveTo(r * 0.1, r * 0.2); ctx.lineTo(r * 0.15, r * 0.35); ctx.lineTo(r * 0.02, r * 0.22); ctx.closePath(); ctx.fill()
+      } else {
+        drawEyes(ctx, 0, r * 0.05, r * 0.2, r * 0.14, '#1a1a1a')
+      }
+      if (m.crown) drawCrown(ctx, -r * 0.65, r * 0.3)
+      break
+    }
+    case 'humanoid': {
+      const bulky = m.bulky || variant === 'ogre' || variant === 'ice'
+      const w = bulky ? r * 0.95 : r * 0.6
+      ctx.fillStyle = color
+      ctx.beginPath(); ctx.moveTo(-w * 0.55, r * 0.9); ctx.lineTo(-w * 0.4, -r * 0.1)
+      ctx.lineTo(w * 0.4, -r * 0.1); ctx.lineTo(w * 0.55, r * 0.9); ctx.closePath(); ctx.fill()
+      ctx.strokeStyle = color; ctx.lineWidth = r * (bulky ? 0.24 : 0.16)
+      for (const s of [-1, 1]) { ctx.beginPath(); ctx.moveTo(s * w * 0.3, r * 0.9); ctx.lineTo(s * w * 0.32, r * 1.3); ctx.stroke() }
+      for (const s of [-1, 1]) { ctx.beginPath(); ctx.moveTo(s * w * 0.5, r * 0.05); ctx.lineTo(s * w * 0.85, r * 0.45); ctx.stroke() }
+      ctx.beginPath(); ctx.arc(0, -r * 0.4, r * (bulky ? 0.55 : 0.42), 0, Math.PI * 2)
+      ctx.fillStyle = color; ctx.fill()
+      if (variant === 'bone') {
+        ctx.fillStyle = '#1a1a1a'
+        ctx.beginPath(); ctx.arc(-r * 0.15, -r * 0.42, r * 0.09, 0, Math.PI * 2); ctx.fill()
+        ctx.beginPath(); ctx.arc(r * 0.15, -r * 0.42, r * 0.09, 0, Math.PI * 2); ctx.fill()
+        ctx.fillRect(-r * 0.12, -r * 0.22, r * 0.24, r * 0.08)
+        ctx.strokeStyle = accent; ctx.lineWidth = 1.5
+        for (let i = -1; i <= 1; i++) { ctx.beginPath(); ctx.moveTo(i * r * 0.18, r * 0.05); ctx.lineTo(i * r * 0.18, r * 0.55); ctx.stroke() }
+      } else if (variant === 'shadow') {
+        ctx.globalAlpha = 0.75
+        drawGlowEyes(ctx, 0, -r * 0.42, r * 0.16, r * 0.09, accent)
+        ctx.globalAlpha = 1
+      } else {
+        drawEyes(ctx, 0, -r * 0.42, r * 0.15, r * 0.08, '#1a1a1a')
+        if (variant === 'goblin' || !variant) {
+          ctx.fillStyle = accent
+          ctx.beginPath(); ctx.moveTo(-r * 0.5, -r * 0.55); ctx.lineTo(-r * 0.65, -r * 0.85); ctx.lineTo(-r * 0.35, -r * 0.65); ctx.closePath(); ctx.fill()
+          ctx.beginPath(); ctx.moveTo(r * 0.5, -r * 0.55); ctx.lineTo(r * 0.65, -r * 0.85); ctx.lineTo(r * 0.35, -r * 0.65); ctx.closePath(); ctx.fill()
+        }
+      }
+      ctx.strokeStyle = m.scythe ? '#c9c9c9' : (accent || '#c9c9c9')
+      ctx.lineWidth = r * 0.12
+      ctx.beginPath(); ctx.moveTo(w * 0.7, r * 0.1); ctx.lineTo(w * (m.scythe ? 1.3 : 1.05), -r * (m.scythe ? 0.8 : 0.5)); ctx.stroke()
+      if (m.crown) drawCrown(ctx, -r * 0.85, r * 0.3)
+      break
+    }
+    case 'arachnid': {
+      ctx.strokeStyle = color; ctx.lineWidth = r * 0.1
+      for (let i = 0; i < 4; i++) {
+        const ang = -0.5 + i * 0.35
+        for (const s of [-1, 1]) {
+          ctx.beginPath(); ctx.moveTo(0, 0)
+          ctx.quadraticCurveTo(s * r * Math.cos(ang) * 0.8, r * 0.1, s * r * (0.9 + i * 0.1), r * (0.5 - i * 0.15))
+          ctx.stroke()
+        }
+      }
+      ctx.beginPath(); ctx.ellipse(0, r * 0.15, r * 0.55, r * 0.45, 0, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill()
+      ctx.beginPath(); ctx.arc(0, -r * 0.35, r * 0.32, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill()
+      drawGlowEyes(ctx, 0, -r * 0.4, r * 0.15, r * 0.06, accent)
+      drawGlowEyes(ctx, 0, -r * 0.28, r * 0.09, r * 0.045, accent)
+      break
+    }
+    case 'spectral': {
+      const wob = Math.sin(t * 0.1 + m.id) * r * 0.1
+      ctx.globalAlpha = 0.75
+      ctx.beginPath()
+      ctx.moveTo(-r * 0.7, r * 0.4)
+      ctx.quadraticCurveTo(-r * 0.9, -r * 0.5, 0, -r * 0.85)
+      ctx.quadraticCurveTo(r * 0.9, -r * 0.5, r * 0.7, r * 0.4)
+      ctx.quadraticCurveTo(r * 0.4 + wob, r * 0.75, r * 0.15, r * 0.5)
+      ctx.quadraticCurveTo(0, r * 0.7, -r * 0.15, r * 0.5)
+      ctx.quadraticCurveTo(-r * 0.4 - wob, r * 0.75, -r * 0.7, r * 0.4)
+      ctx.closePath()
+      ctx.fillStyle = color; ctx.fill()
+      ctx.globalAlpha = 1
+      if (variant === 'banshee') {
+        ctx.strokeStyle = accent; ctx.lineWidth = 1.5
+        ctx.beginPath(); ctx.moveTo(-r * 0.35, -r * 0.6); ctx.quadraticCurveTo(-r * 0.6, -r * 0.2, -r * 0.5, r * 0.2); ctx.stroke()
+        ctx.beginPath(); ctx.moveTo(r * 0.35, -r * 0.6); ctx.quadraticCurveTo(r * 0.6, -r * 0.2, r * 0.5, r * 0.2); ctx.stroke()
+        ctx.fillStyle = '#3a2030'
+        ctx.beginPath(); ctx.ellipse(0, r * 0.05, r * 0.14, r * 0.2, 0, 0, Math.PI * 2); ctx.fill()
+      }
+      drawGlowEyes(ctx, 0, -r * 0.35, r * 0.18, r * 0.09, accent)
+      if (m.crown) drawCrown(ctx, -r * 0.75, r * 0.3)
+      break
+    }
+    case 'golem': {
+      ctx.fillStyle = color
+      ctx.fillRect(-r * 0.75, -r * 0.15, r * 1.5, r * 1.0)
+      ctx.fillRect(-r * 0.4, -r * 0.75, r * 0.8, r * 0.65)
+      for (const s of [-1, 1]) ctx.fillRect(s > 0 ? r * 0.85 : -r * 1.1, -r * 0.05, r * 0.25, r * 0.55)
+      ctx.strokeStyle = accent; ctx.lineWidth = 2
+      ctx.beginPath(); ctx.moveTo(-r * 0.3, -r * 0.1); ctx.lineTo(0, r * 0.3); ctx.lineTo(r * 0.3, -r * 0.05); ctx.stroke()
+      drawGlowEyes(ctx, 0, -r * 0.45, r * 0.14, r * 0.08, accent)
+      break
+    }
+    case 'serpent': {
+      const heads = m.heads || 1
+      ctx.strokeStyle = color; ctx.lineWidth = r * 0.5; ctx.lineCap = 'round'
+      const spread = heads > 1 ? r * 0.5 : 0
+      for (let h = 0; h < heads; h++) {
+        const off = heads > 1 ? (h - (heads - 1) / 2) * spread : 0
+        ctx.beginPath()
+        ctx.moveTo(0, r * 0.7)
+        ctx.quadraticCurveTo(off * 0.6, r * 0.1, off, -r * 0.6)
+        ctx.stroke()
+        ctx.beginPath(); ctx.arc(off, -r * 0.65, r * 0.32, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill()
+        drawGlowEyes(ctx, off, -r * 0.7, r * 0.12, r * 0.06, accent)
+      }
+      ctx.lineCap = 'butt'
+      break
+    }
+    case 'orb': {
+      const pulse = 1 + Math.sin(t * 0.15 + m.id) * 0.08
+      ctx.save(); ctx.scale(pulse, pulse)
+      ctx.globalAlpha = 0.3
+      ctx.beginPath(); ctx.arc(0, 0, r * 1.3, 0, Math.PI * 2); ctx.fillStyle = accent; ctx.fill()
+      ctx.globalAlpha = 1
+      ctx.beginPath(); ctx.arc(0, 0, r * 0.75, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill()
+      ctx.beginPath(); ctx.arc(0, 0, r * 0.4, 0, Math.PI * 2); ctx.fillStyle = accent; ctx.fill()
+      ctx.beginPath(); ctx.arc(-r * 0.12, -r * 0.1, r * 0.16, 0, Math.PI * 2); ctx.fillStyle = '#1a1a1a'; ctx.fill()
+      ctx.restore()
+      break
+    }
+    case 'plant': {
+      ctx.strokeStyle = color; ctx.lineWidth = r * 0.22
+      const sway = Math.sin(t * 0.06 + m.id) * r * 0.2
+      ctx.beginPath(); ctx.moveTo(0, r * 0.9); ctx.quadraticCurveTo(sway, 0, 0, -r * 0.6); ctx.stroke()
+      for (const s of [-1, 1]) {
+        ctx.beginPath(); ctx.moveTo(0, r * 0.3); ctx.quadraticCurveTo(s * r * 0.7, r * 0.1, s * r * 0.9 + sway * 0.5, -r * 0.3); ctx.stroke()
+      }
+      ctx.beginPath(); ctx.arc(0, -r * 0.65, r * 0.4, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill()
+      ctx.fillStyle = accent
+      ctx.beginPath(); ctx.moveTo(-r * 0.3, -r * 0.55); ctx.quadraticCurveTo(0, -r * 0.25, r * 0.3, -r * 0.55); ctx.quadraticCurveTo(0, -r * 0.4, -r * 0.3, -r * 0.55); ctx.fill()
+      drawGlowEyes(ctx, 0, -r * 0.85, r * 0.14, r * 0.07, '#ffffff')
+      break
+    }
+    case 'imp': {
+      ctx.fillStyle = color
+      ctx.beginPath(); ctx.moveTo(-r * 0.4, r * 0.8); ctx.lineTo(-r * 0.35, -r * 0.05); ctx.lineTo(r * 0.35, -r * 0.05); ctx.lineTo(r * 0.4, r * 0.8); ctx.closePath(); ctx.fill()
+      ctx.beginPath(); ctx.arc(0, -r * 0.4, r * 0.4, 0, Math.PI * 2); ctx.fill()
+      ctx.beginPath(); ctx.moveTo(-r * 0.3, -r * 0.65); ctx.lineTo(-r * 0.45, -r * 1.0); ctx.lineTo(-r * 0.12, -r * 0.75); ctx.closePath(); ctx.fill()
+      ctx.beginPath(); ctx.moveTo(r * 0.3, -r * 0.65); ctx.lineTo(r * 0.45, -r * 1.0); ctx.lineTo(r * 0.12, -r * 0.75); ctx.closePath(); ctx.fill()
+      const flap = Math.sin(t * 0.3 + m.id) * 0.3 + 0.7
+      ctx.fillStyle = accent
+      for (const s of [-1, 1]) {
+        ctx.save(); ctx.scale(s, 1)
+        ctx.beginPath(); ctx.moveTo(r * 0.3, -r * 0.1)
+        ctx.quadraticCurveTo(r * 1.0, -r * 0.2 * flap, r * 0.9, r * 0.4)
+        ctx.quadraticCurveTo(r * 0.5, r * 0.2, r * 0.3, r * 0.15)
+        ctx.closePath(); ctx.fill()
+        ctx.restore()
+      }
+      drawGlowEyes(ctx, 0, -r * 0.42, r * 0.14, r * 0.07, variant === 'frost' ? '#ffffff' : '#ffe08a')
+      if (m.demon) {
+        ctx.strokeStyle = accent; ctx.lineWidth = r * 0.1
+        ctx.beginPath(); ctx.moveTo(0, r * 0.75); ctx.quadraticCurveTo(r * 0.3, r * 1.1, r * 0.15, r * 1.35); ctx.stroke()
+      }
+      break
+    }
+    case 'mimic': {
+      ctx.fillStyle = color
+      ctx.fillRect(-r * 0.9, -r * 0.1, r * 1.8, r * 0.85)
+      ctx.beginPath(); ctx.moveTo(-r * 0.9, -r * 0.1); ctx.quadraticCurveTo(0, -r * 0.7, r * 0.9, -r * 0.1); ctx.closePath(); ctx.fill()
+      ctx.strokeStyle = accent; ctx.lineWidth = 2
+      ctx.strokeRect(-r * 0.9, -r * 0.1, r * 1.8, r * 0.85)
+      const bite = Math.sin(t * 0.15 + m.id) * 0.5 + 0.5
+      ctx.fillStyle = '#2a1a10'
+      ctx.beginPath(); ctx.ellipse(0, r * 0.1, r * 0.55, r * 0.12 + bite * r * 0.08, 0, 0, Math.PI * 2); ctx.fill()
+      ctx.fillStyle = '#fff'
+      for (let i = -2; i <= 2; i++) {
+        ctx.beginPath(); ctx.moveTo(i * r * 0.18, r * 0.02); ctx.lineTo(i * r * 0.18 + r * 0.06, r * 0.02); ctx.lineTo(i * r * 0.12, r * 0.14); ctx.closePath(); ctx.fill()
+      }
+      drawGlowEyes(ctx, 0, -r * 0.35, r * 0.2, r * 0.08, accent)
+      break
+    }
+    case 'dragon': {
+      const flap = Math.sin(t * 0.2 + m.id) * 0.4 + 0.6
+      ctx.fillStyle = color
+      for (const s of [-1, 1]) {
+        ctx.save(); ctx.scale(s, 1)
+        ctx.beginPath()
+        ctx.moveTo(r * 0.1, -r * 0.1)
+        ctx.quadraticCurveTo(r * 1.4, -r * (0.6 + flap * 0.5), r * 1.7, r * 0.15)
+        ctx.quadraticCurveTo(r * 1.0, r * 0.25, r * 0.5, r * 0.1)
+        ctx.quadraticCurveTo(r * 0.9, -r * 0.05, r * 1.15, r * (0.15 + flap * 0.3))
+        ctx.quadraticCurveTo(r * 0.6, r * 0.35, r * 0.1, r * 0.15)
+        ctx.closePath(); ctx.fill()
+        ctx.restore()
+      }
+      ctx.strokeStyle = color; ctx.lineWidth = r * 0.28
+      ctx.beginPath(); ctx.moveTo(-r * 0.3, r * 0.5); ctx.quadraticCurveTo(-r * 1.1, r * 0.7, -r * 1.4, r * 0.2); ctx.stroke()
+      ctx.beginPath(); ctx.ellipse(0, r * 0.25, r * 0.65, r * 0.5, 0, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill()
+      ctx.beginPath(); ctx.ellipse(0, -r * 0.35, r * 0.4, r * 0.32, 0, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill()
+      ctx.fillStyle = accent
+      ctx.beginPath(); ctx.moveTo(-r * 0.15, -r * 0.6); ctx.lineTo(-r * 0.25, -r * 0.95); ctx.lineTo(0, -r * 0.7); ctx.closePath(); ctx.fill()
+      ctx.beginPath(); ctx.moveTo(r * 0.15, -r * 0.6); ctx.lineTo(r * 0.25, -r * 0.95); ctx.lineTo(0, -r * 0.7); ctx.closePath(); ctx.fill()
+      drawGlowEyes(ctx, 0, -r * 0.4, r * 0.16, r * 0.08, accent)
+      ctx.fillStyle = accent
+      ctx.beginPath(); ctx.moveTo(r * 0.3, -r * 0.25); ctx.lineTo(r * 0.6, -r * 0.15); ctx.lineTo(r * 0.3, -r * 0.05); ctx.closePath(); ctx.fill()
+      break
+    }
+    default: {
+      ctx.beginPath(); ctx.arc(0, 0, r * 0.7, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill()
+      drawEyes(ctx, 0, -r * 0.1, r * 0.2, r * 0.1, '#1a1a1a')
+    }
+  }
+
+  ctx.restore()
+}
+
+function drawPlayerSprite(ctx, p, t) {
+  const cls = CLASSES.find(c => c.id === p.classId)
+  const race = RACES.find(rc => rc.id === p.raceId)
+  const bodyColors = { warrior: '#8a5a3a', mage: '#6b4aa8', rogue: '#2f4a3a', cleric: '#e8dcc0' }
+  const bodyColor = cls ? bodyColors[cls.id] : '#3a7a4a'
+  const skinColor = race?.id === 'hamsterkin' ? '#d9a860' : '#e8c090'
+  const r = PLAYER_R
+  ctx.save()
+  ctx.translate(p.x, p.y)
+  if (p.facing.x < 0) ctx.scale(-1, 1)
+
+  ctx.strokeStyle = '#3a2a20'; ctx.lineWidth = r * 0.22
+  for (const s of [-1, 1]) { ctx.beginPath(); ctx.moveTo(s * r * 0.25, r * 0.6); ctx.lineTo(s * r * 0.3, r * 1.15); ctx.stroke() }
+
+  ctx.fillStyle = bodyColor
+  ctx.beginPath()
+  ctx.moveTo(-r * 0.5, r * 0.7); ctx.lineTo(-r * 0.45, -r * 0.15)
+  ctx.lineTo(r * 0.45, -r * 0.15); ctx.lineTo(r * 0.5, r * 0.7); ctx.closePath(); ctx.fill()
+
+  ctx.strokeStyle = bodyColor; ctx.lineWidth = r * 0.2
+  for (const s of [-1, 1]) { ctx.beginPath(); ctx.moveTo(s * r * 0.5, r * 0.05); ctx.lineTo(s * r * 0.8, r * 0.4); ctx.stroke() }
+
+  ctx.beginPath(); ctx.arc(0, -r * 0.55, r * 0.45, 0, Math.PI * 2); ctx.fillStyle = skinColor; ctx.fill()
+
+  if (race?.id === 'elf') {
+    ctx.fillStyle = skinColor
+    ctx.beginPath(); ctx.moveTo(-r * 0.4, -r * 0.6); ctx.lineTo(-r * 0.65, -r * 0.7); ctx.lineTo(-r * 0.35, -r * 0.45); ctx.closePath(); ctx.fill()
+    ctx.beginPath(); ctx.moveTo(r * 0.4, -r * 0.6); ctx.lineTo(r * 0.65, -r * 0.7); ctx.lineTo(r * 0.35, -r * 0.45); ctx.closePath(); ctx.fill()
+  }
+  if (race?.id === 'dwarf') {
+    ctx.fillStyle = '#a06a3a'
+    ctx.beginPath()
+    ctx.moveTo(-r * 0.32, -r * 0.4); ctx.lineTo(-r * 0.3, r * 0.05); ctx.lineTo(0, r * 0.15)
+    ctx.lineTo(r * 0.3, r * 0.05); ctx.lineTo(r * 0.32, -r * 0.4); ctx.closePath(); ctx.fill()
+  }
+  if (race?.id === 'hamsterkin') {
+    ctx.fillStyle = skinColor
+    for (const s of [-1, 1]) { ctx.beginPath(); ctx.arc(s * r * 0.35, -r * 0.9, r * 0.2, 0, Math.PI * 2); ctx.fill() }
+    ctx.strokeStyle = skinColor; ctx.lineWidth = 2
+    ctx.beginPath(); ctx.moveTo(-r * 0.5, r * 0.7); ctx.quadraticCurveTo(-r * 0.8, r * 0.6, -r * 0.7, r * 0.35); ctx.stroke()
+  }
+
+  ctx.fillStyle = '#2a1a10'
+  ctx.beginPath(); ctx.arc(-r * 0.15, -r * 0.55, r * 0.07, 0, Math.PI * 2); ctx.fill()
+  ctx.beginPath(); ctx.arc(r * 0.15, -r * 0.55, r * 0.07, 0, Math.PI * 2); ctx.fill()
+
+  if (cls?.id === 'mage') {
+    ctx.fillStyle = bodyColor
+    ctx.beginPath(); ctx.moveTo(-r * 0.5, -r * 0.75); ctx.lineTo(0, -r * 1.5); ctx.lineTo(r * 0.5, -r * 0.75); ctx.closePath(); ctx.fill()
+  } else if (cls?.id === 'rogue') {
+    ctx.fillStyle = bodyColor
+    ctx.beginPath(); ctx.arc(0, -r * 0.65, r * 0.5, Math.PI, Math.PI * 2); ctx.fill()
+  } else if (cls?.id === 'cleric') {
+    ctx.fillStyle = '#ffd34d'
+    ctx.beginPath(); ctx.arc(0, -r * 1.05, r * 0.12, 0, Math.PI * 2); ctx.fill()
+  } else if (cls?.id === 'warrior') {
+    ctx.fillStyle = '#c9c9c9'
+    ctx.fillRect(-r * 0.5, -r * 0.85, r, r * 0.2)
+  }
+
+  ctx.strokeStyle = '#c9c9c9'; ctx.lineWidth = r * 0.16
+  ctx.beginPath(); ctx.moveTo(r * 0.75, r * 0.35); ctx.lineTo(r * 1.15, -r * 0.55); ctx.stroke()
+  if (cls?.id === 'mage') {
+    ctx.fillStyle = '#c9a6ff'
+    ctx.beginPath(); ctx.arc(r * 1.15, -r * 0.55, r * 0.14, 0, Math.PI * 2); ctx.fill()
+  }
+
+  ctx.restore()
 }
 
 // ── Drawing ──────────────────────────────────────────────────────────
@@ -807,9 +1233,7 @@ function draw(g, ctx, W, H) {
 
   for (const m of g.monsters) {
     if (m.dead) continue
-    ctx.font = (m.isBoss ? '54px' : '30px') + ' serif'
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
-    ctx.fillText(m.emoji, m.x, m.y)
+    drawCreature(ctx, m, g.frame)
     if (m.isBoss || m.hp < m.maxHp) {
       const bw = m.isBoss ? 70 : 34
       const by = m.y - (m.isBoss ? 46 : 24)
@@ -823,30 +1247,36 @@ function draw(g, ctx, W, H) {
     }
   }
 
-  ctx.save()
-  if (g.player.invuln > 0 && Math.floor(g.player.invuln / 4) % 2 === 0) ctx.globalAlpha = 0.4
-  ctx.font = '32px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
-  ctx.fillText('🧒', g.player.x, g.player.y)
-  ctx.restore()
+  for (const p of activePlayers(g)) {
+    ctx.save()
+    if (p.invuln > 0 && Math.floor(p.invuln / 4) % 2 === 0) ctx.globalAlpha = 0.4
+    drawPlayerSprite(ctx, p, g.frame)
+    ctx.restore()
 
-  if (g.player.attackTimer > 0) {
-    ctx.strokeStyle = 'rgba(255,255,255,0.6)'
-    ctx.lineWidth = 3
-    ctx.beginPath()
-    ctx.arc(g.player.x + g.player.facing.x * ATTACK_REACH, g.player.y + g.player.facing.y * ATTACK_REACH, ATTACK_ARC_R, 0, Math.PI * 2)
-    ctx.stroke()
+    if (p.attackTimer > 0) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.6)'
+      ctx.lineWidth = 3
+      ctx.beginPath()
+      ctx.arc(p.x + p.facing.x * ATTACK_REACH, p.y + p.facing.y * ATTACK_REACH, ATTACK_ARC_R, 0, Math.PI * 2)
+      ctx.stroke()
+    }
   }
   ctx.restore()
 
   drawHUD(g, ctx, W, H)
 }
 
-function drawHUD(g, ctx, W, H) {
-  const p = g.player
-  const barX = 16, barY = 16, barW = 200, barH = 16
+function drawPlayerStatsBox(ctx, p, barX, barY, label) {
+  const barW = 200, barH = 16
 
   ctx.fillStyle = 'rgba(0,0,0,0.55)'
-  ctx.fillRect(barX - 8, barY - 8, barW + 90, 96)
+  ctx.fillRect(barX - 8, barY - 8, barW + 90, label ? 112 : 96)
+
+  if (label) {
+    ctx.fillStyle = '#FFD34D'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'
+    ctx.fillText(label, barX, barY - 10)
+    barY += 16
+  }
 
   ctx.fillStyle = '#3a0f0f'; ctx.fillRect(barX, barY, barW, barH)
   ctx.fillStyle = '#FF5566'; ctx.fillRect(barX, barY, barW * Math.max(0, p.hp / p.maxHp), barH)
@@ -873,6 +1303,11 @@ function drawHUD(g, ctx, W, H) {
   ctx.font = 'bold 14px sans-serif'
   ctx.fillText(`🪙 ${p.gold}`, barX, rowY)
   ctx.fillText(`🧃 x${p.potions}`, barX + 90, rowY)
+}
+
+function drawHUD(g, ctx, W, H) {
+  drawPlayerStatsBox(ctx, g.player, 16, 16, g.twoPlayer ? 'P1' : null)
+  if (g.twoPlayer) drawPlayerStatsBox(ctx, g.player2, 16, 140, 'P2')
 
   ctx.textAlign = 'center'
   ctx.font = 'bold 13px sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.75)'
@@ -929,7 +1364,10 @@ function drawHUD(g, ctx, W, H) {
   if (g.floorIndex === 0 && g.frame < 600) {
     ctx.globalAlpha = Math.min(1, (600 - g.frame) / 60)
     ctx.font = '13px sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'
-    ctx.fillText('WASD / Arrows to move · Space to attack · F to cast a spell · E to drink a potion · I for spellbook', W / 2, H - 16)
+    const hint = g.twoPlayer
+      ? 'P1: WASD move · Space attack · F magic · E potion — P2: Arrows move · / attack · . magic · , potion — I spellbook'
+      : 'WASD / Arrows to move · Space to attack · F to cast a spell · E to drink a potion · I for spellbook'
+    ctx.fillText(hint, W / 2, H - 16)
     ctx.globalAlpha = 1
   }
 }
@@ -945,25 +1383,33 @@ export default function DungeonCrawlerMax() {
   const gRef = useRef(null)
   const rafRef = useRef(null)
 
+  const [twoPlayer, setTwoPlayer] = useState(false)
   const [spellSnapshot, setSpellSnapshot] = useState(null)
-  const [pickClass, setPickClass] = useState(null)
-  const [pickRace, setPickRace] = useState(null)
+  const [spellTab, setSpellTab] = useState('p1')
+  const emptyPick = () => ({ classId: null, raceId: null })
+  const [classPick, setClassPick] = useState({ p1: emptyPick(), p2: emptyPick() })
 
   function setPhase(p) { phaseRef.current = p; setPhaseState(p) }
+  function snapshotSpells(p) { return { spells: [...p.spells], equippedSpellId: p.equippedSpellId } }
   function refreshSpellSnapshot() {
-    const p = gRef.current?.player
-    if (!p) return
-    setSpellSnapshot({ spells: [...p.spells], equippedSpellId: p.equippedSpellId })
+    const g = gRef.current
+    if (!g) return
+    setSpellSnapshot({ p1: snapshotSpells(g.player), p2: g.twoPlayer ? snapshotSpells(g.player2) : null })
+  }
+  function activeSpellPlayer() {
+    return spellTab === 'p2' ? gRef.current.player2 : gRef.current.player
   }
   function handleEquipSpell(id) {
-    equipSpell(gRef.current, id)
+    equipSpell(gRef.current, activeSpellPlayer(), id)
     refreshSpellSnapshot()
   }
   function confirmClassRace() {
-    if (!pickClass || !pickRace) return
-    chooseClassRace(gRef.current, pickClass, pickRace)
-    setPickClass(null)
-    setPickRace(null)
+    const { p1, p2 } = classPick
+    const solo = !gRef.current.twoPlayer
+    if (!p1.classId || !p1.raceId || (!solo && (!p2.classId || !p2.raceId))) return
+    chooseClassRace(gRef.current, gRef.current.player, p1.classId, p1.raceId)
+    if (!solo) chooseClassRace(gRef.current, gRef.current.player2, p2.classId, p2.raceId)
+    setClassPick({ p1: emptyPick(), p2: emptyPick() })
     setPhase('playing')
   }
 
@@ -985,8 +1431,11 @@ export default function DungeonCrawlerMax() {
       if (e.code === 'Space') { e.preventDefault(); if (gRef.current) gRef.current.attackPressed = true }
       if (e.code === 'KeyE') { if (gRef.current) gRef.current.potionPressed = true }
       if (e.code === 'KeyF') { if (gRef.current) gRef.current.spellPressed = true }
+      if (e.code === 'Slash') { e.preventDefault(); if (gRef.current?.twoPlayer) gRef.current.attackPressed2 = true }
+      if (e.code === 'Comma') { if (gRef.current?.twoPlayer) gRef.current.potionPressed2 = true }
+      if (e.code === 'Period') { if (gRef.current?.twoPlayer) gRef.current.spellPressed2 = true }
       if (e.code === 'KeyI') {
-        if (phaseRef.current === 'playing') { refreshSpellSnapshot(); setPhase('spellbook') }
+        if (phaseRef.current === 'playing') { setSpellTab('p1'); refreshSpellSnapshot(); setPhase('spellbook') }
         else if (phaseRef.current === 'spellbook') setPhase('playing')
       }
     }
@@ -1022,12 +1471,11 @@ export default function DungeonCrawlerMax() {
   }, [])
 
   function startGame() {
-    const g = mkInitialState()
+    const g = mkInitialState(twoPlayer)
     grantAchievement(g, 'contestant')
     gRef.current = g
     setSpellSnapshot(null)
-    setPickClass(null)
-    setPickRace(null)
+    setClassPick({ p1: emptyPick(), p2: emptyPick() })
     setPhase('playing')
   }
 
@@ -1039,23 +1487,46 @@ export default function DungeonCrawlerMax() {
       {phase === 'intro' && (
         <div className={styles.overlay}>
           <div className={styles.card}>
-            <div className={styles.emojiRow}>🧒 🐹 🔮</div>
+            <div className={styles.emojiRow}>{twoPlayer ? '🧒 🧑 🐹 🔮' : '🧒 🐹 🔮'}</div>
             <h1 className={styles.title}>Dungeon Crawler Max</h1>
             <p className={styles.tagline}>A Game Show... For Kids!</p>
             <p className={styles.story}>
-              Congratulations, contestant! You — and your hamster, Biscuit — have just been zapped into
-              THE DUNGEON, a magical game show broadcast to who-knows-where. Floating host MC Marv will
-              explain the rules while a crowd (somewhere) cheers: clear every floor, bonk silly monsters,
-              grab loot, and get stronger. You'll pick a class and race on floor 3, and spell scrolls
-              found in chests can be leveled up and equipped from your spellbook. Don't worry about
-              getting hurt — this game show has excellent insurance. 18 floors stand between you and
-              the mysterious Producer at the top.
+              Congratulations, contestant{twoPlayer ? 's' : ''}! You{twoPlayer ? ' and a friend' : ''} — and your
+              hamster, Biscuit — have just been zapped into THE DUNGEON, a magical game show broadcast to
+              who-knows-where. Floating host MC Marv will explain the rules while a crowd (somewhere)
+              cheers: clear every floor, bonk fearsome monsters, grab loot, and get stronger. You'll{twoPlayer ? ' both ' : ' '}
+              pick a class and race on floor 3, and spell scrolls found in chests can be leveled up and
+              equipped from your spellbook. Don't worry about getting hurt — this game show has excellent
+              insurance. 18 floors stand between you and the mysterious Dragon King at the top.
             </p>
+            <p className={styles.pickLabel}>Players</p>
+            <div className={styles.pickRow}>
+              <button
+                className={`${styles.pickCard} ${!twoPlayer ? styles.pickCardActive : ''}`}
+                onClick={() => setTwoPlayer(false)}
+              >
+                <span className={styles.pickCardEmoji}>🧍</span>
+                <span className={styles.pickCardName}>1 Player</span>
+                <span className={styles.pickCardDesc}>Just you, WASD or Arrows.</span>
+              </button>
+              <button
+                className={`${styles.pickCard} ${twoPlayer ? styles.pickCardActive : ''}`}
+                onClick={() => setTwoPlayer(true)}
+              >
+                <span className={styles.pickCardEmoji}>🧑‍🤝‍🧑</span>
+                <span className={styles.pickCardName}>2 Player</span>
+                <span className={styles.pickCardDesc}>Share the keyboard — P2 takes the arrow-key cluster.</span>
+              </button>
+            </div>
             <div className={styles.controls}>
-              <span><b>Move</b> — WASD / Arrows</span>
-              <span><b>Attack</b> — Space</span>
-              <span><b>Magic</b> — F</span>
-              <span><b>Potion</b> — E</span>
+              <span><b>{twoPlayer ? 'P1 Move' : 'Move'}</b> — WASD{twoPlayer ? '' : ' / Arrows'}</span>
+              <span><b>{twoPlayer ? 'P1 Attack' : 'Attack'}</b> — Space</span>
+              <span><b>{twoPlayer ? 'P1 Magic' : 'Magic'}</b> — F</span>
+              <span><b>{twoPlayer ? 'P1 Potion' : 'Potion'}</b> — E</span>
+              {twoPlayer && <span><b>P2 Move</b> — Arrow keys</span>}
+              {twoPlayer && <span><b>P2 Attack</b> — /</span>}
+              {twoPlayer && <span><b>P2 Magic</b> — .</span>}
+              {twoPlayer && <span><b>P2 Potion</b> — ,</span>}
               <span><b>Spellbook</b> — I</span>
             </div>
             <button className={styles.startButton} onClick={startGame}>Step Into The Dungeon →</button>
@@ -1068,35 +1539,48 @@ export default function DungeonCrawlerMax() {
           <div className={styles.card}>
             <h1 className={styles.title}>Choose Your Class &amp; Race</h1>
             <p className={styles.tagline}>Floor 3 awaits — pick your path before you go in.</p>
-            <p className={styles.pickLabel}>Class</p>
-            <div className={styles.pickRow}>
-              {CLASSES.map(c => (
-                <button
-                  key={c.id}
-                  className={`${styles.pickCard} ${pickClass === c.id ? styles.pickCardActive : ''}`}
-                  onClick={() => setPickClass(c.id)}
-                >
-                  <span className={styles.pickCardEmoji}>{c.emoji}</span>
-                  <span className={styles.pickCardName}>{c.name}</span>
-                  <span className={styles.pickCardDesc}>{c.desc}</span>
-                </button>
-              ))}
-            </div>
-            <p className={styles.pickLabel}>Race</p>
-            <div className={styles.pickRow}>
-              {RACES.map(r => (
-                <button
-                  key={r.id}
-                  className={`${styles.pickCard} ${pickRace === r.id ? styles.pickCardActive : ''}`}
-                  onClick={() => setPickRace(r.id)}
-                >
-                  <span className={styles.pickCardEmoji}>{r.emoji}</span>
-                  <span className={styles.pickCardName}>{r.name}</span>
-                  <span className={styles.pickCardDesc}>{r.desc}</span>
-                </button>
-              ))}
-            </div>
-            <button className={styles.startButton} disabled={!pickClass || !pickRace} onClick={confirmClassRace}>Confirm →</button>
+
+            {(twoPlayer ? [['p1', 'Player 1'], ['p2', 'Player 2']] : [['p1', null]]).map(([key, label]) => (
+              <div key={key} className={styles.pickPlayerBlock}>
+                {label && <h2 className={styles.pickPlayerHeading}>{label}</h2>}
+                <p className={styles.pickLabel}>Class</p>
+                <div className={styles.pickRow}>
+                  {CLASSES.map(c => (
+                    <button
+                      key={c.id}
+                      className={`${styles.pickCard} ${classPick[key].classId === c.id ? styles.pickCardActive : ''}`}
+                      onClick={() => setClassPick(cp => ({ ...cp, [key]: { ...cp[key], classId: c.id } }))}
+                    >
+                      <span className={styles.pickCardEmoji}>{c.emoji}</span>
+                      <span className={styles.pickCardName}>{c.name}</span>
+                      <span className={styles.pickCardDesc}>{c.desc}</span>
+                    </button>
+                  ))}
+                </div>
+                <p className={styles.pickLabel}>Race</p>
+                <div className={styles.pickRow}>
+                  {RACES.map(r => (
+                    <button
+                      key={r.id}
+                      className={`${styles.pickCard} ${classPick[key].raceId === r.id ? styles.pickCardActive : ''}`}
+                      onClick={() => setClassPick(cp => ({ ...cp, [key]: { ...cp[key], raceId: r.id } }))}
+                    >
+                      <span className={styles.pickCardEmoji}>{r.emoji}</span>
+                      <span className={styles.pickCardName}>{r.name}</span>
+                      <span className={styles.pickCardDesc}>{r.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+
+            <button
+              className={styles.startButton}
+              disabled={!classPick.p1.classId || !classPick.p1.raceId || (twoPlayer && (!classPick.p2.classId || !classPick.p2.raceId))}
+              onClick={confirmClassRace}
+            >
+              Confirm →
+            </button>
           </div>
         </div>
       )}
@@ -1106,10 +1590,16 @@ export default function DungeonCrawlerMax() {
           <div className={styles.card}>
             <h1 className={styles.title}>📖 Spellbook</h1>
             <p className={styles.tagline}>Pick which spell is equipped — press I to close.</p>
+            {twoPlayer && (
+              <div className={styles.gearTabs}>
+                <button className={`${styles.gearTabBtn} ${spellTab === 'p1' ? styles.gearTabActive : ''}`} onClick={() => setSpellTab('p1')}>Player 1</button>
+                <button className={`${styles.gearTabBtn} ${spellTab === 'p2' ? styles.gearTabActive : ''}`} onClick={() => setSpellTab('p2')}>Player 2</button>
+              </div>
+            )}
             <div className={styles.gearList}>
-              {spellSnapshot.spells.map(s => {
+              {(spellTab === 'p2' ? spellSnapshot.p2 : spellSnapshot.p1).spells.map(s => {
                 const def = SPELLS.find(d => d.id === s.id)
-                const equipped = spellSnapshot.equippedSpellId === s.id
+                const equipped = (spellTab === 'p2' ? spellSnapshot.p2 : spellSnapshot.p1).equippedSpellId === s.id
                 return (
                   <button
                     key={s.id}
