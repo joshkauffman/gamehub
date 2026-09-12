@@ -1,0 +1,431 @@
+/* The concept art is the interface. Everything here either positions a live
+   control over the painting or reproduces a control the painting cannot hold
+   (a value that changes), using colours sampled from the painting itself. */
+
+.page {
+  position: fixed;
+  inset: 0;
+  background: #10202f;
+  font-family: 'Source Sans 3', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  overflow: hidden;
+}
+
+.viewport {
+  position: absolute;
+  inset: 0;
+}
+
+.stage {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform-origin: 50% 50%;
+  user-select: none;
+}
+
+.plate {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+}
+
+.hit {
+  position: absolute;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 999px;
+}
+
+.hit:disabled {
+  cursor: default;
+}
+
+/* ---------- chrome that lives outside the painting ---------- */
+
+.chrome {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.chrome > * {
+  pointer-events: auto;
+}
+
+.chromeBtn {
+  font: 600 13px/1 'Source Sans 3', system-ui, sans-serif;
+  color: #f6efdd;
+  background: rgba(14, 32, 48, 0.72);
+  border: 1px solid rgba(233, 214, 160, 0.45);
+  border-radius: 999px;
+  padding: 8px 14px;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+}
+
+.themeMenu {
+  position: absolute;
+  top: 48px;
+  right: 12px;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 12px;
+  background: rgba(14, 32, 48, 0.9);
+  border: 1px solid rgba(233, 214, 160, 0.4);
+}
+
+.themeOption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: 1.5px solid transparent;
+  background: none;
+  color: #f6efdd;
+  font: 600 13px/1 'Source Sans 3', system-ui, sans-serif;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.themeOptionOn {
+  border-color: #d9bd79;
+  background: rgba(217, 189, 121, 0.16);
+}
+
+.swatchRow {
+  display: flex;
+  gap: 3px;
+}
+
+.swatchDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.25);
+}
+
+/* ---------- setup screen ---------- */
+
+/* the painted input frame, kept whole at its rounded ends and stretched
+   through the straight middle */
+.field {
+  position: absolute;
+  border-style: solid;
+  border-width: 22px 40px;
+  border-image-slice: 22 40 fill;
+  border-image-repeat: stretch;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.pill {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-radius: 999px;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 500;
+  color: #182f58;
+  padding: 0;
+}
+
+/* the gold plate is the painted pill itself: its rounded caps are kept intact
+   and only the flat middle is stretched to whatever width the option needs */
+.pillSkin {
+  position: absolute;
+  inset: 0;
+  border-style: solid;
+  border-width: 12px 70px;
+  border-image-slice: 12 70 fill;
+  border-image-repeat: stretch;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.pillOff {
+  border: 1.5px solid rgba(190, 168, 120, 0.5);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.pillLabel {
+  position: relative;
+  z-index: 1;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.pillAnchor {
+  position: relative;
+  z-index: 1;
+  display: block;
+}
+
+.pillStar {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.nameInput {
+  position: absolute;
+  border: none;
+  outline: none;
+  background: none;
+  padding: 0 12px;
+  font-family: 'Source Sans 3', system-ui, sans-serif;
+  font-size: 30px;
+  color: #182f58;
+}
+
+.nameInput::placeholder {
+  color: #a9a49a;
+}
+
+/* ---------- live type over the painting ---------- */
+
+.serif {
+  position: absolute;
+  font-family: 'Playfair Display', Georgia, serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  pointer-events: none;
+}
+
+/* a long crew name shortens rather than running past the painted panel */
+.serif > span {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.alignLeft { justify-content: flex-start; }
+.alignRight { justify-content: flex-end; }
+
+.roundTag {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 26px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.rolls {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  pointer-events: none;
+  text-shadow: 0 1px 3px rgba(255, 255, 255, 0.75);
+}
+
+.claimGlow {
+  position: absolute;
+  pointer-events: none;
+  transition: opacity 0.3s;
+  background: radial-gradient(ellipse at 50% 46%,
+    rgba(214, 174, 58, 0.42) 0%, rgba(214, 174, 58, 0.2) 46%, rgba(214, 174, 58, 0) 72%);
+}
+
+.marker {
+  position: absolute;
+  pointer-events: none;
+  transition: opacity 0.25s, filter 0.25s;
+}
+
+.markerOff {
+  opacity: 0.3;
+  filter: grayscale(1);
+}
+
+.activeFrame {
+  position: absolute;
+  border-radius: 20px;
+  pointer-events: none;
+  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.85), 0 0 22px rgba(201, 162, 39, 0.35);
+}
+
+/* ---------- dice ---------- */
+
+.die {
+  position: absolute;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.die:disabled {
+  cursor: default;
+}
+
+/* the button carries the painted die's own tilt, the inner layer the lift, so
+   the two transforms never fight */
+.dieInner {
+  position: absolute;
+  inset: 0;
+  display: block;
+  transition: transform 0.14s;
+}
+
+.die:not(:disabled):hover .dieInner {
+  transform: translateY(-4px);
+}
+
+.dieBody {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.diePip,
+.dieRoleIcon {
+  position: absolute;
+}
+
+.dieNumeral {
+  position: absolute;
+  text-align: center;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.dieGhost {
+  opacity: 0.42;
+}
+
+.dieHeld .dieInner {
+  transform: translateY(-6px);
+}
+
+.dieHeld:not(:disabled):hover .dieInner {
+  transform: translateY(-9px);
+}
+
+.dieRing {
+  position: absolute;
+  inset: 4%;
+  border-radius: 18%;
+  pointer-events: none;
+  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.9), 0 0 16px rgba(201, 162, 39, 0.55);
+}
+
+.dieRingLocked {
+  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.75);
+}
+
+/* ---------- action controls the paintings do not carry ---------- */
+
+.actionBtn {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: 'Playfair Display', Georgia, serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0;
+  transition: transform 0.12s, opacity 0.12s;
+}
+
+.actionBtn:disabled {
+  opacity: 0.42;
+  cursor: default;
+}
+
+.actionBtn:not(:disabled):active {
+  transform: translateY(1px);
+}
+
+.actionBanner {
+  position: absolute;
+  inset: -4px -10px;
+  border-style: solid;
+  border-width: 8px 62px;
+  border-image-slice: 8 62 fill;
+  border-image-repeat: stretch;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.actionLabel {
+  position: relative;
+  z-index: 1;
+  white-space: nowrap;
+}
+
+.actionPlain {
+  border-radius: 999px;
+  background: rgba(250, 247, 236, 0.88);
+  box-shadow: inset 0 0 0 1.5px rgba(186, 160, 100, 0.75),
+              0 4px 12px rgba(40, 70, 96, 0.18);
+}
+
+/* ---------- results ---------- */
+
+.resultsTitle {
+  position: absolute;
+  text-align: center;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 700;
+  color: #182f58;
+  line-height: 1;
+}
+
+.resultRow {
+  position: absolute;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-family: 'Playfair Display', Georgia, serif;
+  border-bottom: 1.5px solid rgba(190, 168, 120, 0.55);
+  padding-bottom: 10px;
+  color: #182f58;
+}
+
+/* solo play leaves the painted second seat empty */
+.emptySeat {
+  position: absolute;
+  border-radius: 20px;
+  pointer-events: none;
+  background: rgba(247, 243, 233, 0.6);
+  backdrop-filter: saturate(0.35);
+}

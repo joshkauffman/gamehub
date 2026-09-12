@@ -29,6 +29,7 @@ import DungeonCrawlerFreeRoam from './games/dungeon-crawler-free-roam/DungeonCra
 import XMarksTheSpot from './games/x-marks-the-spot/XMarksTheSpot.jsx'
 import SnackSquad from './games/snack-squad/SnackSquad.jsx'
 import HogwartsSpellbound from './games/hogwarts-spellbound/HogwartsSpellbound.jsx'
+import ShipCaptainCrew from './games/ship-captain-crew/ShipCaptainCrew.jsx'
 
 export default function App() {
   return (
@@ -63,6 +64,7 @@ export default function App() {
         <Route path="/x-marks-the-spot" element={<XMarksTheSpot />} />
         <Route path="/snack-squad" element={<SnackSquad />} />
         <Route path="/hogwarts-spellbound" element={<HogwartsSpellbound />} />
+        <Route path="/ship-captain-crew" element={<ShipCaptainCrew />} />
       </Routes>
     </HorrorModeProvider>
   )

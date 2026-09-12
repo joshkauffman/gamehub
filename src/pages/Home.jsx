@@ -143,6 +143,13 @@ const CATEGORIES = [
         emoji: '🪢',
         path: '/hangman',
       },
+      {
+        id: 'ship-captain-crew',
+        title: 'Ship Captain Crew',
+        description: 'Roll a 6, a 5, then a 4 in order — whatever\'s left in your hand is cargo. Soft watercolor nautical dice game for 1 or 2 players, 3 selectable themes.',
+        emoji: '⚓',
+        path: '/ship-captain-crew',
+      },
     ],
   },
   {
