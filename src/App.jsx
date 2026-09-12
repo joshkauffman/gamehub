@@ -21,7 +21,6 @@ import LootAndScoot from './games/loot-and-scoot/LootAndScoot.jsx'
 import WingsOfFire from './games/wings-of-fire/WingsOfFire.jsx'
 import Avatar from './games/avatar/Avatar.jsx'
 import OrbitMaze from './games/orbit-maze/OrbitMaze.jsx'
-import GravityFalls from './games/gravity-falls/GravityFalls.jsx'
 import IntergalacticPoker from './games/intergalactic-poker/IntergalacticPoker.jsx'
 import GeometryRush from './games/geometry-rush/GeometryRush.jsx'
 import SatisfyingToybox from './games/satisfying-toybox/SatisfyingToybox.jsx'
@@ -29,6 +28,7 @@ import DungeonCrawlerMax from './games/dungeon-crawler-max/DungeonCrawlerMax.jsx
 import DungeonCrawlerFreeRoam from './games/dungeon-crawler-free-roam/DungeonCrawlerFreeRoam.jsx'
 import XMarksTheSpot from './games/x-marks-the-spot/XMarksTheSpot.jsx'
 import SnackSquad from './games/snack-squad/SnackSquad.jsx'
+import HogwartsSpellbound from './games/hogwarts-spellbound/HogwartsSpellbound.jsx'
 
 export default function App() {
   return (
@@ -55,7 +55,6 @@ export default function App() {
         <Route path="/wings-of-fire" element={<WingsOfFire />} />
         <Route path="/avatar" element={<Avatar />} />
         <Route path="/orbit-maze" element={<OrbitMaze />} />
-        <Route path="/gravity-falls" element={<GravityFalls />} />
         <Route path="/intergalactic-poker" element={<IntergalacticPoker />} />
         <Route path="/geometry-rush" element={<GeometryRush />} />
         <Route path="/satisfying-toybox" element={<SatisfyingToybox />} />
@@ -63,6 +62,7 @@ export default function App() {
         <Route path="/dungeon-crawler-free-roam" element={<DungeonCrawlerFreeRoam />} />
         <Route path="/x-marks-the-spot" element={<XMarksTheSpot />} />
         <Route path="/snack-squad" element={<SnackSquad />} />
+        <Route path="/hogwarts-spellbound" element={<HogwartsSpellbound />} />
       </Routes>
     </HorrorModeProvider>
   )

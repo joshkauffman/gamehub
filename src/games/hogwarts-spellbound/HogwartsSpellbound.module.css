@@ -1,0 +1,368 @@
+.wrapper {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #140a1f;
+}
+
+.canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+.homeLink {
+  position: fixed;
+  top: 76px;
+  left: 10px;
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+  font-size: 13px;
+  font-family: Arial, sans-serif;
+  font-weight: bold;
+  background: rgba(0, 0, 0, 0.45);
+  padding: 5px 10px;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+  z-index: 10;
+}
+.homeLink:hover {
+  color: #fff;
+  background: rgba(0, 0, 0, 0.65);
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: radial-gradient(ellipse at center, rgba(60, 20, 70, 0.55), rgba(10, 4, 16, 0.85));
+  font-family: Arial, sans-serif;
+  z-index: 20;
+}
+
+.card {
+  max-width: 520px;
+  width: 100%;
+  max-height: 88vh;
+  overflow-y: auto;
+  background: linear-gradient(180deg, #2a1638, #1a0e26);
+  border: 2px solid #6a4a9a;
+  border-radius: 16px;
+  padding: 28px 30px;
+  text-align: center;
+  color: #f2e9ff;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+}
+
+.emojiRow {
+  font-size: 34px;
+  margin-bottom: 6px;
+}
+
+.title {
+  margin: 0 0 4px;
+  font-size: 26px;
+  color: #ffd34d;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.4);
+}
+
+.tagline {
+  margin: 0 0 16px;
+  font-size: 14px;
+  font-style: italic;
+  color: #c9a6ff;
+}
+
+.story {
+  font-size: 14px;
+  line-height: 1.55;
+  color: #e5d9f7;
+  margin: 0 0 18px;
+  text-align: left;
+}
+
+.controls {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: #cbb8ec;
+  margin-bottom: 20px;
+}
+.controls b {
+  color: #fff;
+}
+
+.startButton {
+  font-size: 16px;
+  font-weight: bold;
+  padding: 12px 26px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #ffd34d, #e0a91c);
+  color: #2a1638;
+  cursor: pointer;
+  box-shadow: 0 6px 0 #8a6a10;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.startButton:hover {
+  transform: translateY(2px);
+  box-shadow: 0 4px 0 #8a6a10;
+}
+.startButton:active {
+  transform: translateY(6px);
+  box-shadow: 0 0 0 #8a6a10;
+}
+
+.statsList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 15px;
+  margin: 14px 0;
+  color: #e5d9f7;
+}
+
+.achList {
+  list-style: none;
+  margin: 0 0 20px;
+  padding: 0;
+  text-align: left;
+  font-size: 13px;
+  color: #ffe9b8;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 12px;
+}
+
+/* ── Spellbook list ──────────────────────────────────────────────── */
+.gearList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+.gearItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  color: #f2e9ff;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  text-align: left;
+}
+.gearItem:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: #c9a6ff;
+}
+.gearItem:disabled {
+  cursor: default;
+}
+.gearItemActive {
+  border-color: #7cff9e;
+  background: rgba(124, 255, 158, 0.12);
+}
+.gearItemEmoji {
+  font-size: 18px;
+}
+.gearItemName {
+  flex: 1;
+  font-weight: bold;
+}
+.equippedTag {
+  font-size: 11px;
+  font-weight: bold;
+  color: #1a0e26;
+  background: #7cff9e;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+.gearTabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.gearTabBtn {
+  flex: 1;
+  font-family: Arial, sans-serif;
+  font-size: 13px;
+  font-weight: bold;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  color: #cbb8ec;
+  cursor: pointer;
+}
+.gearTabBtn:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+.gearTabActive {
+  border-color: #ffd34d;
+  background: rgba(255, 211, 77, 0.14);
+  color: #ffd34d;
+}
+
+/* ── Class/Race picker ───────────────────────────────────────────── */
+.pickPlayerBlock {
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  padding-top: 14px;
+  margin-top: 14px;
+}
+.pickPlayerBlock:first-of-type {
+  border-top: none;
+  padding-top: 0;
+  margin-top: 0;
+}
+.pickPlayerHeading {
+  text-align: left;
+  margin: 0 0 10px;
+  font-size: 17px;
+  color: #c9a6ff;
+}
+.pickLabel {
+  text-align: left;
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: bold;
+  color: #ffd34d;
+}
+.pickRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.pickCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-family: Arial, sans-serif;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
+  padding: 12px 8px;
+  cursor: pointer;
+  color: #f2e9ff;
+  text-align: center;
+}
+.pickCard:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: #c9a6ff;
+}
+.pickCardActive {
+  border-color: #ffd34d;
+  background: rgba(255, 211, 77, 0.14);
+}
+.pickCardEmoji {
+  font-size: 24px;
+}
+.pickCardName {
+  font-weight: bold;
+  font-size: 13px;
+}
+.pickCardDesc {
+  font-size: 11px;
+  color: #cbb8ec;
+  line-height: 1.35;
+}
+
+.startButton:disabled {
+  cursor: default;
+  opacity: 0.5;
+  box-shadow: none;
+  transform: none;
+}
+
+.row2 {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.secondaryButton {
+  font-size: 14px;
+  font-weight: bold;
+  padding: 12px 22px;
+  border: 1px solid #6a4a9a;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #e5d9f7;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.secondaryButton:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: #c9a6ff;
+}
+
+/* ── Monster Book ─────────────────────────────────────────────────── */
+.bestiaryPanel {
+  max-width: 920px;
+}
+.bestiaryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+  text-align: left;
+  margin-bottom: 20px;
+}
+.bestiaryEntry {
+  display: flex;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
+  padding: 10px;
+}
+.bestiaryPortraitWrap {
+  flex: 0 0 auto;
+  width: 76px;
+  height: 76px;
+  border-radius: 8px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.25));
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+.bestiaryInfo {
+  flex: 1;
+  min-width: 0;
+}
+.bestiaryName {
+  font-weight: bold;
+  font-size: 14px;
+  color: #ffd34d;
+  margin: 0 0 4px;
+  line-height: 1.25;
+}
+.bestiaryStats {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 10.5px;
+  font-weight: bold;
+  color: #8fd3ff;
+  margin-bottom: 5px;
+}
+.bestiaryLore {
+  font-size: 11.5px;
+  line-height: 1.42;
+  color: #cbb8ec;
+  margin: 0 0 4px;
+}
+.bestiaryFound {
+  font-size: 10px;
+  color: #8a7aa0;
+  font-style: italic;
+}

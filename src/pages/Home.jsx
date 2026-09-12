@@ -158,7 +158,7 @@ const CATEGORIES = [
       {
         id: 'dog-man-dash',
         title: 'Dog Man Dash',
-        description: 'An open-world 3D city! Walk (or mouse-look) freely across three districts, fighting villains and collecting coins with Dog Man and the gang.',
+        description: 'Three game modes with Dog Man and the gang: side-scrolling Classic levels, endless-wave Survivor Island, and top-down Tower Defense at H.Q. Unlock 80-HD, Molly, and Petey as you go.',
         emoji: '🐾',
         path: '/dog-man-dash',
       },
@@ -168,13 +168,6 @@ const CATEGORIES = [
         description: 'An open-world 3D heist game. Take jobs from the Fence, sneak past guards to grab the loot, then spend your cash at the Shop on better gear.',
         emoji: '🥷',
         path: '/loot-and-scoot',
-      },
-      {
-        id: 'gravity-falls',
-        title: 'Gravity Falls: Journal Hunt',
-        description: "Pick Dipper, Mabel, Stan, Wendy, or Soos and roam the Mystery Shack, the forest, and downtown Gravity Falls hunting torn Journal 3 pages. Find them all and Bill Cipher is waiting.",
-        emoji: '🌲',
-        path: '/gravity-falls',
       },
       {
         id: 'dungeon-crawler-max',
@@ -189,6 +182,13 @@ const CATEGORIES = [
         description: "The game show goes 3D open-world — now with local two-player! Roam a wide-open field with 18 dungeons scattered around, each guarded by its own boss, finding spell scrolls and gear to equip and picking a class and race along the way.",
         emoji: '🗺️',
         path: '/dungeon-crawler-free-roam',
+      },
+      {
+        id: 'hogwarts-spellbound',
+        title: 'Hogwarts: Spellbound',
+        description: "A three-act crawl through 21 corridors of Hogwarts, solo or local two-player. Duel dangerous creatures and Death Eaters, loot chests, learn real spells like Incendio and Expelliarmus, get Sorted into a House and pick a wand core, then face Lord Voldemort himself.",
+        emoji: '🧙',
+        path: '/hogwarts-spellbound',
       },
       {
         id: 'x-marks-the-spot',
