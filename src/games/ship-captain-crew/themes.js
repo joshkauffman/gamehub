@@ -57,6 +57,9 @@ export const HOME = {
       avatar: { x: 96, y: 820, w: 102, h: 104 },
       field: { x: 206, y: 852, w: 470, h: 74 } },
   ],
+  // solo play leaves the second crew slot empty; the rules go there rather than
+  // nowhere, since nothing else in the game ever states them
+  rules: { x: 104, y: 796, w: 576, h: 126 },
   cta: { x: 98, y: 958, w: 580, h: 120 },
 }
 
@@ -69,15 +72,22 @@ const harbor = {
   ink: '#16305A',
   inkSoft: '#5C7083',
   roundTag: { x: 197, y: 336, w: 340, h: 44, chip: 'rgba(252,247,236,0.62)' },
-  rolls: { x: 197, y: 566, w: 340, h: 26 },
+  status: { x: 62, y: 386, w: 610, h: 32, chip: 'rgba(252,247,236,0.82)' },
   bakedBack: { x: 22, y: 10, w: 72, h: 72 },
   bakedGear: { x: 644, y: 10, w: 72, h: 72 },
+  // the painting already prints SHIP 6 / CAPTAIN 5 / CREW 4 and leaves a star
+  // socket under each one, so the claim state lights those sockets
   marker: { img: harborStar, w: 38, h: 36, y: 280, xs: [168, 348, 528] },
+  glow: {
+    y: 132, h: 186, alpha: 0.34,
+    cols: [{ x: 104, w: 166 }, { x: 274, w: 182 }, { x: 460, w: 172 }],
+  },
   die: {
     body: harborDie, pip: harborPip,
     w: 122, h: 142, cx: 60, cy: 66, dx: 24.2, dy: 26.8, pipSize: 29,
     tops: 425, xs: [44, 180, 313, 446, 578], rots: [-4, -1.5, 0, 2, 8],
     shadow: '0 7px 6px rgba(38,72,104,0.34)',
+    plateY: '1%', plateH: '17%',
   },
   scores: {
     layout: 'side',
@@ -108,19 +118,26 @@ const cove = {
   ink: '#5A3A17',
   inkSoft: '#7A5A34',
   roundTag: { x: 210, y: 219, w: 300, h: 42, size: 27, tracking: '0.05em' },
-  rolls: { x: 180, y: 556, w: 356, h: 26 },
+  status: { x: 46, y: 400, w: 624, h: 30, chip: 'rgba(250,242,220,0.86)' },
   glow: {
-    y: 286, h: 116,
+    y: 286, h: 116, alpha: 0.42,
     cols: [{ x: 88, w: 118 }, { x: 300, w: 122 }, { x: 508, w: 126 }],
   },
+  // the cove painting names the roles but never prints their numbers, so the
+  // target value rides a coin pinned to each painted crest
+  coin: { size: 36, y: 288, xs: [182, 400, 612], ink: '#5A3A17' },
   die: {
     body: coveDie, pip: null,
     w: 106, h: 115, cx: 53, cy: 56,
-    numeralColor: '#1E3A5F', numeralSize: 74,
-    iconSize: 64,
+    numeralColor: '#1E3A5F', numeralSize: 66,
+    iconSize: 36, iconCorner: true,
+    // the cove die is painted translucent, so its silhouette needs a fatter
+    // stroke to carry the same weight of border as the opaque plates
+    outlinePx: 2.2,
     roleIcons: { ship: coveShip, captain: coveCaptain, crew: coveCrew },
     tops: 432, xs: [25, 165, 305, 445, 585], rots: [-3, 1.5, -1, 3, 6],
     shadow: '0 6px 6px rgba(74,58,30,0.3)',
+    plateY: '3%', plateH: '18%',
   },
   scores: {
     layout: 'stacked',
@@ -153,18 +170,22 @@ const sea = {
   ink: '#1B2C4E',
   inkSoft: '#8A7541',
   roundTag: { x: 222, y: 388, w: 340, h: 30 },
-  rolls: { x: 222, y: 606, w: 340, h: 26 },
+  // the open-sea plate has no room above the dice, so the status line takes the
+  // clear water between the dice and the score cards
+  status: { x: 82, y: 600, w: 620, h: 34, chip: 'rgba(250,249,242,0.84)' },
   glow: {
-    y: 60, h: 190,
+    y: 60, h: 190, alpha: 0.38,
     cols: [{ x: 52, w: 206 }, { x: 288, w: 210 }, { x: 528, w: 208 }],
   },
+  coin: { size: 42, y: 64, xs: [231, 469, 698], ink: '#1B2C4E' },
   die: {
     body: seaDie, pip: null,
     w: 136, h: 143, cx: 67, cy: 70,
-    numeralColor: '#5E6C48', numeralSize: 84,
+    numeralColor: '#5E6C48', numeralSize: 78,
     iconSize: 70,
     tops: 442, xs: [20, 172, 324, 476, 628], rots: [-1, 1, 0, -1.5, 1],
     shadow: '0 8px 7px rgba(44,74,100,0.28)',
+    plateY: '5%', plateH: '18%',
   },
   scores: {
     layout: 'stacked',

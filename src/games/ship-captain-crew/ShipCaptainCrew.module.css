@@ -202,6 +202,32 @@
   color: #a9a49a;
 }
 
+.rules {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 9px;
+  padding: 0 4px;
+  font-size: 19px;
+  line-height: 1.36;
+  color: #4c5a6b;
+  pointer-events: none;
+}
+
+.rules b {
+  color: #182f58;
+  font-weight: 700;
+}
+
+.rulesTitle {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 23px;
+  font-weight: 700;
+  color: #182f58;
+  letter-spacing: 0.04em;
+}
+
 /* ---------- live type over the painting ---------- */
 
 .serif {
@@ -239,36 +265,112 @@
   pointer-events: none;
 }
 
-.rolls {
+/* the one line that explains the game: what to roll for next and what the turn
+   is currently worth. It sits on a chip because every plate puts it over water
+   or watercolour, where plain text loses. */
+.status {
   position: absolute;
   display: flex;
   align-items: center;
   justify-content: center;
+  pointer-events: none;
+}
+
+/* the chip hugs the sentence instead of spanning a fixed slab, so it reads as a
+   caption on the painting rather than a bar bolted over it */
+.status > span {
+  display: block;
+  max-width: 100%;
+  padding: 0 20px;
+  line-height: 1.9;
   font-size: 17px;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  pointer-events: none;
-  text-shadow: 0 1px 3px rgba(255, 255, 255, 0.75);
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px rgba(186, 160, 100, 0.5),
+              0 2px 8px rgba(40, 70, 96, 0.14);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .claimGlow {
   position: absolute;
   pointer-events: none;
-  transition: opacity 0.3s;
+  transition: opacity 0.35s;
   background: radial-gradient(ellipse at 50% 46%,
-    rgba(214, 174, 58, 0.42) 0%, rgba(214, 174, 58, 0.2) 46%, rgba(214, 174, 58, 0) 72%);
+    rgba(214, 174, 58, var(--glow, 0.42)) 0%,
+    rgba(214, 174, 58, calc(var(--glow, 0.42) * 0.48)) 46%,
+    rgba(214, 174, 58, 0) 72%);
 }
+
+/* ---------- role header marks: done / next / waiting ---------- */
 
 .marker {
   position: absolute;
   pointer-events: none;
-  transition: opacity 0.25s, filter 0.25s;
+  transition: opacity 0.25s, filter 0.25s, transform 0.25s;
 }
 
-.markerOff {
-  opacity: 0.3;
+.mark_done {
+  filter: drop-shadow(0 0 5px rgba(201, 162, 39, 0.9));
+  transform: scale(1.14);
+}
+
+.mark_next {
+  animation: markPulse 1.5s ease-in-out infinite;
+}
+
+.mark_wait {
+  opacity: 0.26;
   filter: grayscale(1);
+}
+
+@keyframes markPulse {
+  /* the floor stays well clear of .mark_wait (0.26) so a glance at any frame of
+     the pulse still separates "next" from "waiting" */
+  0%, 100% { opacity: 0.66; transform: scale(0.96); filter: grayscale(0.4); }
+  50% { opacity: 1; transform: scale(1.1);
+        filter: grayscale(0) drop-shadow(0 0 6px rgba(201, 162, 39, 0.8)); }
+}
+
+/* cove and sea name the roles but never print 6/5/4 anywhere, so the target
+   value rides a coin pinned to each painted crest */
+.coin {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
+  transition: opacity 0.25s, box-shadow 0.25s, transform 0.25s;
+  background: radial-gradient(circle at 38% 32%, #fbf3da 0%, #efdcaa 52%, #d8bd79 100%);
+}
+
+.coin_done {
+  box-shadow: 0 0 0 2.5px #c9a227, 0 0 14px rgba(201, 162, 39, 0.75);
+  transform: scale(1.08);
+}
+
+.coin_next {
+  box-shadow: 0 0 0 2px rgba(201, 162, 39, 0.85);
+  animation: coinPulse 1.5s ease-in-out infinite;
+}
+
+.coin_wait {
+  opacity: 0.4;
+  box-shadow: inset 0 0 0 1.5px rgba(120, 104, 66, 0.45);
+  background: rgba(250, 246, 234, 0.7);
+}
+
+@keyframes coinPulse {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(201, 162, 39, 0.5); transform: scale(0.98); }
+  50% { box-shadow: 0 0 0 3px rgba(201, 162, 39, 1), 0 0 16px rgba(201, 162, 39, 0.6);
+        transform: scale(1.07); }
 }
 
 .activeFrame {
@@ -317,6 +419,15 @@
   position: absolute;
 }
 
+/* on a claimed die the role crest steps aside into the corner so the face keeps
+   showing its number */
+.dieCornerIcon {
+  position: absolute;
+  right: 7%;
+  top: 7%;
+  filter: drop-shadow(0 1px 2px rgba(60, 44, 18, 0.45));
+}
+
 .dieNumeral {
   position: absolute;
   text-align: center;
@@ -325,8 +436,9 @@
   line-height: 1;
 }
 
+/* an empty slot still has to read as a place a die will land */
 .dieGhost {
-  opacity: 0.42;
+  opacity: 0.58;
 }
 
 .dieHeld .dieInner {
@@ -337,16 +449,99 @@
   transform: translateY(-9px);
 }
 
-.dieRing {
-  position: absolute;
-  inset: 4%;
-  border-radius: 18%;
-  pointer-events: none;
-  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.9), 0 0 16px rgba(201, 162, 39, 0.55);
+.dieClaimed .dieInner {
+  transform: translateY(-8px);
 }
 
-.dieRingLocked {
-  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.75);
+/* ---------- the nameplate that says what a die is ----------
+   Gold and a role name means claimed; ink and KEPT means the player is holding
+   it. The two states used to share one gold ring, which made the only move
+   that scores look the same as a maybe. */
+
+.diePlate {
+  position: absolute;
+  left: -4%;
+  right: -4%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  font-family: 'Source Sans 3', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.diePlateRole {
+  color: #3b2c08;
+  background: linear-gradient(180deg, #f5e2a8 0%, #dcbc63 55%, #c39c2c 100%);
+  box-shadow: 0 1px 3px rgba(58, 44, 12, 0.45), inset 0 1px 0 rgba(255, 253, 240, 0.75);
+}
+
+.diePlateHold {
+  color: #eaf1f8;
+  background: linear-gradient(180deg, #35618f 0%, #1e3e68 100%);
+  box-shadow: 0 1px 3px rgba(16, 34, 56, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.28);
+}
+
+/* ---------- roll and claim motion ---------- */
+
+/* the tumble rides the inner layer so the pips travel with the face instead of
+   each spinning about its own centre */
+.dieRolling .dieInner {
+  animation: dieTumble 0.42s ease-out;
+}
+
+@keyframes dieTumble {
+  0% { transform: translateY(-26px) rotate(-24deg) scale(0.9); opacity: 0.35; }
+  55% { transform: translateY(4px) rotate(9deg) scale(1.04); opacity: 1; }
+  80% { transform: translateY(-2px) rotate(-3deg); }
+  100% { transform: none; }
+}
+
+.dieClaiming .dieInner {
+  animation: dieStamp 0.55s cubic-bezier(0.2, 1.5, 0.4, 1);
+}
+
+@keyframes dieStamp {
+  0% { transform: translateY(-30px) scale(1.3); }
+  45% { transform: translateY(-4px) scale(0.94); }
+  100% { transform: translateY(-8px) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dieRolling .dieInner,
+  .dieClaiming .dieInner,
+  .mark_next,
+  .coin_next {
+    animation: none;
+  }
+
+  /* without the pulse the next-up mark still has to out-read the waiting ones */
+  .mark_next {
+    filter: drop-shadow(0 0 5px rgba(201, 162, 39, 0.9));
+    transform: scale(1.1);
+  }
+
+  .coin_next {
+    box-shadow: 0 0 0 3px rgba(201, 162, 39, 1), 0 0 14px rgba(201, 162, 39, 0.6);
+  }
+}
+
+/* ---------- keyboard ----------
+   Harbor bakes every control into the painting, so its buttons have no content
+   of their own. Without this a keyboard player sees nothing at all move. */
+
+.hit:focus-visible,
+.die:focus-visible,
+.actionBtn:focus-visible,
+.pill:focus-visible {
+  outline: 3px solid #1f4f8f;
+  outline-offset: 3px;
+  border-radius: 12px;
 }
 
 /* ---------- action controls the paintings do not carry ---------- */
@@ -419,6 +614,14 @@
   border-bottom: 1.5px solid rgba(190, 168, 120, 0.55);
   padding-bottom: 10px;
   color: #182f58;
+}
+
+.resultsNote {
+  position: absolute;
+  text-align: center;
+  font-size: 21px;
+  letter-spacing: 0.04em;
+  color: #6b7180;
 }
 
 /* solo play leaves the painted second seat empty */
