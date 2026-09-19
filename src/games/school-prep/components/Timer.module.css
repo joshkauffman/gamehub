@@ -1,0 +1,40 @@
+.timer {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  z-index: 40;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.9rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 1.1rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.timer.low {
+  border-color: #e0b23a;
+  color: #e0b23a;
+}
+
+.hidden {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  z-index: 40;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.9rem;
+}
+
+@media (max-width: 520px) {
+  .timer, .hidden {
+    top: auto;
+    bottom: 14px;
+    right: 14px;
+  }
+}

@@ -1,0 +1,78 @@
+.wrap {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 1rem 0 3rem;
+}
+
+.counter {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin-bottom: 0.75rem;
+}
+
+.prompt {
+  font-size: 1.3rem;
+  line-height: 1.5;
+  margin-bottom: 0.5rem;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 1.25rem;
+}
+
+.primaryBtn, .secondaryBtn, .ghostBtn {
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius);
+  font-weight: 700;
+  font-size: 0.98rem;
+}
+
+.primaryBtn {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff;
+}
+
+.primaryBtn:disabled, .secondaryBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.secondaryBtn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.ghostBtn {
+  background: transparent;
+  border: 1px dashed var(--border);
+  color: var(--text-muted);
+}
+
+.hint {
+  margin-top: 1rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+@media (min-width: 760px) {
+  .wrap { max-width: 720px; }
+}
+
+.withPassage {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+@media (min-width: 860px) {
+  .wrap:has(.withPassage) { max-width: 980px; }
+  .withPassage {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+  .withPassage > * { flex: 1; min-width: 0; }
+}

@@ -1,0 +1,109 @@
+.wrap {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 1rem 0 3rem;
+}
+
+.title { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.4rem; }
+.subtitle { color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.5; }
+
+.list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 1rem;
+  text-align: left;
+}
+
+.blankRow {
+  border-color: #b7a24a;
+  background: rgba(183, 162, 74, 0.08);
+}
+
+.num {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--surface2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.prompt {
+  flex: 1;
+  font-size: 0.92rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status {
+  flex-shrink: 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.flaggedStatus { color: #d8c675; }
+.blankStatus { color: #e0b23a; font-weight: 700; }
+
+.submitBtn {
+  width: 100%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.05rem;
+  padding: 1rem;
+  border-radius: var(--radius);
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 1rem;
+}
+
+.dialog {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  max-width: 400px;
+  line-height: 1.5;
+}
+
+.dialogActions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.primaryBtn, .secondaryBtn {
+  flex: 1;
+  padding: 0.75rem;
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+}
+
+.primaryBtn { background: var(--accent); color: #fff; }
+.secondaryBtn { background: var(--surface2); border: 1px solid var(--border); color: var(--text); }

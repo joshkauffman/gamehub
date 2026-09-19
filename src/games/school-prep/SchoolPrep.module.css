@@ -1,0 +1,55 @@
+.page {
+  min-height: 100vh;
+  padding: 1.5rem 1.25rem 3rem;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.backBtn {
+  display: inline-block;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.timerToggle {
+  position: fixed;
+  top: 14px;
+  right: 100px;
+  z-index: 40;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.4rem 0.7rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+@media (max-width: 520px) {
+  .timerToggle {
+    top: auto;
+    bottom: 14px;
+    right: 100px;
+  }
+}
+
+.comebackNote {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  padding: 0.6rem 0.9rem;
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.timesUpBanner {
+  background: rgba(224, 178, 58, 0.15);
+  border: 1px solid #e0b23a;
+  color: #e0b23a;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  margin-bottom: 1.25rem;
+  text-align: center;
+}

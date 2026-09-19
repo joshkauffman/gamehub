@@ -249,6 +249,16 @@ export default function Home() {
         </h1>
         <p className={styles.tagline}>Pick a game. Play smart.</p>
       </header>
+
+      <Link to="/school-prep" className={styles.featured}>
+        <span className={styles.featuredEmoji}>🎓</span>
+        <span className={styles.featuredBody}>
+          <span className={styles.featuredTitle}>School Prep</span>
+          <span className={styles.featuredDesc}>Timed RWA entrance-exam practice rounds in Math, English &amp; Français — nothing's marked until you submit.</span>
+        </span>
+        <span className={styles.featuredPlay}>Practice →</span>
+      </Link>
+
       <main className={styles.categories}>
         {CATEGORIES.map(category => (
           <section key={category.name} className={styles.section}>

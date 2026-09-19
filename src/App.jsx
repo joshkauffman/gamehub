@@ -30,6 +30,7 @@ import XMarksTheSpot from './games/x-marks-the-spot/XMarksTheSpot.jsx'
 import SnackSquad from './games/snack-squad/SnackSquad.jsx'
 import HogwartsSpellbound from './games/hogwarts-spellbound/HogwartsSpellbound.jsx'
 import ShipCaptainCrew from './games/ship-captain-crew/ShipCaptainCrew.jsx'
+import SchoolPrep from './games/school-prep/SchoolPrep.jsx'
 
 export default function App() {
   return (
@@ -65,6 +66,7 @@ export default function App() {
         <Route path="/snack-squad" element={<SnackSquad />} />
         <Route path="/hogwarts-spellbound" element={<HogwartsSpellbound />} />
         <Route path="/ship-captain-crew" element={<ShipCaptainCrew />} />
+        <Route path="/school-prep" element={<SchoolPrep />} />
       </Routes>
     </HorrorModeProvider>
   )

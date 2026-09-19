@@ -52,6 +52,50 @@
   font-size: 1.1rem;
 }
 
+.featured {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto 2.5rem;
+  padding: 1.1rem 1.4rem;
+  background: linear-gradient(135deg, rgba(108, 99, 255, 0.16), rgba(255, 101, 132, 0.1));
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.featured:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(108, 99, 255, 0.25);
+}
+
+.featuredEmoji { font-size: 2rem; flex-shrink: 0; }
+
+.featuredBody {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.featuredTitle { font-weight: 800; font-size: 1.1rem; }
+.featuredDesc { color: var(--text-muted); font-size: 0.85rem; line-height: 1.4; }
+
+.featuredPlay {
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+@media (max-width: 560px) {
+  .featured { flex-wrap: wrap; }
+  .featuredPlay { width: 100%; text-align: right; }
+}
+
 .categories {
   display: flex;
   flex-direction: column;

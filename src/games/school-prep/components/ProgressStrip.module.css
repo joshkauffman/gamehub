@@ -1,0 +1,48 @@
+.strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 1.5rem;
+}
+
+.dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dot:disabled { cursor: default; }
+.dot:not(:disabled) { cursor: pointer; }
+
+.unvisited { opacity: 0.55; }
+
+.answered {
+  background: var(--surface2);
+  border-color: #6a6a8a;
+  color: var(--text);
+}
+
+.flagged {
+  border-color: #b7a24a;
+  color: #d8c675;
+  border-style: dashed;
+}
+
+.unsure {
+  border-color: var(--text-muted);
+  color: var(--text-muted);
+  border-style: dotted;
+}
+
+.current {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
