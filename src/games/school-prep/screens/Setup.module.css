@@ -98,6 +98,31 @@
   margin-top: 0.5rem;
 }
 
+.printRow {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px dashed var(--border);
+}
+
+.printHint {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin-bottom: 0.6rem;
+  line-height: 1.4;
+}
+
+.printBtn {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-weight: 600;
+  padding: 0.85rem;
+  border-radius: var(--radius);
+}
+
+.printBtn:hover { border-color: var(--accent); }
+
 .historyBtn {
   width: 100%;
   background: var(--surface);

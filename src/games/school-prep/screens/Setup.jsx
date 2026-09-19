@@ -32,17 +32,30 @@ export default function Setup({ onStart, historyCount, onViewHistory }) {
     }
   }
 
-  function handleStart() {
-    let count = countChoice
-    if (countChoice === 'custom') {
-      const n = Number(customCount)
-      if (!Number.isInteger(n) || n < 1 || n > 100) {
-        setCustomError('Enter a whole number from 1 to 100.')
-        return
-      }
-      count = n
+  // Shared by "Start round" and "Make a Printable Version" — both need the
+  // same validated question count.
+  function resolveCount() {
+    if (countChoice !== 'custom') return countChoice
+    const n = Number(customCount)
+    if (!Number.isInteger(n) || n < 1 || n > 100) {
+      setCustomError('Enter a whole number from 1 to 100.')
+      return null
     }
+    return n
+  }
+
+  function handleStart() {
+    const count = resolveCount()
+    if (count == null) return
     onStart({ subject, count, timerOn, topicFilter: topicFilter || null })
+  }
+
+  function handlePrint() {
+    const count = resolveCount()
+    if (count == null) return
+    const params = new URLSearchParams({ subject, count: String(count) })
+    if (topicFilter) params.set('topic', topicFilter)
+    window.open(`/school-prep/print?${params.toString()}`, '_blank')
   }
 
   return (
@@ -123,6 +136,13 @@ export default function Setup({ onStart, historyCount, onViewHistory }) {
       <button type="button" className={styles.startBtn} onClick={handleStart}>
         Start round →
       </button>
+
+      <div className={styles.printRow}>
+        <p className={styles.printHint}>Prefer paper? Print this subject and question count as a worksheet with an answer key.</p>
+        <button type="button" className={styles.printBtn} onClick={handlePrint}>
+          🖨️ Make a Printable Version
+        </button>
+      </div>
 
       {historyCount > 0 && (
         <button type="button" className={styles.historyBtn} onClick={onViewHistory}>

@@ -31,6 +31,7 @@ import SnackSquad from './games/snack-squad/SnackSquad.jsx'
 import HogwartsSpellbound from './games/hogwarts-spellbound/HogwartsSpellbound.jsx'
 import ShipCaptainCrew from './games/ship-captain-crew/ShipCaptainCrew.jsx'
 import SchoolPrep from './games/school-prep/SchoolPrep.jsx'
+import PrintWorksheet from './games/school-prep/screens/PrintWorksheet.jsx'
 
 export default function App() {
   return (
@@ -67,6 +68,7 @@ export default function App() {
         <Route path="/hogwarts-spellbound" element={<HogwartsSpellbound />} />
         <Route path="/ship-captain-crew" element={<ShipCaptainCrew />} />
         <Route path="/school-prep" element={<SchoolPrep />} />
+        <Route path="/school-prep/print" element={<PrintWorksheet />} />
       </Routes>
     </HorrorModeProvider>
   )
