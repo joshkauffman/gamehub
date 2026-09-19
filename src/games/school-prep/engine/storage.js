@@ -3,6 +3,7 @@ const ROUND_KEY = 'school-prep:round'
 const HISTORY_KEY = 'school-prep:history'
 const SEEN_KEY = 'school-prep:seen'
 const VISITS_KEY = 'school-prep:visits'
+const VISITOR_ID_KEY = 'school-prep:visitor-id'
 
 export function saveRound(round) {
   try {
@@ -80,4 +81,37 @@ export function recordVisit() {
     localStorage.setItem(VISITS_KEY, String(next))
   } catch { /* ignore */ }
   return next
+}
+
+// Anonymous random id used only to count unique visitors server-side. Null if
+// localStorage is unavailable (that open still counts, just not as unique).
+function visitorId() {
+  try {
+    let id = localStorage.getItem(VISITOR_ID_KEY)
+    if (!id) {
+      id = crypto.randomUUID()
+      localStorage.setItem(VISITOR_ID_KEY, id)
+    }
+    return id
+  } catch {
+    return null
+  }
+}
+
+// Global open + unique-visitor counters, kept server-side (api/visits.js).
+// Resolves to { opens, uniques }, or null when the API is unreachable (e.g.
+// plain `vite dev`), so callers can fall back to the per-browser count.
+export async function recordGlobalVisit() {
+  try {
+    const res = await fetch('/api/visits', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ visitorId: visitorId() }),
+    })
+    if (!res.ok) return null
+    const { opens, uniques } = await res.json()
+    return Number.isFinite(opens) && Number.isFinite(uniques) ? { opens, uniques } : null
+  } catch {
+    return null
+  }
 }

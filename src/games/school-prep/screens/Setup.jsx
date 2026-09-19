@@ -11,7 +11,7 @@ const SUBJECTS = [
 
 const COUNT_PRESETS = [15, 25, 45]
 
-export default function Setup({ onStart, visits, historyCount, onViewHistory }) {
+export default function Setup({ onStart, visits, globalVisits, historyCount, onViewHistory }) {
   const [subject, setSubject] = useState('math')
   const [countChoice, setCountChoice] = useState(15)
   const [customCount, setCustomCount] = useState('')
@@ -65,7 +65,13 @@ export default function Setup({ onStart, visits, historyCount, onViewHistory }) 
       <h1 className={styles.title}>
         School <button type="button" className={styles.secretP} onClick={() => setShowVisits(v => !v)}>P</button>rep
       </h1>
-      {showVisits && <p className={styles.visitCount}>Visits: {visits ?? 0}</p>}
+      {showVisits && (
+        <p className={styles.visitCount}>
+          {globalVisits
+            ? `Opens: ${globalVisits.opens} · Unique visitors: ${globalVisits.uniques} (this browser: ${visits ?? 0} opens)`
+            : `Opens (this browser): ${visits ?? 0}`}
+        </p>
+      )}
       <p className={styles.subtitle}>RWA entrance exam practice — Math, English, Français. Nothing is marked right or wrong until you submit the whole round.</p>
       <button type="button" className={styles.infoBtn} onClick={() => infoRef.current?.showModal()}>
         ℹ️ More Info

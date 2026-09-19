@@ -10,7 +10,7 @@ import Timer from './components/Timer.jsx'
 import ProgressStrip from './components/ProgressStrip.jsx'
 import { buildRound } from './engine/roundBuilder.js'
 import { scoreRound } from './engine/scoring.js'
-import { saveRound, loadRound, clearRound, loadHistory, appendHistory, markSeen, recordVisit } from './engine/storage.js'
+import { saveRound, loadRound, clearRound, loadHistory, appendHistory, markSeen, recordVisit, recordGlobalVisit } from './engine/storage.js'
 
 const GRACE_SECONDS = 20
 
@@ -24,6 +24,7 @@ export default function SchoolPrep() {
   const [graceSecondsLeft, setGraceSecondsLeft] = useState(null)
   const [timerHidden, setTimerHidden] = useState(false)
   const [visits, setVisits] = useState(null)
+  const [globalVisits, setGlobalVisits] = useState(null)
   const visitCounted = useRef(false)
 
   // Count one visit per page load. The ref guards against StrictMode's
@@ -32,6 +33,7 @@ export default function SchoolPrep() {
     if (visitCounted.current) return
     visitCounted.current = true
     setVisits(recordVisit())
+    recordGlobalVisit().then(setGlobalVisits)
   }, [])
 
   const activeRoundTicking = round != null && round.phase !== 'results'
@@ -181,7 +183,7 @@ export default function SchoolPrep() {
       ) : resultsScore ? (
         <Results score={resultsScore} onRestart={backToSetup} onViewHistory={() => setHistoryView(true)} />
       ) : !round ? (
-        <Setup onStart={handleStart} visits={visits} historyCount={loadHistory().length} onViewHistory={() => setHistoryView(true)} />
+        <Setup onStart={handleStart} visits={visits} globalVisits={globalVisits} historyCount={loadHistory().length} onViewHistory={() => setHistoryView(true)} />
       ) : (
         <RoundView
           round={round}
