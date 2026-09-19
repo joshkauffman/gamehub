@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import styles from './Question.module.css'
 import ChoiceList from '../components/ChoiceList.jsx'
 import PassagePanel from '../components/PassagePanel.jsx'
+import Visual from '../components/Visual.jsx'
 
 const KEY_TO_INDEX = { a: 0, b: 1, c: 2, d: 3 }
 
@@ -15,7 +16,8 @@ export default function Question({ question, passage, index, total, initialSelec
   useEffect(() => {
     function handleKey(e) {
       const key = e.key.toLowerCase()
-      if (KEY_TO_INDEX[key] != null) {
+      // Some questions (<, >, = and spinner comparisons) have only 3 choices.
+      if (KEY_TO_INDEX[key] != null && KEY_TO_INDEX[key] < question.choices.length) {
         setSelected(KEY_TO_INDEX[key])
       } else if (e.key === 'Enter' && selected != null) {
         // Prevent the browser's own "Enter activates the focused button"
@@ -29,11 +31,12 @@ export default function Question({ question, passage, index, total, initialSelec
     }
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
-  }, [selected, reviewMode, onSure, onSaveEdit])
+  }, [selected, reviewMode, onSure, onSaveEdit, question.choices.length])
 
   const body = (
     <div>
       <h2 className={styles.prompt}>{question.prompt}</h2>
+      <Visual visual={question.visual} />
       <ChoiceList choices={question.choices} selected={selected} onSelect={setSelected} />
     </div>
   )
@@ -58,7 +61,7 @@ export default function Question({ question, passage, index, total, initialSelec
       ) : (
         <div className={styles.actions}>
           <button type="button" className={styles.primaryBtn} disabled={selected == null} onClick={e => { e.currentTarget.blur(); onSure(selected) }}>
-            I am sure of this
+            Submit answer
           </button>
           <button type="button" className={styles.secondaryBtn} disabled={selected == null} onClick={e => { e.currentTarget.blur(); onFlag(selected) }}>
             Let's come back to this to review
@@ -69,7 +72,7 @@ export default function Question({ question, passage, index, total, initialSelec
         </div>
       )}
 
-      <p className={styles.hint}>Keyboard: A–D to pick, Enter to confirm.</p>
+      <p className={styles.hint}>Keyboard: A–{'ABCD'[question.choices.length - 1]} to pick, Enter to confirm.</p>
     </div>
   )
 }

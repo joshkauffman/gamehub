@@ -12,8 +12,56 @@
 
 .subtitle {
   color: var(--text-muted);
-  margin-bottom: 2rem;
+  margin-bottom: 0.75rem;
   line-height: 1.5;
+}
+
+.infoBtn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-weight: 600;
+  padding: 0.4rem 0.8rem;
+  border-radius: var(--radius-sm);
+  margin-bottom: 1.75rem;
+}
+
+.infoBtn:hover { border-color: var(--accent); color: var(--text); }
+
+.dialog {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  max-width: min(520px, calc(100vw - 2rem));
+  line-height: 1.55;
+  margin: auto;
+}
+
+.dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
+
+.dialogTitle { font-size: 1.3rem; margin-bottom: 0.75rem; }
+
+.dialogHeading {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin: 1rem 0 0.3rem;
+}
+
+.dialogList { padding-left: 1.2rem; margin: 0 0 0.6rem; display: grid; gap: 0.4rem; }
+
+.dialogActions { display: flex; justify-content: flex-end; margin-top: 1.25rem; }
+
+.dialogClose {
+  background: var(--accent);
+  border: none;
+  color: #fff;
+  font-weight: 700;
+  padding: 0.6rem 1.4rem;
+  border-radius: var(--radius-sm);
 }
 
 .section { margin-bottom: 1.75rem; }

@@ -1,7 +1,7 @@
 import englishBank from '../data/english.json'
 import frenchBank from '../data/french.json'
 import mathStaticBank from '../data/math-static.json'
-import { generateMathQuestion, MATH_TOPICS } from '../generators/math.js'
+import { generateMathQuestion, MATH_TOPICS, MATH_STRAND_TOPICS, MATH_STRAND_WEIGHTS } from '../generators/math.js'
 import { loadSeen } from './storage.js'
 
 // English/French strands roughly proportioned the way RWA's own English test
@@ -43,6 +43,7 @@ function getStaticBank(subject) {
 // Shuffles each question's choices at build time so the same question never
 // shows its answer in the same position twice.
 function shuffleChoices(q) {
+  if (q.fixedOrder) return q // e.g. "<  >  =" choices read best in a set order
   const correctValue = q.choices[q.answerIndex]
   const order = shuffle(q.choices.map((_, i) => i))
   const choices = order.map(i => q.choices[i])
@@ -117,11 +118,44 @@ function pickStaticQuestions(subject, count, topicFilter) {
     }
   }
 
-  return { questions: chosen.slice(0, count).map(shuffleChoices), passages }
+  return { questions: shuffleKeepingPassagesTogether(chosen.slice(0, count)).map(shuffleChoices), passages }
+}
+
+// The strand quotas above fill the round strand by strand, which would show
+// the same strand order every time. Shuffle the order afterwards — but by
+// group, so a passage's questions stay together (the passage text is shown
+// with its first question) — and shuffle the order inside each group too.
+function shuffleKeepingPassagesTogether(questions) {
+  const groups = []
+  const byPassage = new Map()
+  for (const q of questions) {
+    if (!q.passageId) { groups.push([q]); continue }
+    if (!byPassage.has(q.passageId)) {
+      const g = []
+      byPassage.set(q.passageId, g)
+      groups.push(g)
+    }
+    byPassage.get(q.passageId).push(q)
+  }
+  return shuffle(groups).flatMap(g => shuffle(g))
+}
+
+// Picks a strand by the diagnostic's weighting (arithmetic-heavy), then a
+// topic within it, so adding many geometry topics doesn't tilt a round.
+function pickMathTopic(topicFilter) {
+  if (topicFilter && MATH_TOPICS.includes(topicFilter)) return topicFilter
+  let r = Math.random()
+  for (const [strand, weight] of Object.entries(MATH_STRAND_WEIGHTS)) {
+    if (r < weight) {
+      const topics = MATH_STRAND_TOPICS[strand]
+      return topics[Math.floor(Math.random() * topics.length)]
+    }
+    r -= weight
+  }
+  return MATH_TOPICS[Math.floor(Math.random() * MATH_TOPICS.length)]
 }
 
 function buildMathRound(count, topicFilter) {
-  const topics = topicFilter && MATH_TOPICS.includes(topicFilter) ? [topicFilter] : MATH_TOPICS
   const staticPool = shuffle(mathStaticBank.questions.filter(q => !topicFilter || q.topic === topicFilter || q.strand === topicFilter))
   const questions = []
   // Mix in a handful of hand-written word problems/geometry/stats items so a
@@ -130,8 +164,7 @@ function buildMathRound(count, topicFilter) {
   const staticSlots = Math.min(staticPool.length, Math.max(2, Math.round(count * 0.2)))
   for (let i = 0; i < staticSlots; i++) questions.push(shuffleChoices(staticPool[i]))
   while (questions.length < count) {
-    const topic = topics[Math.floor(Math.random() * topics.length)]
-    const q = generateMathQuestion(topic, weightedDifficulty())
+    const q = generateMathQuestion(pickMathTopic(topicFilter), weightedDifficulty())
     questions.push(shuffleChoices(q))
   }
   return { questions: shuffle(questions).slice(0, count), passages: [] }

@@ -1,0 +1,97 @@
+.frame {
+  margin: 0.75rem 0 1rem;
+  color: inherit;
+  break-inside: avoid;
+}
+
+.svg {
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+  width: 170px;
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+.wide {
+  width: 340px;
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+.stroke {
+  stroke: currentColor;
+  stroke-width: 2.5;
+  fill: none;
+}
+
+.thin {
+  stroke: currentColor;
+  stroke-width: 1.5;
+  fill: none;
+}
+
+.dashed {
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+  fill: none;
+}
+
+.gridLine {
+  stroke: currentColor;
+  stroke-opacity: 0.2;
+  stroke-width: 1;
+}
+
+.tick {
+  fill: currentColor;
+  font-size: 11px;
+}
+
+.bar {
+  fill: rgba(128, 128, 128, 0.6);
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+
+.faceTop, .faceLeft, .faceRight {
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+}
+.faceTop { fill: rgba(128, 128, 128, 0.18); }
+.faceLeft { fill: rgba(128, 128, 128, 0.42); }
+.faceRight { fill: rgba(128, 128, 128, 0.3); }
+
+.label {
+  fill: currentColor;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.point {
+  fill: currentColor;
+}
+
+.cellOn {
+  fill: rgba(128, 128, 128, 0.55);
+  stroke: currentColor;
+  stroke-width: 1;
+}
+
+.cellOff {
+  fill: none;
+  stroke: currentColor;
+  stroke-opacity: 0.35;
+  stroke-width: 1;
+}
+
+@media print {
+  .cellOn { fill: #bbb; }
+  .bar { fill: #bbb; }
+  .faceTop { fill: #eee; }
+  .faceLeft { fill: #bbb; }
+  .faceRight { fill: #d4d4d4; }
+}

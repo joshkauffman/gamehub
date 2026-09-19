@@ -1,5 +1,6 @@
 import styles from './Results.module.css'
 import { strandLabel } from '../engine/labels.js'
+import Visual from '../components/Visual.jsx'
 
 function formatTime(seconds) {
   if (seconds == null) return '—'
@@ -47,12 +48,21 @@ export default function Results({ score, onRestart, onViewHistory }) {
 
       <section className={styles.section}>
         <h3 className={styles.sectionLabel}>Full answer review</h3>
+        <p className={styles.hint}>
+          {score.total - score.correctCount === 0
+            ? 'Every answer was right. 🎉'
+            : `${score.total - score.correctCount} missed question${score.total - score.correctCount === 1 ? ' is' : 's are'} highlighted in red.`}
+        </p>
         <div className={styles.answerList}>
           {score.results.map((r, i) => (
-            <div key={r.question.id} className={styles.answerRow}>
+            <div key={r.question.id} className={`${styles.answerRow} ${r.correct ? '' : styles.wrongRow}`}>
+              {!r.correct && (
+                <span className={styles.wrongBadge}>{r.answerIndex == null ? '✗ Not answered' : '✗ Wrong'}</span>
+              )}
               <p className={styles.answerPrompt}>{i + 1}. {r.question.prompt}</p>
+              <Visual visual={r.question.visual} />
               <p className={styles.answerLine}>
-                Your answer: <strong>{r.answerIndex != null ? r.question.choices[r.answerIndex] : '(blank)'}</strong>
+                Your answer: <strong className={r.correct ? '' : styles.wrongText}>{r.answerIndex != null ? r.question.choices[r.answerIndex] : '(blank)'}</strong>
                 {' · '}Correct answer: <strong>{r.question.choices[r.question.answerIndex]}</strong>
               </p>
               <p className={styles.explanation}>{r.question.explanation}</p>

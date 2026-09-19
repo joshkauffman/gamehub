@@ -64,6 +64,27 @@
   border-radius: var(--radius-sm);
   padding: 0.9rem 1.1rem;
 }
+.wrongRow {
+  border-color: #ff5c6c;
+  border-left-width: 6px;
+  background: rgba(255, 92, 108, 0.1);
+}
+
+.wrongBadge {
+  display: inline-block;
+  background: #ff5c6c;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  margin-bottom: 0.45rem;
+}
+
+.wrongText { color: #ff8a95; text-decoration: line-through; }
+
 .answerPrompt { font-weight: 600; margin-bottom: 0.4rem; line-height: 1.4; }
 .answerLine { font-size: 0.88rem; color: var(--text-muted); margin-bottom: 0.3rem; }
 .explanation { font-size: 0.85rem; color: var(--text-muted); font-style: italic; }

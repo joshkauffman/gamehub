@@ -3,6 +3,7 @@ import { useSearchParams, Link } from 'react-router-dom'
 import styles from './PrintWorksheet.module.css'
 import { buildRound } from '../engine/roundBuilder.js'
 import { strandLabel } from '../engine/labels.js'
+import Visual from '../components/Visual.jsx'
 
 const SUBJECT_LABEL = { math: 'Math', english: 'English', french: 'Français' }
 const LETTERS = ['A', 'B', 'C', 'D']
@@ -77,6 +78,7 @@ export default function PrintWorksheet() {
                 </div>
               )}
               <p className={styles.prompt}><span className={styles.qNum}>{i + 1}.</span> {q.prompt}</p>
+              <Visual visual={q.visual} />
               <div className={styles.choices}>
                 {q.choices.map((choice, ci) => (
                   <div key={ci} className={styles.choice}>

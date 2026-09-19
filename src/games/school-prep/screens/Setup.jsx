@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import styles from './Setup.module.css'
 import { availableTopics } from '../engine/roundBuilder.js'
 import { strandLabel } from '../engine/labels.js'
@@ -18,6 +18,7 @@ export default function Setup({ onStart, historyCount, onViewHistory }) {
   const [customError, setCustomError] = useState('')
   const [timerOn, setTimerOn] = useState(true)
   const [topicFilter, setTopicFilter] = useState('')
+  const infoRef = useRef(null)
 
   const topics = useMemo(() => availableTopics(subject), [subject])
 
@@ -62,6 +63,44 @@ export default function Setup({ onStart, historyCount, onViewHistory }) {
     <div className={styles.wrap}>
       <h1 className={styles.title}>School Prep</h1>
       <p className={styles.subtitle}>RWA entrance exam practice — Math, English, Français. Nothing is marked right or wrong until you submit the whole round.</p>
+      <button type="button" className={styles.infoBtn} onClick={() => infoRef.current?.showModal()}>
+        ℹ️ More Info
+      </button>
+
+      <dialog
+        ref={infoRef}
+        className={styles.dialog}
+        aria-labelledby="school-prep-info-title"
+        onClick={e => { if (e.target === infoRef.current) infoRef.current.close() }}
+      >
+        <h2 id="school-prep-info-title" className={styles.dialogTitle}>About School Prep</h2>
+        <h3 className={styles.dialogHeading}>What it is for</h3>
+        <p>
+          Practice for a school entrance exam (RWA) in Math, English and Français. Every question is multiple choice,
+          and nothing is marked until the whole round is submitted, like a real test.
+        </p>
+        <h3 className={styles.dialogHeading}>Where the questions come from</h3>
+        <p>
+          All of the questions were written with AI. It was given practice tests to learn from, including a Grade 5 diagnostic
+          test from a teacher and sample tests found online, and it wrote new questions in the same style. Math questions are
+          generated fresh every round, so the numbers change. The order of questions is shuffled each time.
+        </p>
+        <h3 className={styles.dialogHeading}>Your options on each question</h3>
+        <ul className={styles.dialogList}>
+          <li><strong>Submit answer:</strong> pick an answer, then submit it and move on. You can still change it later from the review screen at the end.</li>
+          <li><strong>Let's come back to this to review:</strong> saves your answer but flags the question, so you can look at it again at the end.</li>
+          <li><strong>I am unsure, come back at the end:</strong> skips the question without an answer. It comes back after the last question so you can try again.</li>
+        </ul>
+        <p>Before the round is final there is a review screen where you can open any question and change your answer. Wrong answers are highlighted in red on the results page.</p>
+        <h3 className={styles.dialogHeading}>How hard is it?</h3>
+        <p>
+          The difficulty is a guess based on whatever practice material could be found. It is not known to match the real exam.
+          Please treat this as best-effort practice, not a prediction of the real test or a score to worry about.
+        </p>
+        <div className={styles.dialogActions}>
+          <button type="button" className={styles.dialogClose} onClick={() => infoRef.current?.close()}>Close</button>
+        </div>
+      </dialog>
 
       <section className={styles.section}>
         <h2 className={styles.sectionLabel}>Subject</h2>
