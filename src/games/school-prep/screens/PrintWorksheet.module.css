@@ -127,8 +127,19 @@
   margin-left: 1.1rem;
 }
 
+/* Printer margin, set two ways for reliability: @page for the physical
+   sheet (some "print to PDF" drivers honor this), and padding on .page
+   itself as a floor that always applies regardless of driver support —
+   without it, a driver that ignores @page prints edge-to-edge with no
+   left margin. */
+@page {
+  margin: 1cm;
+}
+
 @media print {
   .noPrint { display: none !important; }
-  .page { padding: 0; max-width: none; }
-  @page { margin: 1.5cm; }
+  .page {
+    max-width: none;
+    padding: 0.5cm 1.5cm 2cm;
+  }
 }
