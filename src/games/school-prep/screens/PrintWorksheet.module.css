@@ -127,19 +127,24 @@
   margin-left: 1.1rem;
 }
 
-/* Printer margin, set two ways for reliability: @page for the physical
-   sheet (some "print to PDF" drivers honor this), and padding on .page
-   itself as a floor that always applies regardless of driver support —
-   without it, a driver that ignores @page prints edge-to-edge with no
-   left margin. */
+/* Printer margin. Left/right come from padding on .page below, which is
+   safe because a multi-page box is only fragmented vertically — its left
+   and right padding still applies on every printed page. Top and bottom
+   CANNOT be fixed that way: a box's top/bottom padding only appears once,
+   on the very first and very last page of the whole flow, never on the
+   pages in between. So top/bottom margin has to come from @page, which
+   the print engine re-applies to every physical page. */
 @page {
-  margin: 1cm;
+  margin-top: 1.5cm;
+  margin-bottom: 1.5cm;
+  margin-left: 1cm;
+  margin-right: 1cm;
 }
 
 @media print {
   .noPrint { display: none !important; }
   .page {
     max-width: none;
-    padding: 0.5cm 1.5cm 2cm;
+    padding: 0 1.5cm;
   }
 }
