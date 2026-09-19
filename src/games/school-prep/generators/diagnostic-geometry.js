@@ -165,12 +165,15 @@ export const GEOMETRY_GENERATORS = {
     }
     if (kind === 'convex') {
       const convex = Math.random() < 0.5
-      return make(GE, 'polygons', difficulty,
-        convex
-          ? 'A polygon has every interior angle less than 180°, so no corner "caves in". Is it convex or nonconvex?'
-          : 'A polygon has one interior angle bigger than 180°, so one corner "caves in". Is it convex or nonconvex?',
-        convex ? 'convex' : 'nonconvex', convex ? ['nonconvex', 'regular', 'irregular'] : ['convex', 'regular', 'irregular'],
-        convex ? 'All angles under 180° means convex.' : 'An angle over 180° that caves in means nonconvex.')
+      const answer = convex ? 'convex' : 'nonconvex'
+      return {
+        subject: 'math', strand: GE, topic: 'polygons', difficulty,
+        prompt: convex
+          ? 'A polygon has every interior angle less than 180°, so no corner "caves in". Is it convex or nonconvex (also called concave)?'
+          : 'A polygon has one interior angle bigger than 180°, so one corner "caves in". Is it convex or nonconvex (also called concave)?',
+        ...buildChoices(answer, [convex ? 'nonconvex' : 'convex'], 2),
+        explanation: convex ? 'All angles under 180° means convex.' : 'An angle over 180° that caves in means nonconvex (concave).',
+      }
     }
     const items = [
       ['In rectangle ABCD, sides AB and CD are opposite sides. How are AB and CD related?', 'parallel (AB // CD)', 'Opposite sides of a rectangle never meet, so they are parallel.'],
@@ -232,7 +235,7 @@ export const GEOMETRY_GENERATORS = {
     const text = v => `${num(v)} ${to}`
     return make(ME, 'unit-conversion', difficulty,
       `Convert ${num(value)} ${unit(from)} to ${to}.${[from, to].includes('dm') ? ' (1 dm = 10 cm.)' : ''}`, text(correctNum),
-      [correctNum * 10, correctNum / 10, correctNum * 100, correctNum / 100, correctNum * 1000].map(text),
+      [correctNum * 10, correctNum / 10, correctNum * 100, correctNum / 100, correctNum * 1000].filter(v => Math.round(v * 100) === Number((v * 100).toFixed(6))).map(text),
       `${fam.units[from] > fam.units[to] ? `Going from ${from} to a smaller unit, multiply by ${fam.units[from] / fam.units[to]}` : `Going from ${from} to a larger unit, divide by ${fam.units[to] / fam.units[from]}`}: ${num(value)} ${from} = ${text(correctNum)}.`)
   },
 
@@ -258,8 +261,8 @@ export const GEOMETRY_GENERATORS = {
       return make(ME, 'elapsed-time', difficulty,
         `Amelia swims ${days} days per week. She swims ${each} minutes each day. How much time does she spend swimming each week? (Remember: 60 minutes = 1 hour.)`,
         hm(total),
-        [`${Math.floor(total / 100)} h ${pad2(total % 100)} min`, hm(total + 10), hm(Math.max(0, total - 10)), `${h + 1} h ${pad2(m)} min`, hm(total + 15)],
-        `${days} × ${each} = ${total} minutes. ${total} ÷ 60 = ${h} hours with ${m} minutes left over: ${hm(total)}.`)
+        [...(total >= 100 ? [`${Math.floor(total / 100)} h ${pad2(total % 100)} min`] : []), hm(total + 10), hm(Math.max(0, total - 10)), `${h + 1} h ${pad2(m)} min`, hm(total + 15)],
+        `${days} × ${each} = ${total} minutes. ${total} ÷ 60 = ${h} hour${h === 1 ? '' : 's'} with ${m} minutes left over: ${hm(total)}.`)
     }
     const startMin = randInt(8, 15) * 60 + randInt(0, 11) * 5
     const dur = randInt(2, 7) * 60 + randInt(1, 11) * 5
@@ -351,7 +354,7 @@ export const GEOMETRY_GENERATORS = {
     const niceMax = (maxV) => { const step = maxV > 12 ? 5 : 2; return { step, max: Math.ceil(maxV / step) * step } }
     if (Math.random() < 0.6) {
       const themes = [
-        { intro: 'The bar graph shows the number of pets owned by students.', cats: ['Dogs', 'Cats', 'Fish', 'Birds', 'Rabbits'], who: 'students own' },
+        { intro: 'The bar graph shows the favourite pet of the students in a class.', cats: ['Dogs', 'Cats', 'Fish', 'Birds', 'Rabbits'], who: 'students chose' },
         { intro: 'The bar graph shows the favourite fruit of the students in a class.', cats: ['Apples', 'Bananas', 'Grapes', 'Oranges', 'Pears'], who: 'students chose' },
         { intro: 'The bar graph shows the favourite sport of the students in a class.', cats: ['Soccer', 'Hockey', 'Tennis', 'Swimming', 'Baseball'], who: 'students chose' },
       ]
@@ -409,13 +412,13 @@ export const GEOMETRY_GENERATORS = {
       const nb = randInt(9, 16) * 25 + 20, pe = randInt(3, 7) * 25, er = randInt(2, 5) * 25
       const k = randInt(2, 4), j = randInt(2, 3)
       const total = nb + k * pe + j * er
-      const paid = Math.ceil(total / 1000) * 1000 + (Math.random() < 0.5 ? 200 : 0)
+      const paid = (Math.floor(total / 1000) + 1) * 1000 + (Math.random() < 0.5 ? 200 : 0)
       const change = paid - total
       const cash = paid % 1000 === 0 ? `a ${money(paid)} bill` : `a ${money(paid - 200)} bill and a $2.00 coin`
       return make(PS, 'word-problems-gen', difficulty,
         `Justine buys 1 notebook for ${money(nb)}, ${k} pencils for ${money(pe)} each and ${j} erasers for ${money(er)} each. She hands the cashier ${cash}. How much money does she get back?`,
         money(change),
-        [money(paid - (nb + pe + er)), money(change + 50), money(change - 50), money(change + 100), money(Math.max(25, change - 100))],
+        [paid - (nb + pe + er), change + 50, change - 50, change + 100, change - 100].filter(c => c > 0).map(money),
         `Total cost: ${money(nb)} + ${k} × ${money(pe)} + ${j} × ${money(er)} = ${money(total)}. Change: ${money(paid)} − ${money(total)} = ${money(change)}.`)
     }
     if (kind === 'cycling') {

@@ -80,9 +80,13 @@ const GENERATORS = {
 
   'add-subtract-fractions'(difficulty) {
     const denom = difficulty === 1 ? pick([4, 5, 6, 8]) : pick([6, 8, 10, 12])
-    let n1 = randInt(1, denom - 1), n2 = randInt(1, denom - 1)
     const isAdd = Math.random() < 0.5
-    if (!isAdd && n1 < n2) [n1, n2] = [n2, n1]
+    // Keep the answer a proper fraction: a sum below 1, or a difference above 0.
+    let n1, n2
+    do {
+      n1 = randInt(1, denom - 1); n2 = randInt(1, denom - 1)
+      if (!isAdd && n1 < n2) [n1, n2] = [n2, n1]
+    } while (isAdd ? n1 + n2 >= denom : n1 === n2)
     const correctNum = isAdd ? n1 + n2 : n1 - n2
     const g = gcd(correctNum, denom) || 1
     const simplified = `${correctNum / g}/${denom / g}`
@@ -115,7 +119,7 @@ const GENERATORS = {
     return {
       subject: 'math', strand: 'fractions-percent', topic: 'fraction-decimal-percent', difficulty,
       prompt: `${n}/${d} is equal to what percent? (Percent means "out of 100".)`, choices, answerIndex,
-      explanation: `${n}/${d} = ${(n / d).toFixed(2)} = ${pct}%.`,
+      explanation: `${n}/${d} = ${n / d} = ${pct}%.`,
     }
   },
 
@@ -185,7 +189,7 @@ const GENERATORS = {
     return {
       subject: 'math', strand: 'stats-probability', topic: 'simple-probability', difficulty,
       prompt: `A bag has ${total} marbles, and ${favourable} of them are blue. What is the probability (the chance) of picking a blue marble? Write it as a fraction in lowest terms (simplified as far as possible).`,
-      ...buildChoices(correct, [`${favourable}/${total}`, `${total - favourable}/${total}`, `${favourable}/${total - favourable}`, `1/${total}`, `${favourable + 1}/${total}`, `${favourable}/${favourable + total}`]),
+      ...buildChoices(correct, [`${favourable}/${total}`, `${total - favourable}/${total}`, `1/${total}`, `${favourable + 1}/${total}`, `${favourable}/${favourable + total}`]),
       explanation: `Probability = favourable ÷ total = ${favourable}/${total}, which simplifies to ${correct}.`,
     }
   },

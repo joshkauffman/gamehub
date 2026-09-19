@@ -276,19 +276,21 @@ export const DIAGNOSTIC_GENERATORS = {
     const seenText = new Set()
     for (let i = 0; i < 300 && statements.length < 40; i++) {
       const n = randInt(1, 100)
-      const m = pick([1, 4, 9, 16, 25, 36, 49, 64, 81, 100, randInt(2, 100)])
+      let m
+      do { m = pick([1, 4, 9, 16, 25, 36, 49, 64, 81, 100, randInt(2, 100)]) } while (m === n)
       const options = [
         [`${n} is a square number`, isSquare(n)],
         [`${n} is a prime number`, isPrime(n)],
         [`${n} is a composite number`, n > 1 && !isPrime(n)],
         [`${n} is an odd, composite and square number`, n % 2 === 1 && n > 1 && !isPrime(n) && isSquare(n)],
-        [`${n} and ${m} are square numbers`, n !== m && isSquare(n) && isSquare(m)],
+        [`${n} and ${m} are square numbers`, isSquare(n) && isSquare(m)],
       ]
       const [text, truth] = pick(options)
       if (!seenText.has(text)) { seenText.add(text); statements.push({ text, truth }) }
     }
     const trues = shuffled(statements.filter(s => s.truth))
     const falses = shuffled(statements.filter(s => !s.truth))
+    if (trues.length < 3 || falses.length < 3) return DIAGNOSTIC_GENERATORS['number-properties'](difficulty) // freak roll: too few statements to build a question
     const askTrue = Math.random() < 0.6 || trues.length < 3
     const [one, many] = askTrue ? [trues, falses] : [falses, trues]
     const correct = one[0]
@@ -370,7 +372,7 @@ export const DIAGNOSTIC_GENERATORS = {
         [total / k, total / m, q + 1, q * 2], `${total} ÷ ${k} = ${total / k}. What times ${m} gives ${total / k}? ${total / k} ÷ ${m} = ${q}.`)
     }
     const k = randInt(3, 6), q = randInt(8, 30), total = k * q
-    const a = randInt(20, Math.floor(total / 2)), b = randInt(3, 9), c = total - a - b
+    const a = randInt(Math.min(20, Math.floor(total / 3)), Math.floor(total / 2)), b = randInt(3, 9), c = total - a - b
     return makeNum(NO, 'equivalent-expressions', difficulty,
       `Find the number that makes both sides equal: ${a} + ${b} + ${c} = ${k} × ___`, q,
       [total, q + 1, q - 1, total - k], `${a} + ${b} + ${c} = ${total}. Then ${total} ÷ ${k} = ${q}.`)

@@ -188,6 +188,7 @@ function BarGraph({ bars, max, step, yTitle }) {
         return (
           <g key={label}>
             <rect x={G.left + i * slot + slot * 0.2} y={G.bottom - h} width={slot * 0.6} height={h} className={styles.bar} />
+            <text x={G.left + i * slot + slot / 2} y={G.bottom - h - 4} className={styles.tick} textAnchor="middle">{value}</text>
             <text x={G.left + i * slot + slot / 2} y={G.bottom + 16} className={styles.tick} textAnchor="middle">{label}</text>
           </g>
         )
@@ -208,6 +209,7 @@ function LineGraph({ points, xMax, xStep, max, step, xTitle, yTitle }) {
       {xTitle && <text x={(G.left + G.right) / 2} y="172" className={styles.tick} textAnchor="middle">{xTitle}</text>}
       <polyline points={points.map(p => `${px(p.x)},${py(p.y)}`).join(' ')} className={styles.stroke} />
       {points.map(p => <circle key={p.x} cx={px(p.x)} cy={py(p.y)} r="3.5" className={styles.point} />)}
+      {points.map(p => <text key={`v${p.x}`} x={px(p.x)} y={py(p.y) - 8} className={styles.tick} textAnchor="middle">{p.y}</text>)}
     </svg>
   )
 }

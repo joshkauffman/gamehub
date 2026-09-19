@@ -41,8 +41,11 @@ export function num(x) {
 export function buildChoices(correct, wrongCandidates, size = 4) {
   const want = size - 1
   const pool = []
+  // "8782.0" and "8782" are the same number written twice, so compare plain numbers by value.
+  const key = v => { const n = Number(String(v).replace(/ /g, '')); return Number.isNaN(n) ? String(v) : n }
   for (const w of wrongCandidates) {
-    if (w !== correct && !pool.includes(w)) pool.push(w)
+    if (String(w) === '0' && String(correct) !== '0') continue // a bare 0 is never a tempting wrong answer
+    if (key(w) !== key(correct) && !pool.some(p => key(p) === key(w))) pool.push(w)
     if (pool.length === want) break
   }
   let guard = 0
@@ -50,9 +53,9 @@ export function buildChoices(correct, wrongCandidates, size = 4) {
     guard++
     const asNumber = typeof correct === 'number' ? correct : Number(String(correct).replace(/ /g, ''))
     if (!Number.isInteger(asNumber)) throw new Error(`Not enough distinct wrong answers for "${correct}"`)
-    const jitter = Math.max(0, asNumber + pick([-3, -2, -1, 1, 2, 3]) * (guard % 3 === 0 ? 10 : 1))
+    const jitter = Math.max(1, asNumber + pick([-3, -2, -1, 1, 2, 3]) * (guard % 3 === 0 ? 10 : 1))
     const candidate = typeof correct === 'number' ? jitter : fmt(jitter)
-    if (candidate !== correct && !pool.includes(candidate)) pool.push(candidate)
+    if (key(candidate) !== key(correct) && !pool.some(p => key(p) === key(candidate))) pool.push(candidate)
   }
   const choices = shuffled([correct, ...pool].map(String))
   return { choices, answerIndex: choices.indexOf(String(correct)) }
