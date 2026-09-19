@@ -11,13 +11,14 @@ const SUBJECTS = [
 
 const COUNT_PRESETS = [15, 25, 45]
 
-export default function Setup({ onStart, historyCount, onViewHistory }) {
+export default function Setup({ onStart, visits, historyCount, onViewHistory }) {
   const [subject, setSubject] = useState('math')
   const [countChoice, setCountChoice] = useState(15)
   const [customCount, setCustomCount] = useState('')
   const [customError, setCustomError] = useState('')
   const [timerOn, setTimerOn] = useState(true)
   const [topicFilter, setTopicFilter] = useState('')
+  const [showVisits, setShowVisits] = useState(false)
   const infoRef = useRef(null)
 
   const topics = useMemo(() => availableTopics(subject), [subject])
@@ -61,7 +62,10 @@ export default function Setup({ onStart, historyCount, onViewHistory }) {
 
   return (
     <div className={styles.wrap}>
-      <h1 className={styles.title}>School Prep</h1>
+      <h1 className={styles.title}>
+        School <button type="button" className={styles.secretP} onClick={() => setShowVisits(v => !v)}>P</button>rep
+      </h1>
+      {showVisits && <p className={styles.visitCount}>Visits: {visits ?? 0}</p>}
       <p className={styles.subtitle}>RWA entrance exam practice — Math, English, Français. Nothing is marked right or wrong until you submit the whole round.</p>
       <button type="button" className={styles.infoBtn} onClick={() => infoRef.current?.showModal()}>
         ℹ️ More Info

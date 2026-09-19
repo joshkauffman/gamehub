@@ -10,6 +10,27 @@
   margin-bottom: 0.4rem;
 }
 
+.secretP {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  cursor: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.secretP:focus-visible {
+  outline: none;
+}
+
+.visitCount {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  margin-bottom: 0.4rem;
+}
+
 .subtitle {
   color: var(--text-muted);
   margin-bottom: 0.75rem;

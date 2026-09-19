@@ -2,6 +2,7 @@
 const ROUND_KEY = 'school-prep:round'
 const HISTORY_KEY = 'school-prep:history'
 const SEEN_KEY = 'school-prep:seen'
+const VISITS_KEY = 'school-prep:visits'
 
 export function saveRound(round) {
   try {
@@ -61,4 +62,22 @@ export function markSeen(subject, ids) {
     all[subject] = [...ids, ...prior].slice(0, 200)
     localStorage.setItem(SEEN_KEY, JSON.stringify(all))
   } catch { /* ignore */ }
+}
+
+// Secret page-visit counter (per browser). Shown by clicking the "P" in the
+// Setup title.
+export function loadVisits() {
+  try {
+    return Number(localStorage.getItem(VISITS_KEY)) || 0
+  } catch {
+    return 0
+  }
+}
+
+export function recordVisit() {
+  const next = loadVisits() + 1
+  try {
+    localStorage.setItem(VISITS_KEY, String(next))
+  } catch { /* ignore */ }
+  return next
 }

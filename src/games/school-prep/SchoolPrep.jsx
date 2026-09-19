@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import styles from './SchoolPrep.module.css'
 import Setup from './screens/Setup.jsx'
@@ -10,7 +10,7 @@ import Timer from './components/Timer.jsx'
 import ProgressStrip from './components/ProgressStrip.jsx'
 import { buildRound } from './engine/roundBuilder.js'
 import { scoreRound } from './engine/scoring.js'
-import { saveRound, loadRound, clearRound, loadHistory, appendHistory, markSeen } from './engine/storage.js'
+import { saveRound, loadRound, clearRound, loadHistory, appendHistory, markSeen, recordVisit } from './engine/storage.js'
 
 const GRACE_SECONDS = 20
 
@@ -23,6 +23,16 @@ export default function SchoolPrep() {
   const [historyView, setHistoryView] = useState(false)
   const [graceSecondsLeft, setGraceSecondsLeft] = useState(null)
   const [timerHidden, setTimerHidden] = useState(false)
+  const [visits, setVisits] = useState(null)
+  const visitCounted = useRef(false)
+
+  // Count one visit per page load. The ref guards against StrictMode's
+  // dev-mode double effect run.
+  useEffect(() => {
+    if (visitCounted.current) return
+    visitCounted.current = true
+    setVisits(recordVisit())
+  }, [])
 
   const activeRoundTicking = round != null && round.phase !== 'results'
 
@@ -171,7 +181,7 @@ export default function SchoolPrep() {
       ) : resultsScore ? (
         <Results score={resultsScore} onRestart={backToSetup} onViewHistory={() => setHistoryView(true)} />
       ) : !round ? (
-        <Setup onStart={handleStart} historyCount={loadHistory().length} onViewHistory={() => setHistoryView(true)} />
+        <Setup onStart={handleStart} visits={visits} historyCount={loadHistory().length} onViewHistory={() => setHistoryView(true)} />
       ) : (
         <RoundView
           round={round}
