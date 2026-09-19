@@ -135,8 +135,8 @@
    pages in between. So top/bottom margin has to come from @page, which
    the print engine re-applies to every physical page. */
 @page {
-  margin-top: 1.5cm;
-  margin-bottom: 1.5cm;
+  margin-top: 3cm;
+  margin-bottom: 3cm;
   margin-left: 1cm;
   margin-right: 1cm;
 }
