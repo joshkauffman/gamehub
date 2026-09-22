@@ -36,15 +36,25 @@ const CUBE_JUMP_V = 620
 
 const SHIP_GRAVITY = 1500
 const SHIP_THRUST = 3000
-const SHIP_MAX_VY = 480
+const SHIP_MAX_VY = 380 // lower cap keeps a fully-held thrust/dive's overshoot
+                        // small relative to corridor width -- max momentum
+                        // (vy²/2·decel) shouldn't be able to eat a whole
+                        // dodge's worth of clearance
 export const PLAYFIELD_H_SHIP = 380
 
 const BALL_CEIL_H = 130
-const BALL_SNAP_RATE = 16
+const BALL_SNAP_RATE = 40 // fast enough that a flip is visually a snap, not a slow slide,
+                          // so a flip made in time is never still mid-transition when it matters
 
 const ORB_JUMP_V = 720
 const PAD_JUMP_V = 920
 const ORB_RADIUS = 15
+
+// Forgiveness windows so a human's "close enough" timing still registers —
+// a jump pressed a hair before it's technically valid, or one obstacle's
+// worth of hesitation before falling, both still count. Pure input QoL:
+// neither changes what a well-timed jump can clear.
+const JUMP_BUFFER = 0.09
 
 // ── Jump physics ─────────────────────────────────────────────────────
 // A cube jump is a simple projectile under constant gravity: peak height
@@ -74,7 +84,7 @@ function orbComboAirTime() {
 function orbComboDistance(speed) { return speed * orbComboAirTime() }
 
 const LOOKAHEAD = 1400
-const PORTAL_BUFFER = 160
+const PORTAL_BUFFER = 220
 const SECTION_LENGTHS = { cube: [1800, 2800], ship: [1400, 2200], ball: [1200, 2000] }
 // Distance covered before the first obstacle is allowed to spawn. Speed
 // ramps up slightly with distance, so this is sized a bit past 5s worth
@@ -185,6 +195,8 @@ export function resetRun(state, options = {}) {
   state.best = state.best ?? loadBest()
   state.shake = 0
   state.lastJumpHeld = false
+  state.jumpBufferTimer = 0
+  state.lastShipSpikeX = -Infinity
   state.rng = options.seed != null ? mulberry32(options.seed) : Math.random
   state.length = options.length ?? Infinity
   state.difficultyCap = options.difficultyCap ?? 1
@@ -219,6 +231,9 @@ export function stepGame(state, input, dt) {
   state.score = Math.floor(state.distance / 10)
 
   const jumpPressed = edge(input, state)
+
+  if (jumpPressed) state.jumpBufferTimer = JUMP_BUFFER
+  else state.jumpBufferTimer = Math.max(0, state.jumpBufferTimer - dt)
 
   if (state.mode === 'cube') stepCube(state, input, jumpPressed, dt)
   else if (state.mode === 'ship') stepShip(state, input, dt)
@@ -257,9 +272,13 @@ function win(state) {
 function stepCube(state, input, jumpPressed, dt) {
   const px = state.distance
 
-  if (jumpPressed && state.onGround) {
+  // A buffered press (this frame's or one still within JUMP_BUFFER of a
+  // recent press) fires the instant the player is grounded, instead of
+  // requiring the press and the landing frame to be the exact same frame.
+  if (state.jumpBufferTimer > 0 && state.onGround) {
     state.vy = CUBE_JUMP_V
     state.onGround = false
+    state.jumpBufferTimer = 0
   } else if (jumpPressed && !state.onGround) {
     for (const o of state.obstacles) {
       if (o.type === 'orb' && !o.consumed && Math.hypot(px - o.x, (state.y + PLAYER_HALF_HIT) - o.y) < ORB_RADIUS + PLAYER_HALF_HIT) {
@@ -374,7 +393,14 @@ function checkPortal(state, px) {
     if (o.type === 'portal' && !o.consumed && px >= o.x) {
       o.consumed = true
       state.mode = o.mode
-      if (o.mode === 'ship') { state.y = Math.min(state.y, PLAYFIELD_H_SHIP - PLAYER_SIZE); state.vy = 0 }
+      if (o.mode === 'ship') {
+        // Snap into the middle of whatever corridor is waiting right after
+        // the portal, instead of carrying over the old mode's height — the
+        // portal buffer is far too short to climb/dive the ship a large
+        // distance from an arbitrary leftover y before the first wall.
+        state.y = Math.max(0, Math.min(PLAYFIELD_H_SHIP - PLAYER_SIZE, shipCorridorMidAt(state.obstacles, o.x) - PLAYER_SIZE / 2))
+        state.vy = 0
+      }
       else if (o.mode === 'ball') { state.y = 0; state.vy = 0; state.gravityDir = 1 }
       // Cube always lands on solid ground on entry — otherwise a
       // transition from high up in ship/ball mode could free-fall
@@ -382,6 +408,16 @@ function checkPortal(state, px) {
       else { state.y = 0; state.vy = 0; state.onGround = true }
     }
   }
+}
+
+// The vertical middle of the first ship corridor segment at or after `fromX`
+// — used to place the player safely the instant they portal into ship mode.
+function shipCorridorMidAt(obstacles, fromX) {
+  const walls = obstacles.filter(o => o.type === 'block' && o.x >= fromX - 5).sort((a, b) => a.x - b.x)
+  const floorWall = walls.find(o => o.bottom === 0)
+  const ceilWall = walls.find(o => o.top >= PLAYFIELD_H_SHIP - 1)
+  if (floorWall && ceilWall) return (floorWall.top + ceilWall.bottom) / 2
+  return PLAYFIELD_H_SHIP / 2
 }
 
 // ── Particles (visual trail only — no gameplay effect) ─────────────────
@@ -424,30 +460,45 @@ function startNewSection(state) {
 }
 
 function patternSpikeRow(startX, difficulty, speed, rng) {
-  // Cap how many spikes can be chained so the row never exceeds what a
-  // single jump can clear, even at the lowest speed the row can spawn at.
+  // Cap how many spikes can be chained so the row never exceeds a modest
+  // fraction of what a single jump can clear, even at the lowest speed the
+  // row can spawn at -- leaves a wide timing window either side of
+  // "optimal", not just barely enough.
   const maxClear = jumpDistance(CUBE_JUMP_V, speed) - PLAYER_HIT
-  const maxCount = Math.max(1, Math.floor((maxClear * 0.5) / 28))
+  const maxCount = Math.max(1, Math.floor((maxClear * 0.35) / 28))
   const count = 1 + Math.floor(rng() * Math.min(1 + difficulty * 2, maxCount))
   const obstacles = []
   for (let i = 0; i < count; i++) obstacles.push({ type: 'spike', x: startX + i * 28, w: 26, bottom: 0, top: 26, dir: 'up' })
-  return { obstacles, length: count * 28 }
+  // Clearing this row takes a full, fixed-length cube jump — the same jump
+  // whether there's 1 spike or several — so the player can land anywhere up
+  // to a full jumpDistance past the row, not just past its own last spike.
+  // `length` has to cover that whole reach (as patternPadLaunch already does
+  // for its own boosted arc), or the *next* pattern can start close enough
+  // that this row's landing spot lands inside it. MAX_SPEED, not the current
+  // `speed`, because this chunk generates up to LOOKAHEAD ahead of the
+  // player, and speed only ramps up in the meantime.
+  return { obstacles, length: Math.max(count * 28, jumpDistance(CUBE_JUMP_V, MAX_SPEED) - PLAYER_HIT) }
 }
 function patternGapJump(startX, difficulty, speed, rng) {
   // Full jump distance minus the player's hitbox width on both ends — the
   // actual span a well-timed jump can clear without clipping either lip.
-  // Scaling as a fraction of that (not a fixed number) keeps the gap
-  // always legal no matter how fast the player currently is.
+  // Sized as a modest fraction of that (not close to it) so a well-timed
+  // jump clears this with a wide margin either side, not a razor's edge.
   const maxClear = jumpDistance(CUBE_JUMP_V, speed) - PLAYER_HIT
-  const w = maxClear * (0.35 + difficulty * 0.12 + rand(rng, -0.03, 0.03))
-  return { obstacles: [{ type: 'gap', x: startX, w }], length: w }
+  const w = maxClear * (0.2 + difficulty * 0.08 + rand(rng, -0.02, 0.02))
+  // The clearing jump itself travels a full jumpDistance, not just the gap's
+  // own width (the gap is only ever a fraction of what the jump can reach) —
+  // so, same reasoning as patternSpikeRow/patternPadLaunch, `length` has to
+  // cover that whole reach or the next pattern can start inside this jump's
+  // landing arc.
+  return { obstacles: [{ type: 'gap', x: startX, w }], length: Math.max(w, jumpDistance(CUBE_JUMP_V, MAX_SPEED) - PLAYER_HIT) }
 }
 function patternBlockHop(startX, difficulty, speed, rng) {
-  // Block heights as fractions of the jump's peak height — 0.72 leaves
-  // just enough margin below the peak for a well-timed jump to clear the
-  // "must already be this high" side-collision check; 0.36 is an easy hop.
+  // Block heights as fractions of the jump's peak height — kept well under
+  // the peak (not just barely under it) so a jump doesn't have to be timed
+  // to the frame to already be "high enough" when it reaches the block.
   const tall = rng() < 0.3 + difficulty * 0.3
-  const h = CUBE_JUMP_HEIGHT * (tall ? 0.72 : 0.36)
+  const h = CUBE_JUMP_HEIGHT * (tall ? 0.55 : 0.28)
   const w = 44
   const obstacles = [{ type: 'block', x: startX, w, bottom: 0, top: h }]
   let length = w + 40
@@ -469,13 +520,16 @@ function patternOrbGap(startX, difficulty, speed, rng) {
   // covers far more ground than a single jump — size the gap as a fraction
   // of that combined reach so the orb boost is genuinely required.
   const maxClear = orbComboDistance(speed) - PLAYER_HIT
-  const w = maxClear * (0.32 + difficulty * 0.05 + rand(rng, -0.02, 0.02))
+  const w = maxClear * (0.2 + difficulty * 0.04 + rand(rng, -0.015, 0.015))
+  // Same reasoning as patternGapJump: the combo arc travels its full
+  // distance regardless of how wide the gap itself is, so `length` must
+  // cover that whole reach or the next pattern can start inside it.
   return {
     obstacles: [
       { type: 'gap', x: startX, w },
       { type: 'orb', x: startX + w / 2, y: ORB_TRIGGER_Y, consumed: false },
     ],
-    length: w,
+    length: Math.max(w, orbComboDistance(MAX_SPEED) - PLAYER_HIT),
   }
 }
 function patternPadLaunch(startX, difficulty, speed, rng) {
@@ -503,27 +557,40 @@ function patternPadLaunch(startX, difficulty, speed, rng) {
   return { obstacles, length: Math.max(spikesEnd, padLandDistance) }
 }
 const CUBE_PATTERNS = [patternSpikeRow, patternGapJump, patternBlockHop, patternOrbGap, patternPadLaunch]
+// Backstop under every pattern's own `length`, independent of it: no matter
+// what the next pattern turns out to be, there's always at least this much
+// flat ground between where one clearing jump could land and where the next
+// hazard can start. Patterns whose own reach is already bigger than this
+// (patternPadLaunch, patternOrbGap at high difficulty) are unaffected — this
+// only raises the floor for the tighter ones.
+const MIN_CUBE_ADVANCE = jumpDistance(CUBE_JUMP_V, MAX_SPEED) * 1.3
 
 function genCubeChunk(state, difficulty) {
   const pattern = CUBE_PATTERNS[Math.floor(state.rng() * CUBE_PATTERNS.length)]
   const { obstacles, length } = pattern(state.genX, difficulty, state.speed, state.rng)
   for (const o of obstacles) state.obstacles.push(o)
-  const flat = (90 - difficulty * 20 + state.rng() * 60) * 1.15
-  state.genX += length + flat
+  const flat = 130 + state.rng() * 90
+  state.genX += Math.max(length + flat, MIN_CUBE_ADVANCE)
 }
+
+// A mid-corridor spike forces a dodge to one side, needing real time to
+// move there and back — never spawn two closer together than this.
+const MIN_SHIP_SPIKE_GAP = 420
 
 function genShipChunk(state, difficulty) {
   const segW = 90
-  const halfH = 150 - difficulty * 55
-  state.shipMidY += rand(state.rng, -45, 45)
+  const halfH = 150 - difficulty * 25
+  state.shipMidY += rand(state.rng, -35, 35)
   const margin = halfH + 30
   state.shipMidY = Math.max(margin, Math.min(PLAYFIELD_H_SHIP - margin, state.shipMidY))
   const mid = state.shipMidY
 
   state.obstacles.push({ type: 'block', x: state.genX, w: segW, bottom: 0, top: Math.max(0, mid - halfH) })
   state.obstacles.push({ type: 'block', x: state.genX, w: segW, bottom: Math.min(PLAYFIELD_H_SHIP, mid + halfH), top: PLAYFIELD_H_SHIP })
-  if (difficulty > 0.35 && state.rng() < 0.18) {
+  const canSpike = difficulty > 0.35 && state.genX - state.lastShipSpikeX >= MIN_SHIP_SPIKE_GAP
+  if (canSpike && state.rng() < 0.15) {
     state.obstacles.push({ type: 'spike', x: state.genX + segW / 2, w: 22, bottom: mid - 11, top: mid + 11, dir: 'diamond' })
+    state.lastShipSpikeX = state.genX
   }
   state.genX += segW
 }
@@ -536,6 +603,6 @@ function genBallChunk(state, difficulty) {
   const bottom = onFloor ? 0 : BALL_CEIL_H - h
   const top = bottom + h
   state.obstacles.push({ type: isBlock ? 'block' : 'spike', x: state.genX, w, bottom, top, dir: onFloor ? 'up' : 'down' })
-  const flat = (100 - difficulty * 30 + state.rng() * 50) * 1.15
+  const flat = 110 + state.rng() * 70
   state.genX += w + flat
 }

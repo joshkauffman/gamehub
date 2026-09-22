@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import styles from './HogwartsSpellbound.module.css'
+import { loadSharedCoins, syncSharedCoins } from '../../shared/sharedCoins.js'
 
 // ── Hogwarts: Spellbound ─────────────────────────────────────────────────
 // A wizarding-war crawl through Hogwarts: a talking portrait narrates, a
@@ -1395,6 +1396,7 @@ export default function HogwartsSpellbound() {
   const keysRef = useRef({})
   const gRef = useRef(null)
   const rafRef = useRef(null)
+  const lastSyncedGoldRef = useRef(0) // see ../../shared/sharedCoins.js
 
   const [twoPlayer, setTwoPlayer] = useState(false)
   const [spellSnapshot, setSpellSnapshot] = useState(null)
@@ -1515,7 +1517,10 @@ export default function HogwartsSpellbound() {
     function step() {
       const { w: W, h: H } = sizeRef.current
       const g = gRef.current
-      if (phaseRef.current === 'playing' && g) update(g, keysRef.current, helpers)
+      if (phaseRef.current === 'playing' && g) {
+        update(g, keysRef.current, helpers)
+        syncSharedCoins(g.player, lastSyncedGoldRef)
+      }
       ctx.clearRect(0, 0, W, H)
       if (phaseRef.current === 'playing' && g) {
         draw(g, ctx, W, H)
@@ -1526,12 +1531,25 @@ export default function HogwartsSpellbound() {
       rafRef.current = requestAnimationFrame(step)
     }
     rafRef.current = requestAnimationFrame(step)
-    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current) }
+    // Best-effort final sync on tab close/navigation-away, on top of the
+    // per-frame sync above.
+    function onBeforeUnload() { syncSharedCoins(gRef.current?.player, lastSyncedGoldRef) }
+    window.addEventListener('beforeunload', onBeforeUnload)
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current)
+      onBeforeUnload()
+      window.removeEventListener('beforeunload', onBeforeUnload)
+    }
   }, [])
 
   function startGame() {
     const g = mkInitialState(twoPlayer)
     grantAchievement(g, 'contestant')
+    // Coins found in Dungeon Crawler Max or Free Roam carry over here too
+    // — see ../../shared/sharedCoins.js. Player 2 keeps their own
+    // per-run-only Galleons, same as before.
+    g.player.gold = loadSharedCoins()
+    lastSyncedGoldRef.current = g.player.gold
     gRef.current = g
     setSpellSnapshot(null)
     setClassPick({ p1: emptyPick(), p2: emptyPick() })
