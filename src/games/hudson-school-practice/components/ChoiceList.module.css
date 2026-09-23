@@ -1,0 +1,104 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 1.25rem 0;
+}
+
+.choice {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  text-align: left;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.9rem 1.1rem;
+  min-height: 56px;
+  font-size: 1.05rem;
+  color: var(--text);
+  transition: border-color 0.12s, background 0.12s;
+}
+
+.choice:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.choice:disabled {
+  cursor: default;
+}
+
+.selected {
+  border-color: var(--accent);
+  background: var(--surface2);
+}
+
+.letter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--surface2);
+  font-weight: 800;
+  font-size: 0.95rem;
+}
+
+.selected .letter {
+  background: var(--accent);
+  color: #fff;
+}
+
+.text { flex: 1; line-height: 1.4; }
+
+.correctChoice {
+  border-color: #4cd47a;
+  background: rgba(76, 212, 122, 0.12);
+}
+
+.correctChoice .letter {
+  background: #4cd47a;
+  color: #04331a;
+}
+
+.wrongChoice {
+  border-color: #ff5c6c;
+  background: rgba(255, 92, 108, 0.12);
+}
+
+.wrongChoice .letter {
+  background: #ff5c6c;
+  color: #fff;
+}
+
+.idkBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  background: transparent;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 0.85rem 1.1rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+}
+
+.idkBtn:hover:not(:disabled) {
+  border-color: var(--accent2);
+  color: var(--text);
+}
+
+.idkBtn:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.idkChosen {
+  border-color: var(--accent2);
+  color: var(--text);
+  background: rgba(255, 101, 132, 0.1);
+}

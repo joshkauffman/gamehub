@@ -207,6 +207,18 @@ const CATEGORIES = [
     ],
   },
   {
+    name: 'Learning',
+    games: [
+      {
+        id: 'hudson-school-practice',
+        title: 'Hudson School Practice',
+        description: 'Math practice for grades 1–6, made for Hudson. Multiple choice, no timer, and "I have no idea" is always a real answer.',
+        emoji: '🧮',
+        path: '/hudson-school-practice',
+      },
+    ],
+  },
+  {
     name: 'Tools & Hangouts',
     games: [
       {
