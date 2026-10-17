@@ -91,6 +91,7 @@ function makeEnemy(def) {
     vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed,
     alive: true, hitFlash: 0, changeDirTimer: 60 + Math.random() * 60,
     attackCooldown: 60 + Math.random() * 60,
+    burnTicksLeft: 0, burnDamage: 0, burnTimer: 0, burnInterval: 0,
   }
 }
 
@@ -124,11 +125,13 @@ function loadRoom(state, world, roomKey, entrySide, entryPoint) {
   state.bolts = []
   state.orbs = []
   state.bombs = []
+  state.hazards = []
   state.enemyShots = []
   state.particles = []
   state.boss = room.isBoss ? {
     x: PLAY_X0 + PLAY_W / 2 - 40, y: PLAY_Y0 + PLAY_H / 2 - 40, w: 80, h: 80,
     hp: BOSS_HP, maxHp: BOSS_HP, alive: true, attackCooldown: 90, vx: 1, vy: 0,
+    burnTicksLeft: 0, burnDamage: 0, burnTimer: 0, burnInterval: 0,
   } : null
 
   const p = state.player
@@ -156,6 +159,7 @@ function loadRoom(state, world, roomKey, entrySide, entryPoint) {
     p.facing = 'up'
   }
   p.vx = 0; p.vy = 0
+  p.weaponDashTimer = 0
 }
 
 export function freshState(characterId) {
@@ -176,6 +180,8 @@ export function freshState(characterId) {
       abilities: freshAbilities(), invincible: 90,
       cooldowns: { melee: 0, item1: 0, item2: 0, item3: 0 },
       meleeSwing: 0, meleeWeaponId: null,
+      weaponDashTimer: 0, weaponDashVx: 0, weaponDashVy: 0,
+      weaponDashHit: null, weaponDashDamage: 0, weaponDashColor: '#fff',
     },
   }
   loadRoom(state, START_WORLD, START_ROOM_KEY, 'start')
@@ -296,9 +302,11 @@ function destroyBombWalls(state, cx, cy, radius) {
   }
 }
 
-// Every character's item3 weapon is bomb-kind (just reskinned/retuned —
-// bombs/smokebomb/firebomb), so bomb-gated bonus content stays reachable
-// no matter who you're playing.
+// Every character's item3 weapon detonates and cracks 'B' walls the
+// same way, so bomb-gated bonus content stays reachable no matter who
+// you're playing — but a weapon def can still attach a `burnZone`
+// (Firebomb does) to leave a lingering tick-damage patch behind after
+// the initial blast, which a plain Bomb doesn't get.
 function explodeBomb(state, bomb) {
   const cx = bomb.x + bomb.w / 2, cy = bomb.y + bomb.h / 2
   spawnParticles(state, cx, cy, bomb.color, 18)
@@ -312,6 +320,13 @@ function explodeBomb(state, bomb) {
     const b = state.boss
     const dx = (b.x + b.w / 2) - cx, dy = (b.y + b.h / 2) - cy
     if (dx * dx + dy * dy <= bomb.radius * bomb.radius * 1.4) hurtBoss(state, bomb.damage)
+  }
+  if (bomb.burnZone) {
+    state.hazards.push({
+      shape: 'zone', x: cx, y: cy, radius: bomb.radius * 0.8,
+      framesLeft: bomb.burnZone.duration, tickTimer: bomb.burnZone.tickInterval,
+      tickInterval: bomb.burnZone.tickInterval, tickDamage: bomb.burnZone.tickDamage, color: bomb.color,
+    })
   }
 }
 
@@ -345,6 +360,24 @@ function stepWeapons(state, input) {
       }
       for (const e of state.enemies) if (e.alive && aabb(reach, e)) hurtEnemy(state, e, def.damage, def.color)
       if (state.boss && state.boss.alive && aabb(reach, state.boss)) hurtBoss(state, def.damage)
+    } else if (def.kind === 'dash') {
+      p.cooldowns[slot] = def.cooldown
+      p.meleeSwing = def.active
+      p.meleeWeaponId = weaponId
+      p.weaponDashTimer = def.dashFrames
+      p.weaponDashVx = fv.x * (def.dashDistance / def.dashFrames)
+      p.weaponDashVy = fv.y * (def.dashDistance / def.dashFrames)
+      p.weaponDashHit = new Set()
+      p.weaponDashDamage = def.damage
+      p.weaponDashColor = def.color
+    } else if (def.kind === 'cone') {
+      p.cooldowns[slot] = def.cooldown
+      p.meleeSwing = def.active
+      p.meleeWeaponId = weaponId
+      state.hazards.push({
+        shape: 'cone', framesLeft: def.duration, tickTimer: 0, tickInterval: def.tickInterval,
+        tickDamage: def.tickDamage, reach: def.reach, width: def.width, color: def.color,
+      })
     } else if (def.kind === 'return') {
       if (state.returning) continue // only one can be in flight at a time
       p.cooldowns[slot] = def.cooldown
@@ -360,11 +393,42 @@ function stepWeapons(state, input) {
         x: cx - size / 2, y: cy - size / 2, w: size, h: size,
         vx: fv.x * def.speed, vy: fv.y * def.speed, color: def.color, dmg: def.damage,
       })
+    } else if (def.kind === 'pierce') {
+      p.cooldowns[slot] = def.cooldown
+      const size = def.size || 10
+      state.bolts.push({
+        x: cx - size / 2, y: cy - size / 2, w: size, h: size,
+        vx: fv.x * def.speed, vy: fv.y * def.speed, color: def.color, dmg: def.damage,
+        pierce: true, hit: new Set(),
+      })
+    } else if (def.kind === 'knockback') {
+      p.cooldowns[slot] = def.cooldown
+      const size = def.size || 10
+      state.bolts.push({
+        x: cx - size / 2, y: cy - size / 2, w: size, h: size,
+        vx: fv.x * def.speed, vy: fv.y * def.speed, color: def.color, dmg: def.damage,
+        knockback: def.knockback, dirx: fv.x, diry: fv.y,
+      })
+    } else if (def.kind === 'dot') {
+      p.cooldowns[slot] = def.cooldown
+      const size = def.size || 10
+      state.bolts.push({
+        x: cx - size / 2, y: cy - size / 2, w: size, h: size,
+        vx: fv.x * def.speed, vy: fv.y * def.speed, color: def.color, dmg: def.damage,
+        burn: { ticks: def.burnTicks, damage: def.burnDamage, interval: def.burnInterval },
+      })
     } else if (def.kind === 'bomb') {
       p.cooldowns[slot] = def.cooldown
       state.bombs.push({
         x: cx - 8, y: cy - 8, w: 16, h: 16, fuse: def.fuse,
-        radius: def.radius, damage: def.damage, color: def.color,
+        radius: def.radius, damage: def.damage, color: def.color, burnZone: def.burnZone || null,
+      })
+    } else if (def.kind === 'lob') {
+      p.cooldowns[slot] = def.cooldown
+      state.bombs.push({
+        x: cx - 8, y: cy - 8, w: 16, h: 16, fuse: def.fuse,
+        vx: fv.x * def.speed, vy: fv.y * def.speed, travel: def.travel,
+        radius: def.radius, damage: def.damage, color: def.color, burnZone: null,
       })
     } else if (def.kind === 'burst') {
       p.cooldowns[slot] = def.cooldown
@@ -401,15 +465,48 @@ function stepReturning(state) {
   }
 }
 
+// Applies a bolt's on-hit extras — knockback shoves the target further
+// along the bolt's own travel direction, dot attaches a burn status
+// that ticks on its own afterward (see stepBurning). Both are additive
+// to the instant hurtEnemy/hurtBoss hit, not substitutes for it. The
+// boss only takes horizontal knockback — its y is never otherwise
+// touched or re-clamped once set, where an enemy's position gets
+// re-clamped into its patrol box every frame by steerWithinBounds.
+function applyBoltExtras(a, target, isBoss) {
+  if (a.knockback) {
+    target.x += a.dirx * a.knockback
+    if (!isBoss) target.y += a.diry * a.knockback
+  }
+  if (a.burn) {
+    target.burnTicksLeft = a.burn.ticks
+    target.burnDamage = a.burn.damage
+    target.burnInterval = a.burn.interval
+    target.burnTimer = a.burn.interval
+  }
+}
+
 function stepBolts(state) {
   state.bolts.forEach(a => {
     a.x += a.vx; a.y += a.vy
     if (a.x < PLAY_X0 || a.x > PLAY_X0 + PLAY_W || a.y < PLAY_Y0 || a.y > PLAY_Y0 + PLAY_H) { a.dead = true; return }
     if (isSolidTile(state.tiles, tileRow(a.y), tileCol(a.x))) { a.dead = true; return }
-    for (const e of state.enemies) {
-      if (e.alive && aabb(a, e)) { hurtEnemy(state, e, a.dmg, a.color); a.dead = true; break }
+    if (a.pierce) {
+      // Keeps flying after a hit — tracks who it's already hit so it
+      // can't double-dip the same target on later frames.
+      for (const e of state.enemies) {
+        if (e.alive && !a.hit.has(e) && aabb(a, e)) { hurtEnemy(state, e, a.dmg, a.color); a.hit.add(e) }
+      }
+      if (state.boss && state.boss.alive && !a.hit.has(state.boss) && aabb(a, state.boss)) {
+        hurtBoss(state, a.dmg); a.hit.add(state.boss)
+      }
+      return
     }
-    if (!a.dead && state.boss && state.boss.alive && aabb(a, state.boss)) { hurtBoss(state, a.dmg); a.dead = true }
+    for (const e of state.enemies) {
+      if (e.alive && aabb(a, e)) { hurtEnemy(state, e, a.dmg, a.color); applyBoltExtras(a, e, false); a.dead = true; break }
+    }
+    if (!a.dead && state.boss && state.boss.alive && aabb(a, state.boss)) {
+      hurtBoss(state, a.dmg); applyBoltExtras(a, state.boss, true); a.dead = true
+    }
   })
   state.bolts = state.bolts.filter(a => !a.dead)
 }
@@ -452,9 +549,91 @@ function stepOrbs(state) {
   state.orbs = state.orbs.filter(o => !o.dead)
 }
 
+// A plain bomb (no `travel` field) just ticks its fuse down from the
+// drop spot, same as always. A lob-kind bomb spends its first `travel`
+// frames flying — only once it lands (travel runs out, or it hits a
+// wall) does its fuse start counting down, so it reads as "toss it,
+// then it still takes a beat" instead of an instant detonation at the
+// landing spot.
 function stepBombs(state) {
-  state.bombs.forEach(b => { b.fuse--; if (b.fuse <= 0) { explodeBomb(state, b); b.dead = true } })
+  state.bombs.forEach(b => {
+    if (b.travel > 0) {
+      b.x += b.vx; b.y += b.vy
+      b.travel--
+      if (isSolidTile(state.tiles, tileRow(b.y + b.h / 2), tileCol(b.x + b.w / 2))) b.travel = 0
+      return
+    }
+    b.fuse--
+    if (b.fuse <= 0) { explodeBomb(state, b); b.dead = true }
+  })
   state.bombs = state.bombs.filter(b => !b.dead)
+}
+
+// A hazard is a lingering, ticking-damage area — the Flame Rod's cone
+// (anchored to and re-aimed with the player every frame, like a
+// channel) and a Firebomb's burn zone (fixed in place where it landed)
+// both live here, sharing one duration/tick-interval/tick-damage
+// clock. Unlike every other weapon effect, a hazard keeps dealing
+// damage after the button press that created it is long over.
+function stepHazards(state) {
+  const p = state.player
+  for (const hz of state.hazards) {
+    hz.framesLeft--
+    if (hz.shape === 'cone') {
+      const fv = facingVector(p.facing)
+      const cx = p.x + p.w / 2, cy = p.y + p.h / 2
+      hz.x = cx; hz.y = cy
+      hz.rect = {
+        x: cx + fv.x * (p.w / 2) - (fv.x === 0 ? hz.width / 2 : 0),
+        y: cy + fv.y * (p.h / 2) - (fv.y === 0 ? hz.width / 2 : 0),
+        w: fv.x !== 0 ? hz.reach : hz.width,
+        h: fv.y !== 0 ? hz.reach : hz.width,
+      }
+    }
+    hz.tickTimer--
+    if (hz.tickTimer > 0) continue
+    hz.tickTimer = hz.tickInterval
+    if (hz.shape === 'cone') {
+      for (const e of state.enemies) if (e.alive && aabb(hz.rect, e)) hurtEnemy(state, e, hz.tickDamage, hz.color)
+      if (state.boss && state.boss.alive && aabb(hz.rect, state.boss)) hurtBoss(state, hz.tickDamage)
+    } else {
+      for (const e of state.enemies) {
+        if (!e.alive) continue
+        const dx = (e.x + e.w / 2) - hz.x, dy = (e.y + e.h / 2) - hz.y
+        if (dx * dx + dy * dy <= hz.radius * hz.radius) hurtEnemy(state, e, hz.tickDamage, hz.color)
+      }
+      if (state.boss && state.boss.alive) {
+        const b = state.boss
+        const dx = (b.x + b.w / 2) - hz.x, dy = (b.y + b.h / 2) - hz.y
+        if (dx * dx + dy * dy <= hz.radius * hz.radius * 1.2) hurtBoss(state, hz.tickDamage)
+      }
+    }
+  }
+  state.hazards = state.hazards.filter(hz => hz.framesLeft > 0)
+}
+
+// Ticks the Scorch Bolt's burn status, attached directly to whatever
+// it hit (see applyBoltExtras) rather than living in its own array —
+// there's at most one active burn per target, so it's simpler as a few
+// fields on the target itself than a separate tracked-entity list.
+function stepBurning(state) {
+  for (const e of state.enemies) {
+    if (!e.alive || e.burnTicksLeft <= 0) continue
+    e.burnTimer--
+    if (e.burnTimer > 0) continue
+    hurtEnemy(state, e, e.burnDamage, '#ff7a3a')
+    e.burnTicksLeft--
+    e.burnTimer = e.burnInterval
+  }
+  const b = state.boss
+  if (b && b.alive && b.burnTicksLeft > 0) {
+    b.burnTimer--
+    if (b.burnTimer <= 0) {
+      hurtBoss(state, b.burnDamage)
+      b.burnTicksLeft--
+      b.burnTimer = b.burnInterval
+    }
+  }
 }
 
 function stepEnemyShots(state) {
@@ -560,24 +739,57 @@ export function stepGame(state, input) {
 
   const p = state.player
 
-  let vx = (input.right ? 1 : 0) - (input.left ? 1 : 0)
-  let vy = (input.down ? 1 : 0) - (input.up ? 1 : 0)
-  if (vx !== 0 && vy !== 0) { vx *= 0.7071; vy *= 0.7071 }
-  p.vx = vx * MOVE_SPEED
-  p.vy = vy * MOVE_SPEED
-  if (input.down) p.facing = 'down'
-  else if (input.up) p.facing = 'up'
-  else if (input.left) p.facing = 'left'
-  else if (input.right) p.facing = 'right'
+  // A dash-kind melee weapon (the Rogue's daggers) takes over movement
+  // for its own short duration — the player is committed to the lunge,
+  // not steerable by held input, and facing stays locked to whichever
+  // direction the strike was thrown in. Snapshotted once so the
+  // movement branch and the hit-check below always agree on whether
+  // this frame counts as "dashing" — decrementing the timer inside the
+  // movement branch and then re-reading it for the hit-check condition
+  // would silently skip the hit-check on the dash's very last frame of
+  // movement, since by then the timer had already ticked to 0.
+  const dashingThisFrame = p.weaponDashTimer > 0
+  if (dashingThisFrame) {
+    p.vx = p.weaponDashVx
+    p.vy = p.weaponDashVy
+    p.weaponDashTimer--
+  } else {
+    let vx = (input.right ? 1 : 0) - (input.left ? 1 : 0)
+    let vy = (input.down ? 1 : 0) - (input.up ? 1 : 0)
+    if (vx !== 0 && vy !== 0) { vx *= 0.7071; vy *= 0.7071 }
+    p.vx = vx * MOVE_SPEED
+    p.vy = vy * MOVE_SPEED
+    if (input.down) p.facing = 'down'
+    else if (input.up) p.facing = 'up'
+    else if (input.left) p.facing = 'left'
+    else if (input.right) p.facing = 'right'
+  }
 
   checkLockedDoor(state)
   moveWithTiles(p, state.tiles)
+
+  if (dashingThisFrame) {
+    // Hit-check every frame of the lunge, not just once at the start —
+    // the dash's hitbox is wherever the player's body actually is this
+    // frame, and each enemy can only be caught once per dash.
+    const hitRect = { x: p.x - 4, y: p.y - 4, w: p.w + 8, h: p.h + 8 }
+    for (const e of state.enemies) {
+      if (e.alive && !p.weaponDashHit.has(e) && aabb(hitRect, e)) {
+        hurtEnemy(state, e, p.weaponDashDamage, p.weaponDashColor); p.weaponDashHit.add(e)
+      }
+    }
+    if (state.boss && state.boss.alive && !p.weaponDashHit.has(state.boss) && aabb(hitRect, state.boss)) {
+      hurtBoss(state, p.weaponDashDamage); p.weaponDashHit.add(state.boss)
+    }
+  }
 
   stepWeapons(state, input)
   stepReturning(state)
   stepBolts(state)
   stepOrbs(state)
   stepBombs(state)
+  stepHazards(state)
+  stepBurning(state)
   stepEnemyShots(state)
   stepEnemies(state)
   stepBoss(state)

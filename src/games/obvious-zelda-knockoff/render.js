@@ -208,6 +208,24 @@ function drawEnemy(ctx, e) {
     ctx.fillStyle = '#5a4428'
     ctx.beginPath(); ctx.arc(cx, cy, e.w / 2 - 6, 0, Math.PI * 2); ctx.fill()
   }
+  drawBurnFlicker(ctx, e.burnTicksLeft, cx, cy, e.w)
+}
+
+// A small flickering flame over anything with an active Scorch Bolt
+// burn — the only visible tell that damage is still coming in after
+// the bolt itself is long gone.
+function drawBurnFlicker(ctx, burnTicksLeft, cx, cy, w) {
+  if (!burnTicksLeft) return
+  ctx.save()
+  ctx.globalAlpha = 0.7
+  ctx.fillStyle = '#ff7a3a'
+  const top = cy - w / 2 - 6
+  ctx.beginPath()
+  ctx.moveTo(cx, top - 6)
+  ctx.quadraticCurveTo(cx - 5, top, cx - 2, top + 6)
+  ctx.quadraticCurveTo(cx + 5, top + 2, cx, top - 6)
+  ctx.fill()
+  ctx.restore()
 }
 
 function drawBoss(ctx, b) {
@@ -225,6 +243,7 @@ function drawBoss(ctx, b) {
   ctx.fillStyle = '#1a0522'
   ctx.beginPath(); ctx.arc(cx - 14, cy - 6, 4, 0, Math.PI * 2); ctx.arc(cx + 14, cy - 6, 4, 0, Math.PI * 2); ctx.fill()
   ctx.restore()
+  drawBurnFlicker(ctx, b.burnTicksLeft, cx, cy, b.w)
   const barW = 140
   ctx.fillStyle = 'rgba(0,0,0,0.5)'
   ctx.fillRect(cx - barW / 2, b.y - 18, barW, 8)
@@ -274,6 +293,30 @@ function drawProjectiles(ctx, state) {
     ctx.fillStyle = pulse ? bm.color : '#333'
     ctx.beginPath(); ctx.arc(bm.x + bm.w / 2, bm.y + bm.h / 2, bm.w / 2, 0, Math.PI * 2); ctx.fill()
   })
+}
+
+// A hazard is a lingering tick-damage area — drawn as a flickering
+// translucent patch so it reads as "still dangerous to stand in"
+// rather than a one-off effect. A cone (Flame Rod) is a directional
+// wedge anchored to the player; a zone (Firebomb's burn patch) is a
+// fixed circle on the ground where it landed.
+function drawHazards(ctx, state) {
+  const flicker = 0.55 + 0.35 * Math.sin(state.frame * 0.4)
+  for (const hz of state.hazards) {
+    ctx.save()
+    ctx.globalAlpha = flicker * Math.min(1, hz.framesLeft / 10)
+    ctx.fillStyle = hz.color
+    if (hz.shape === 'cone' && hz.rect) {
+      ctx.shadowColor = hz.color
+      ctx.shadowBlur = 10
+      ctx.fillRect(hz.rect.x, hz.rect.y, hz.rect.w, hz.rect.h)
+    } else if (hz.shape === 'zone') {
+      ctx.shadowColor = hz.color
+      ctx.shadowBlur = 14
+      ctx.beginPath(); ctx.arc(hz.x, hz.y, hz.radius, 0, Math.PI * 2); ctx.fill()
+    }
+    ctx.restore()
+  }
 }
 
 function drawParticles(ctx, particles) {
@@ -427,6 +470,7 @@ export function render(ctx, state) {
   drawTiles(ctx, state.tiles, state.biome, state.frame)
   drawPortals(ctx, state)
   state.items.forEach(it => drawItem(ctx, it, state.frame, state.character))
+  drawHazards(ctx, state)
   state.enemies.forEach(e => drawEnemy(ctx, e))
   drawBoss(ctx, state.boss)
   drawProjectiles(ctx, state)
