@@ -27,7 +27,7 @@ export const CHARACTERS = [
     id: 'pyromancer',
     name: 'Ember the Pyromancer',
     emoji: '🔥',
-    tagline: 'A sweeping flame rod, a looping fire orb, scorch bolts, and a big firebomb.',
+    tagline: 'A sweeping flame rod, a bursting fire orb, scorch bolts, and a big firebomb.',
     colors: { tunic: '#8a2a1f', cap: '#8a2a1f', accent: '#ffb84a', boots: '#3a1a12' },
     weapons: { melee: 'flamerod', item1: 'fireorb', item2: 'scorchbolt', item3: 'firebomb' },
   },

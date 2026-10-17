@@ -1,12 +1,20 @@
 // ── The Obvious Zelda Knockoff — weapon definitions ────────────────────
 // Every character maps the same four action slots (melee on Z, three
 // item slots on X/C/V) onto one of these. `kind` drives engine.js's
-// dispatch — the slot itself doesn't care what's plugged into it:
+// dispatch — the slot itself doesn't care what's plugged into it, and
+// each kind is a genuinely different mechanic, not a reskin:
 //   melee    - swings a short-lived hitbox in the facing direction
-//   return   - flies out, loops back once it reaches `range`, hits
-//              once per enemy per throw (only one can be in flight)
-//   straight - flies in a straight line until it hits something,
-//              a wall, or leaves the room
+//   return   - flies out in a straight line, loops back once it
+//              reaches `range`, can hit each enemy once on the way out
+//              AND once on the way back (only one can be in flight) —
+//              good single-target poke, no area effect
+//   straight - flies in a straight line, stops and deals damage the
+//              instant it touches one target, a wall, or leaves the
+//              room — single hit, no return trip
+//   burst    - lobbed outward; detonates into an area-of-effect blast
+//              (radius `radius`) the instant it touches a target, a
+//              wall, or travels `range` — hits everything in range of
+//              the blast once, good against groups, bad for chip damage
 //   bomb     - drops in place, explodes after `fuse` frames, damages
 //              anything within `radius`, and cracks 'B' walls
 
@@ -59,8 +67,9 @@ export const WEAPON_DEFS = {
     color: '#ff7a3a', hiltColor: '#6a1f16', guardColor: '#ffb84a',
   },
   fireorb: {
-    kind: 'return', label: 'Fire Orb', icon: '☄️', desc: 'Press X to loose a fire orb — loops back to you.',
-    cooldown: 40, speed: 5, range: 140, damage: 1, color: '#ff5c2a',
+    kind: 'burst', label: 'Fire Orb', icon: '☄️',
+    desc: 'Press X to lob a fire orb — it bursts into a fireball on impact, scorching everything nearby.',
+    cooldown: 42, speed: 5.5, range: 160, radius: 52, damage: 2, color: '#ff5c2a',
   },
   scorchbolt: {
     kind: 'straight', label: 'Scorch Bolt', icon: '✨', desc: 'Press C to fire a scorch bolt.',

@@ -244,6 +244,29 @@ function drawProjectiles(ctx, state) {
     ctx.restore()
   }
   state.bolts.forEach(a => { ctx.fillStyle = a.color; ctx.fillRect(a.x, a.y, a.w, a.h) })
+  // Burst orbs: a glowing, flickering ball with a trailing tail toward
+  // where it came from — reads as a lobbed fireball rather than a
+  // straight-line bolt or a returning boomerang.
+  state.orbs.forEach(o => {
+    ctx.save()
+    const back = Math.hypot(o.vx, o.vy) || 1
+    const tx = -o.vx / back, ty = -o.vy / back
+    const grad = ctx.createLinearGradient(o.x, o.y, o.x + tx * 18, o.y + ty * 18)
+    grad.addColorStop(0, o.color)
+    grad.addColorStop(1, 'rgba(255,255,255,0)')
+    ctx.strokeStyle = grad
+    ctx.lineWidth = 6
+    ctx.lineCap = 'round'
+    ctx.beginPath(); ctx.moveTo(o.x, o.y); ctx.lineTo(o.x + tx * 18, o.y + ty * 18); ctx.stroke()
+    ctx.shadowColor = o.color
+    ctx.shadowBlur = 12
+    ctx.fillStyle = o.color
+    ctx.beginPath(); ctx.arc(o.x, o.y, 7, 0, Math.PI * 2); ctx.fill()
+    ctx.shadowBlur = 0
+    ctx.fillStyle = 'rgba(255,255,255,0.85)'
+    ctx.beginPath(); ctx.arc(o.x, o.y, 3, 0, Math.PI * 2); ctx.fill()
+    ctx.restore()
+  })
   ctx.fillStyle = '#8a6a4a'
   state.enemyShots.forEach(es => { ctx.beginPath(); ctx.arc(es.x, es.y, es.w / 2, 0, Math.PI * 2); ctx.fill() })
   state.bombs.forEach(bm => {

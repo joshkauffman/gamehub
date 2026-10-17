@@ -122,6 +122,7 @@ function loadRoom(state, world, roomKey, entrySide, entryPoint) {
   state.enemies = (room.enemies || []).map(makeEnemy)
   state.returning = null
   state.bolts = []
+  state.orbs = []
   state.bombs = []
   state.enemyShots = []
   state.particles = []
@@ -365,6 +366,12 @@ function stepWeapons(state, input) {
         x: cx - 8, y: cy - 8, w: 16, h: 16, fuse: def.fuse,
         radius: def.radius, damage: def.damage, color: def.color,
       })
+    } else if (def.kind === 'burst') {
+      p.cooldowns[slot] = def.cooldown
+      state.orbs.push({
+        x: cx, y: cy, vx: fv.x * def.speed, vy: fv.y * def.speed,
+        traveled: 0, range: def.range, radius: def.radius, damage: def.damage, color: def.color,
+      })
     }
   }
 }
@@ -405,6 +412,44 @@ function stepBolts(state) {
     if (!a.dead && state.boss && state.boss.alive && aabb(a, state.boss)) { hurtBoss(state, a.dmg); a.dead = true }
   })
   state.bolts = state.bolts.filter(a => !a.dead)
+}
+
+// Detonates a burst-kind orb in place: area damage to everything within
+// `radius`, same shape as a bomb's blast but triggered by impact/range
+// instead of a fuse timer.
+function detonateOrb(state, o) {
+  spawnParticles(state, o.x, o.y, o.color, 16)
+  for (const e of state.enemies) {
+    if (!e.alive) continue
+    const dx = (e.x + e.w / 2) - o.x, dy = (e.y + e.h / 2) - o.y
+    if (dx * dx + dy * dy <= o.radius * o.radius) hurtEnemy(state, e, o.damage, o.color)
+  }
+  if (state.boss && state.boss.alive) {
+    const b = state.boss
+    const dx = (b.x + b.w / 2) - o.x, dy = (b.y + b.h / 2) - o.y
+    if (dx * dx + dy * dy <= o.radius * o.radius * 1.2) hurtBoss(state, o.damage)
+  }
+}
+
+// A burst-kind weapon is a lobbed orb, not an out-and-back throw — it
+// flies until it touches a target, a wall, or runs out of range, then
+// detonates into one area-of-effect blast. No return trip, and unlike a
+// bolt it can catch a whole cluster of enemies at once.
+function stepOrbs(state) {
+  state.orbs.forEach(o => {
+    o.x += o.vx; o.y += o.vy
+    o.traveled += Math.hypot(o.vx, o.vy)
+    const hitbox = { x: o.x - 6, y: o.y - 6, w: 12, h: 12 }
+    let detonate = o.traveled >= o.range
+      || o.x < PLAY_X0 || o.x > PLAY_X0 + PLAY_W || o.y < PLAY_Y0 || o.y > PLAY_Y0 + PLAY_H
+      || isSolidTile(state.tiles, tileRow(o.y), tileCol(o.x))
+    if (!detonate) {
+      for (const e of state.enemies) if (e.alive && aabb(hitbox, e)) { detonate = true; break }
+      if (!detonate && state.boss && state.boss.alive && aabb(hitbox, state.boss)) detonate = true
+    }
+    if (detonate) { detonateOrb(state, o); o.dead = true }
+  })
+  state.orbs = state.orbs.filter(o => !o.dead)
 }
 
 function stepBombs(state) {
@@ -531,6 +576,7 @@ export function stepGame(state, input) {
   stepWeapons(state, input)
   stepReturning(state)
   stepBolts(state)
+  stepOrbs(state)
   stepBombs(state)
   stepEnemyShots(state)
   stepEnemies(state)
