@@ -261,7 +261,7 @@ const CATEGORIES = [
       {
         id: 'dungeon-crawler-max',
         title: 'Dungeon Crawler Max',
-        description: "A kid-safe game-show dungeon crawl through 18 floors. Bonk monsters, loot chests, cast spells you level up over time, pick a class and race on floor 3, and fight a floor boss all the way to the mysterious Producer, while your hamster sidekick heckles supportively.",
+        description: "A game-show dungeon crawl through 18 floors. Bonk monsters, loot chests, cast spells you level up over time, pick a class and race on floor 3, and fight a floor boss all the way to the mysterious Producer, while your hamster sidekick heckles supportively.",
         emoji: '🏰',
         path: '/dungeon-crawler-max',
       },

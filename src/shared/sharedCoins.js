@@ -1,8 +1,8 @@
 // ── Shared coin purse ────────────────────────────────────────────────
 // One gold/coin balance shared across Dungeon Crawler Max, Dungeon
 // Crawler Max: Free Roam, and Hogwarts: Spellbound — all three are the
-// same "kid-safe game show dungeon" universe under the hood (near-
-// identical player/loot/achievement code), so coins found in any one of
+// same "game show dungeon" universe under the hood (near-identical
+// player/loot/achievement code), so coins found in any one of
 // them spend in the others too. Backed by one localStorage number; each
 // game's Player 1 reads it in at game start and writes back through it
 // whenever their own gold changes (see syncSharedCoins below) — Player 2

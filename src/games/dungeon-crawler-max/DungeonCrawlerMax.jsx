@@ -4,11 +4,11 @@ import styles from './DungeonCrawlerMax.module.css'
 import { loadSharedCoins, syncSharedCoins } from '../../shared/sharedCoins.js'
 
 // ── Dungeon Crawler Max ──────────────────────────────────────────────────
-// A kid-safe riff on the "trapped in a monster-filled dungeon game show"
-// premise: a floating game-show host narrates, a talking pet hamster
-// heckles supportively, floors escalate toward a boss, and loot/XP/levels
-// drive progress. Getting knocked out has zero real stakes — it's a "free
-// respawn" gag, not a death, since this is built for a 6-year-old.
+// A riff on the "trapped in a monster-filled dungeon game show" premise:
+// a floating game-show host narrates, a talking pet hamster heckles
+// supportively, floors escalate toward a boss, and loot/XP/levels drive
+// progress. Getting knocked out has zero real stakes — it's a "free
+// respawn" gag, not a death.
 //
 // Everything lives in one plain object (`g`) mutated in place every frame
 // and drawn straight to canvas — same pattern as this hub's other 2D

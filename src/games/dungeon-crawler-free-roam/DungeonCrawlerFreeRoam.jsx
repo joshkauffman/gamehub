@@ -19,7 +19,7 @@ import {
 } from './constants.js'
 
 // ── Dungeon Crawler Max: Free Roam ──────────────────────────────────────
-// Same kid-safe "game show dungeon" universe as Dungeon Crawler Max, now
+// Same "game show dungeon" universe as Dungeon Crawler Max, now
 // a sequence of floors instead of house-shaped buildings: every floor is
 // one big, empty, foggy plane — no rooms, no walls — with monsters
 // roaming it and exactly one staircase hidden far from spawn (the final

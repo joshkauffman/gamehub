@@ -1,5 +1,5 @@
 // ── Tuning ───────────────────────────────────────────────────────────
-// Same kid-safe "game show dungeon" premise as Dungeon Crawler Max, now
+// Same "game show dungeon" premise as Dungeon Crawler Max, now
 // a sequence of floors instead of a ring of house-shaped dungeon
 // buildings: each floor is one big, foggy, mostly-empty plane with
 // monsters roaming it, a handful of small open-air mini dungeons (a few
