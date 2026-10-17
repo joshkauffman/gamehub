@@ -7,14 +7,14 @@
 import {
   PLAY_X0, PLAY_Y0, TILE, COLS, ROWS, PLAY_W, PLAY_H,
   PLAYER_SIZE, MOVE_SPEED, HEARTS_START, HEART_CONTAINER_BONUS,
-  CONTACT_DAMAGE, STRONG_CONTACT_DAMAGE, INVINCIBLE_FRAMES,
-  SWORD_COOLDOWN, SWORD_ACTIVE_FRAMES, SWORD_REACH, SWORD_DAMAGE,
-  BOOMERANG_COOLDOWN, BOOMERANG_SPEED, BOOMERANG_RANGE, BOOMERANG_DAMAGE,
-  ARROW_COOLDOWN, ARROW_SPEED, ARROW_DAMAGE,
-  BOMB_COOLDOWN, BOMB_FUSE, BOMB_RADIUS, BOMB_DAMAGE, BOSS_HP,
+  CONTACT_DAMAGE, STRONG_CONTACT_DAMAGE, INVINCIBLE_FRAMES, BOSS_HP,
   SOLID_TILES, ITEM_DEFS,
 } from './constants.js'
 import { WORLDS, PORTALS, START_WORLD, START_ROOM_KEY, TOTAL_ITEMS } from './levels.js'
+import { WEAPON_DEFS } from './weapons.js'
+import { characterById } from './characterData.js'
+
+const SLOTS = ['melee', 'item1', 'item2', 'item3']
 
 export function aabb(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y }
 
@@ -72,7 +72,7 @@ function moveWithTiles(e, tiles) {
 function colToX(col) { return PLAY_X0 + col * TILE }
 function rowToY(row) { return PLAY_Y0 + row * TILE }
 
-function freshAbilities() { return { sword: false, boomerang: false, bow: false, bombs: false } }
+function freshAbilities() { return { melee: false, item1: false, item2: false, item3: false } }
 
 function makeEnemy(def) {
   const size = ENEMY_SIZE[def.type]
@@ -120,8 +120,8 @@ function loadRoom(state, world, roomKey, entrySide, entryPoint) {
     .map(it => ({ ...it, x: colToX(it.col) + TILE / 2 - 14, y: rowToY(it.row) - 14, w: 28, h: 28, bob: Math.random() * Math.PI * 2 }))
 
   state.enemies = (room.enemies || []).map(makeEnemy)
-  state.boomerang = null
-  state.arrows = []
+  state.returning = null
+  state.bolts = []
   state.bombs = []
   state.enemyShots = []
   state.particles = []
@@ -157,10 +157,11 @@ function loadRoom(state, world, roomKey, entrySide, entryPoint) {
   p.vx = 0; p.vy = 0
 }
 
-export function freshState() {
+export function freshState(characterId) {
   const state = {
     frame: 0,
     status: 'playing',
+    character: characterById(characterId),
     mapOpen: false,
     prevMapHeld: false,
     score: 0,
@@ -172,7 +173,8 @@ export function freshState() {
       x: 0, y: 0, w: PLAYER_SIZE.w, h: PLAYER_SIZE.h, vx: 0, vy: 0, facing: 'down',
       hearts: HEARTS_START, maxHearts: HEARTS_START, smallKeys: 0,
       abilities: freshAbilities(), invincible: 90,
-      swordCooldown: 0, swordSwing: 0, boomerangCooldown: 0, arrowCooldown: 0, bombCooldown: 0,
+      cooldowns: { melee: 0, item1: 0, item2: 0, item3: 0 },
+      meleeSwing: 0, meleeWeaponId: null,
     },
   }
   loadRoom(state, START_WORLD, START_ROOM_KEY, 'start')
@@ -194,19 +196,38 @@ function facingVector(facing) {
   return { x: 0, y: 1 }
 }
 
+// Weapon pickups are slot-based ('weapon_melee', 'weapon_item1', ...) —
+// the same pickup spot resolves to a different concrete weapon depending
+// on which character is being played (see characterData.js). Heart
+// containers and small keys aren't weapons, so they resolve through the
+// plain ITEM_DEFS table same as before.
 function collectItem(state, item) {
   state.collectedItems.add(item.id)
-  const def = ITEM_DEFS[item.type]
   const p = state.player
-  if (item.type === 'sword') p.abilities.sword = true
-  else if (item.type === 'boomerang') p.abilities.boomerang = true
-  else if (item.type === 'bow') p.abilities.bow = true
-  else if (item.type === 'bombs') p.abilities.bombs = true
-  else if (item.type === 'heart_container') { p.maxHearts += HEART_CONTAINER_BONUS; p.hearts = p.maxHearts }
-  else if (item.type === 'small_key') p.smallKeys += 1
+  const cx = item.x + item.w / 2, cy = item.y + item.h / 2
   state.score += 100
+
+  if (item.type === 'heart_container') {
+    p.maxHearts += HEART_CONTAINER_BONUS; p.hearts = p.maxHearts
+    const def = ITEM_DEFS.heart_container
+    showMessage(state, `${def.label} acquired! ${def.desc}`)
+    spawnParticles(state, cx, cy, def.color, 14)
+    return
+  }
+  if (item.type === 'small_key') {
+    p.smallKeys += 1
+    const def = ITEM_DEFS.small_key
+    showMessage(state, `${def.label} acquired! ${def.desc}`)
+    spawnParticles(state, cx, cy, def.color, 14)
+    return
+  }
+
+  const slot = item.type.replace('weapon_', '')
+  const weaponId = state.character.weapons[slot]
+  const def = WEAPON_DEFS[weaponId]
+  p.abilities[slot] = true
   showMessage(state, `${def.label} acquired! ${def.desc}`)
-  spawnParticles(state, item.x + item.w / 2, item.y + item.h / 2, def.color, 14)
+  spawnParticles(state, cx, cy, def.color, 14)
 }
 
 function hurtPlayer(state, amount) {
@@ -257,15 +278,15 @@ function checkLockedDoor(state) {
   }
 }
 
-function destroyBombWalls(state, cx, cy) {
-  const c0 = tileCol(cx - BOMB_RADIUS), c1 = tileCol(cx + BOMB_RADIUS)
-  const r0 = tileRow(cy - BOMB_RADIUS), r1 = tileRow(cy + BOMB_RADIUS)
+function destroyBombWalls(state, cx, cy, radius) {
+  const c0 = tileCol(cx - radius), c1 = tileCol(cx + radius)
+  const r0 = tileRow(cy - radius), r1 = tileRow(cy + radius)
   for (let r = r0; r <= r1; r++) {
     for (let c = c0; c <= c1; c++) {
       if (r < 0 || r >= ROWS || c < 0 || c >= COLS) continue
       if (state.tiles[r][c] !== 'B') continue
       const dx = (colToX(c) + TILE / 2) - cx, dy = (rowToY(r) + TILE / 2) - cy
-      if (dx * dx + dy * dy <= BOMB_RADIUS * BOMB_RADIUS) {
+      if (dx * dx + dy * dy <= radius * radius) {
         state.tiles[r][c] = '.'
         state.destroyedTiles.add(`${state.roomFullKey}|${r}|${c}`)
         spawnParticles(state, colToX(c) + TILE / 2, rowToY(r) + TILE / 2, '#c9a46a', 8)
@@ -274,101 +295,116 @@ function destroyBombWalls(state, cx, cy) {
   }
 }
 
+// Every character's item3 weapon is bomb-kind (just reskinned/retuned —
+// bombs/smokebomb/firebomb), so bomb-gated bonus content stays reachable
+// no matter who you're playing.
 function explodeBomb(state, bomb) {
   const cx = bomb.x + bomb.w / 2, cy = bomb.y + bomb.h / 2
-  spawnParticles(state, cx, cy, '#ffe35c', 18)
-  destroyBombWalls(state, cx, cy)
+  spawnParticles(state, cx, cy, bomb.color, 18)
+  destroyBombWalls(state, cx, cy, bomb.radius)
   for (const e of state.enemies) {
     if (!e.alive) continue
     const dx = (e.x + e.w / 2) - cx, dy = (e.y + e.h / 2) - cy
-    if (dx * dx + dy * dy <= BOMB_RADIUS * BOMB_RADIUS) hurtEnemy(state, e, BOMB_DAMAGE, '#ffe35c')
+    if (dx * dx + dy * dy <= bomb.radius * bomb.radius) hurtEnemy(state, e, bomb.damage, bomb.color)
   }
   if (state.boss && state.boss.alive) {
     const b = state.boss
     const dx = (b.x + b.w / 2) - cx, dy = (b.y + b.h / 2) - cy
-    if (dx * dx + dy * dy <= BOMB_RADIUS * BOMB_RADIUS * 1.4) hurtBoss(state, BOMB_DAMAGE)
+    if (dx * dx + dy * dy <= bomb.radius * bomb.radius * 1.4) hurtBoss(state, bomb.damage)
   }
 }
 
+// Slot-agnostic: each slot (melee/item1/item2/item3) just looks up
+// whatever weapon the current character has plugged into it and
+// dispatches on that weapon's `kind` — the slot itself doesn't know or
+// care whether it's holding a sword, a dagger, or a flame rod.
 function stepWeapons(state, input) {
   const p = state.player
-  if (p.swordCooldown > 0) p.swordCooldown--
-  if (p.boomerangCooldown > 0) p.boomerangCooldown--
-  if (p.arrowCooldown > 0) p.arrowCooldown--
-  if (p.bombCooldown > 0) p.bombCooldown--
-  if (p.swordSwing > 0) p.swordSwing--
+  for (const slot of SLOTS) if (p.cooldowns[slot] > 0) p.cooldowns[slot]--
+  if (p.meleeSwing > 0) p.meleeSwing--
 
   const fv = facingVector(p.facing)
   const cx = p.x + p.w / 2, cy = p.y + p.h / 2
 
-  if (input.sword && p.abilities.sword && p.swordCooldown <= 0) {
-    p.swordCooldown = SWORD_COOLDOWN
-    p.swordSwing = SWORD_ACTIVE_FRAMES
-    const reach = {
-      x: cx + fv.x * (p.w / 2) - (fv.x === 0 ? p.w * 0.4 : 2),
-      y: cy + fv.y * (p.h / 2) - (fv.y === 0 ? p.h * 0.4 : 2),
-      w: fv.x !== 0 ? SWORD_REACH : p.w * 0.8,
-      h: fv.y !== 0 ? SWORD_REACH : p.h * 0.8,
+  for (const slot of SLOTS) {
+    if (!input[slot] || !p.abilities[slot] || p.cooldowns[slot] > 0) continue
+    const weaponId = state.character.weapons[slot]
+    const def = WEAPON_DEFS[weaponId]
+    if (!def) continue
+
+    if (def.kind === 'melee') {
+      p.cooldowns[slot] = def.cooldown
+      p.meleeSwing = def.active
+      p.meleeWeaponId = weaponId
+      const reach = {
+        x: cx + fv.x * (p.w / 2) - (fv.x === 0 ? p.w * 0.4 : 2),
+        y: cy + fv.y * (p.h / 2) - (fv.y === 0 ? p.h * 0.4 : 2),
+        w: fv.x !== 0 ? def.reach : p.w * 0.8,
+        h: fv.y !== 0 ? def.reach : p.h * 0.8,
+      }
+      for (const e of state.enemies) if (e.alive && aabb(reach, e)) hurtEnemy(state, e, def.damage, def.color)
+      if (state.boss && state.boss.alive && aabb(reach, state.boss)) hurtBoss(state, def.damage)
+    } else if (def.kind === 'return') {
+      if (state.returning) continue // only one can be in flight at a time
+      p.cooldowns[slot] = def.cooldown
+      state.returning = {
+        weaponId, color: def.color, damage: def.damage, speed: def.speed, range: def.range,
+        x: cx, y: cy, vx: fv.x * def.speed, vy: fv.y * def.speed,
+        traveled: 0, returning: false, hit: new Set(),
+      }
+    } else if (def.kind === 'straight') {
+      p.cooldowns[slot] = def.cooldown
+      const size = def.size || 10
+      state.bolts.push({
+        x: cx - size / 2, y: cy - size / 2, w: size, h: size,
+        vx: fv.x * def.speed, vy: fv.y * def.speed, color: def.color, dmg: def.damage,
+      })
+    } else if (def.kind === 'bomb') {
+      p.cooldowns[slot] = def.cooldown
+      state.bombs.push({
+        x: cx - 8, y: cy - 8, w: 16, h: 16, fuse: def.fuse,
+        radius: def.radius, damage: def.damage, color: def.color,
+      })
     }
-    for (const e of state.enemies) if (e.alive && aabb(reach, e)) hurtEnemy(state, e, SWORD_DAMAGE, '#d8d8e4')
-    if (state.boss && state.boss.alive && aabb(reach, state.boss)) hurtBoss(state, SWORD_DAMAGE)
-  }
-
-  if (input.item1 && p.abilities.boomerang && p.boomerangCooldown <= 0 && !state.boomerang) {
-    p.boomerangCooldown = BOOMERANG_COOLDOWN
-    state.boomerang = {
-      x: cx, y: cy, vx: fv.x * BOOMERANG_SPEED, vy: fv.y * BOOMERANG_SPEED,
-      traveled: 0, returning: false, hit: new Set(),
-    }
-  }
-
-  if (input.item2 && p.abilities.bow && p.arrowCooldown <= 0) {
-    p.arrowCooldown = ARROW_COOLDOWN
-    state.arrows.push({ x: cx - 5, y: cy - 5, w: 10, h: 10, vx: fv.x * ARROW_SPEED, vy: fv.y * ARROW_SPEED })
-  }
-
-  if (input.item3 && p.abilities.bombs && p.bombCooldown <= 0) {
-    p.bombCooldown = BOMB_COOLDOWN
-    state.bombs.push({ x: cx - 8, y: cy - 8, w: 16, h: 16, fuse: BOMB_FUSE })
   }
 }
 
-function stepBoomerang(state) {
-  const b = state.boomerang
+function stepReturning(state) {
+  const b = state.returning
   if (!b) return
   const p = state.player
   if (!b.returning) {
     b.x += b.vx; b.y += b.vy
     b.traveled += Math.hypot(b.vx, b.vy)
-    if (b.traveled >= BOOMERANG_RANGE) b.returning = true
+    if (b.traveled >= b.range) b.returning = true
   } else {
     const dx = (p.x + p.w / 2) - b.x, dy = (p.y + p.h / 2) - b.y
     const dist = Math.hypot(dx, dy) || 1
-    b.vx = (dx / dist) * BOOMERANG_SPEED
-    b.vy = (dy / dist) * BOOMERANG_SPEED
+    b.vx = (dx / dist) * b.speed
+    b.vy = (dy / dist) * b.speed
     b.x += b.vx; b.y += b.vy
-    if (dist < 16) { state.boomerang = null; return }
+    if (dist < 16) { state.returning = null; return }
   }
   const rect = { x: b.x - 6, y: b.y - 6, w: 12, h: 12 }
   for (const e of state.enemies) {
-    if (e.alive && !b.hit.has(e) && aabb(rect, e)) { hurtEnemy(state, e, BOOMERANG_DAMAGE, '#5bc8ff'); b.hit.add(e) }
+    if (e.alive && !b.hit.has(e) && aabb(rect, e)) { hurtEnemy(state, e, b.damage, b.color); b.hit.add(e) }
   }
   if (state.boss && state.boss.alive && !b.hit.has(state.boss) && aabb(rect, state.boss)) {
-    hurtBoss(state, BOOMERANG_DAMAGE); b.hit.add(state.boss)
+    hurtBoss(state, b.damage); b.hit.add(state.boss)
   }
 }
 
-function stepArrows(state) {
-  state.arrows.forEach(a => {
+function stepBolts(state) {
+  state.bolts.forEach(a => {
     a.x += a.vx; a.y += a.vy
     if (a.x < PLAY_X0 || a.x > PLAY_X0 + PLAY_W || a.y < PLAY_Y0 || a.y > PLAY_Y0 + PLAY_H) { a.dead = true; return }
     if (isSolidTile(state.tiles, tileRow(a.y), tileCol(a.x))) { a.dead = true; return }
     for (const e of state.enemies) {
-      if (e.alive && aabb(a, e)) { hurtEnemy(state, e, ARROW_DAMAGE, '#ffb85c'); a.dead = true; break }
+      if (e.alive && aabb(a, e)) { hurtEnemy(state, e, a.dmg, a.color); a.dead = true; break }
     }
-    if (!a.dead && state.boss && state.boss.alive && aabb(a, state.boss)) { hurtBoss(state, ARROW_DAMAGE); a.dead = true }
+    if (!a.dead && state.boss && state.boss.alive && aabb(a, state.boss)) { hurtBoss(state, a.dmg); a.dead = true }
   })
-  state.arrows = state.arrows.filter(a => !a.dead)
+  state.bolts = state.bolts.filter(a => !a.dead)
 }
 
 function stepBombs(state) {
@@ -493,8 +529,8 @@ export function stepGame(state, input) {
   moveWithTiles(p, state.tiles)
 
   stepWeapons(state, input)
-  stepBoomerang(state)
-  stepArrows(state)
+  stepReturning(state)
+  stepBolts(state)
   stepBombs(state)
   stepEnemyShots(state)
   stepEnemies(state)

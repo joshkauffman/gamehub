@@ -123,7 +123,7 @@ function buildBossRoom(rows) {
 
 const OVERWORLD_ROOMS = [
   { gx: 0, gy: 0, name: 'Forest Grove', biome: 'forest', build: buildForestGrove,
-    items: [{ type: 'boomerang', col: 12, row: 5 }],
+    items: [{ type: 'weapon_item1', col: 12, row: 5 }],
     enemies: [{ type: 'blob', col: 8, row: 6, minCol: 6, maxCol: 17, minRow: 3, maxRow: 9 }] },
   { gx: 1, gy: 0, name: 'North Field', biome: 'field', build: buildNorthField,
     enemies: [{ type: 'blob', col: 11, row: 6, minCol: 8, maxCol: 15, minRow: 3, maxRow: 9 }] },
@@ -134,13 +134,13 @@ const OVERWORLD_ROOMS = [
     enemies: [{ type: 'pebblefoot', col: 17, row: 7, facing: 'left' }] },
   { gx: 1, gy: 1, name: 'Start Meadow', biome: 'field', build: buildStartMeadow, isStart: true },
   { gx: 2, gy: 1, name: 'East Shore', biome: 'shore', build: buildEastShore,
-    items: [{ type: 'bow', col: 11, row: 9 }],
+    items: [{ type: 'weapon_item2', col: 11, row: 9 }],
     enemies: [{ type: 'bat', col: 10, row: 5, minCol: 6, maxCol: 16, minRow: 2, maxRow: 9 }] },
   { gx: 3, gy: 1, name: 'Dungeon Approach', biome: 'field', build: buildDungeonApproach,
     items: [{ type: 'heart_container', col: 18, row: 5 }],
     enemies: [{ type: 'blob', col: 6, row: 6, minCol: 3, maxCol: 9, minRow: 3, maxRow: 9 }] },
   { gx: 1, gy: 2, name: 'South Field', biome: 'field', build: buildSouthField,
-    items: [{ type: 'bombs', col: 12, row: 7 }],
+    items: [{ type: 'weapon_item3', col: 12, row: 7 }],
     enemies: [{ type: 'blob', col: 8, row: 7, minCol: 5, maxCol: 18, minRow: 6, maxRow: 9 }] },
   { gx: 2, gy: 2, name: 'Lakeside', biome: 'shore', build: buildLakeside,
     enemies: [{ type: 'pebblefoot', col: 11, row: 6, facing: 'up' }] },
@@ -148,7 +148,7 @@ const OVERWORLD_ROOMS = [
 
 const CAVE_ROOMS = [
   { gx: 0, gy: 0, name: "Old Man's Cave", biome: 'dungeon', build: buildSwordCave,
-    items: [{ type: 'sword', col: 11, row: 5 }] },
+    items: [{ type: 'weapon_melee', col: 11, row: 5 }] },
 ]
 
 const DUNGEON_ROOMS = [

@@ -57,7 +57,7 @@ const CATEGORIES = [
       {
         id: 'obvious-zelda-knockoff',
         title: 'The Obvious Zelda Knockoff',
-        description: "A hero in a green cap gets handed a sword by a suspiciously generous old man, then wanders a small overworld collecting a boomerang, a bow, and bombs on the way to a short dungeon. It's a knockoff. It knows it's a knockoff. That's the whole bit.",
+        description: "Pick your hero — Knight, Rogue, or Pyromancer — then wander a small overworld collecting a completely different arsenal depending on who you chose, on the way to a short dungeon. It's a knockoff. It knows it's a knockoff. That's the whole bit.",
         emoji: '🗡️',
         path: '/obvious-zelda-knockoff',
       },

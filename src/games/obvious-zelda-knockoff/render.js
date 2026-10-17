@@ -1,8 +1,11 @@
 // ── The Obvious Zelda Knockoff — rendering ────────────────────────────
 // Pure canvas drawing. Reads state produced by engine.js; never mutates it.
 
-import { W, H, HUD_H, PLAY_X0, PLAY_Y0, TILE, COLS, ROWS, BIOMES, ITEM_DEFS, SWORD_ACTIVE_FRAMES, SWORD_REACH } from './constants.js'
+import { W, H, HUD_H, PLAY_X0, PLAY_Y0, TILE, COLS, ROWS, BIOMES, ITEM_DEFS } from './constants.js'
 import { WORLDS, PORTALS } from './levels.js'
+import { WEAPON_DEFS } from './weapons.js'
+
+const SLOTS = ['melee', 'item1', 'item2', 'item3']
 
 // A glowing patch over every portal trigger in the current room — the
 // only visible hint for where a cave mouth or dungeon doorway actually
@@ -72,8 +75,20 @@ function drawTiles(ctx, tiles, biome, frame) {
   }
 }
 
-function drawItem(ctx, item, frame) {
-  const def = ITEM_DEFS[item.type]
+// Weapon pickup glow color depends on which character is playing (a
+// 'weapon_item1' pickup glows blue for the Knight's Boomerang but
+// orange for the Pyromancer's Fire Orb) — heart containers and small
+// keys are the same for everyone, so they still come from ITEM_DEFS.
+function defForItem(item, character) {
+  if (item.type.startsWith('weapon_')) {
+    const slot = item.type.replace('weapon_', '')
+    return WEAPON_DEFS[character.weapons[slot]]
+  }
+  return ITEM_DEFS[item.type]
+}
+
+function drawItem(ctx, item, frame, character) {
+  const def = defForItem(item, character)
   const bobY = Math.sin(frame * 0.08 + item.bob) * 4
   const cx = item.x + item.w / 2, cy = item.y + item.h / 2 + bobY
   ctx.save()
@@ -87,26 +102,28 @@ function drawItem(ctx, item, frame) {
   ctx.restore()
 }
 
-function drawPlayer(ctx, p, frame) {
+export function drawPlayer(ctx, p, frame, character) {
+  const colors = character.colors
   ctx.save()
   const flashing = p.invincible > 0 && Math.floor(frame / 4) % 2 === 0
   ctx.globalAlpha = flashing ? 0.45 : 1
   const cx = p.x + p.w / 2, cy = p.y + p.h / 2
 
   // Original shapes, deliberately shaped to read as "that kind of
-  // green-tunic hero" — a cap, a tunic, boots, and a sword that swings
-  // in the direction you're facing.
-  ctx.fillStyle = '#2a7a3a'
+  // tunic hero" — a cap, a tunic, boots, and a weapon that swings in
+  // the direction you're facing. Clothing colors come from the chosen
+  // character; the silhouette itself stays the same for all three.
+  ctx.fillStyle = colors.tunic
   ctx.fillRect(p.x + 2, p.y + p.h * 0.3, p.w - 4, p.h * 0.55)
   ctx.fillStyle = '#8a5a2a'
   ctx.fillRect(p.x + 2, p.y + p.h * 0.72, p.w - 4, p.h * 0.18)
   // belt buckle
-  ctx.fillStyle = '#ffd54a'
+  ctx.fillStyle = colors.accent
   ctx.fillRect(cx - 3, p.y + p.h * 0.74, 6, 6)
   // head + cap
   ctx.fillStyle = '#f2c89a'
   ctx.beginPath(); ctx.arc(cx, p.y + p.h * 0.22, p.w * 0.36, 0, Math.PI * 2); ctx.fill()
-  ctx.fillStyle = '#2a7a3a'
+  ctx.fillStyle = colors.cap
   ctx.beginPath(); ctx.arc(cx, p.y + p.h * 0.14, p.w * 0.4, Math.PI, 0); ctx.fill()
   ctx.beginPath()
   ctx.moveTo(cx - p.w * 0.1, p.y + p.h * 0.1)
@@ -120,29 +137,32 @@ function drawPlayer(ctx, p, frame) {
   ctx.fillRect(cx - 5 + eyeDX, p.y + p.h * 0.23 + eyeDY, 3, 3)
   ctx.fillRect(cx + 2 + eyeDX, p.y + p.h * 0.23 + eyeDY, 3, 3)
   // boots
-  ctx.fillStyle = '#5a3a1f'
+  ctx.fillStyle = colors.boots
   ctx.fillRect(p.x + 2, p.y + p.h - 6, p.w * 0.36, 6)
   ctx.fillRect(p.x + p.w - p.w * 0.36 - 2, p.y + p.h - 6, p.w * 0.36, 6)
 
-  // An actual sword, swept through an arc centered on the facing
-  // direction — not just a motion-line flash.
-  if (p.swordSwing > 0) {
-    const t = 1 - p.swordSwing / SWORD_ACTIVE_FRAMES // 0 at the start of the swing, 1 at the end
+  // An actual weapon, swept through an arc centered on the facing
+  // direction — not just a motion-line flash. Shape stays the same
+  // (handle/guard/blade) for every melee weapon; only the colors and
+  // reach/timing (from the weapon's own def) change.
+  if (p.meleeSwing > 0 && p.meleeWeaponId) {
+    const def = WEAPON_DEFS[p.meleeWeaponId]
+    const t = 1 - p.meleeSwing / def.active // 0 at the start of the swing, 1 at the end
     const sweep = (t - 0.5) * Math.PI * 0.95
     const angle = facingAngle(p.facing) + sweep
-    const hilt = 6, blade = SWORD_REACH + 12
+    const hilt = 6, blade = def.reach + 12
 
     ctx.save()
     ctx.translate(cx, cy)
     ctx.rotate(angle)
     // handle
-    ctx.fillStyle = '#5a3a1f'
+    ctx.fillStyle = def.hiltColor
     ctx.fillRect(0, -2.5, hilt, 5)
     // crossguard
-    ctx.fillStyle = '#ffd54a'
+    ctx.fillStyle = def.guardColor
     ctx.fillRect(hilt - 2, -5.5, 3, 11)
     // blade
-    ctx.fillStyle = '#e8e8f0'
+    ctx.fillStyle = def.color
     ctx.fillRect(hilt + 1, -2, blade, 4)
     ctx.beginPath()
     ctx.moveTo(hilt + 1 + blade, -2)
@@ -213,23 +233,22 @@ function drawBoss(ctx, b) {
 }
 
 function drawProjectiles(ctx, state) {
-  if (state.boomerang) {
-    const bm = state.boomerang
+  if (state.returning) {
+    const bm = state.returning
     ctx.save()
     ctx.translate(bm.x, bm.y)
     ctx.rotate(state.frame * 0.6)
-    ctx.fillStyle = '#5bc8ff'
+    ctx.fillStyle = bm.color
     ctx.fillRect(-8, -2, 16, 4)
     ctx.fillRect(-2, -8, 4, 16)
     ctx.restore()
   }
-  ctx.fillStyle = '#c99a5b'
-  state.arrows.forEach(a => ctx.fillRect(a.x, a.y, a.w, a.h))
+  state.bolts.forEach(a => { ctx.fillStyle = a.color; ctx.fillRect(a.x, a.y, a.w, a.h) })
   ctx.fillStyle = '#8a6a4a'
   state.enemyShots.forEach(es => { ctx.beginPath(); ctx.arc(es.x, es.y, es.w / 2, 0, Math.PI * 2); ctx.fill() })
   state.bombs.forEach(bm => {
     const pulse = bm.fuse % 10 < 5
-    ctx.fillStyle = pulse ? '#ffe35c' : '#333'
+    ctx.fillStyle = pulse ? bm.color : '#333'
     ctx.beginPath(); ctx.arc(bm.x + bm.w / 2, bm.y + bm.h / 2, bm.w / 2, 0, Math.PI * 2); ctx.fill()
   })
 }
@@ -280,12 +299,12 @@ function drawHUD(ctx, state) {
   ctx.font = 'bold 11px monospace'
   ctx.textAlign = 'left'
   ctx.textBaseline = 'middle'
-  const abilityIcons = [['sword', '🗡'], ['boomerang', '➰'], ['bow', '🏹'], ['bombs', '●']]
   let ax = 230
-  abilityIcons.forEach(([key, icon]) => {
-    ctx.fillStyle = p.abilities[key] ? '#ffd54a' : 'rgba(255,255,255,0.2)'
+  SLOTS.forEach(slot => {
+    const def = WEAPON_DEFS[state.character.weapons[slot]]
+    ctx.fillStyle = p.abilities[slot] ? '#ffd54a' : 'rgba(255,255,255,0.2)'
     ctx.font = '14px sans-serif'
-    ctx.fillText(icon, ax, 28)
+    ctx.fillText(def.icon, ax, 28)
     ax += 24
   })
   if (p.smallKeys > 0) {
@@ -384,11 +403,11 @@ export function render(ctx, state) {
   drawBackground(ctx, state.biome)
   drawTiles(ctx, state.tiles, state.biome, state.frame)
   drawPortals(ctx, state)
-  state.items.forEach(it => drawItem(ctx, it, state.frame))
+  state.items.forEach(it => drawItem(ctx, it, state.frame, state.character))
   state.enemies.forEach(e => drawEnemy(ctx, e))
   drawBoss(ctx, state.boss)
   drawProjectiles(ctx, state)
-  drawPlayer(ctx, state.player, state.frame)
+  drawPlayer(ctx, state.player, state.frame, state.character)
   drawParticles(ctx, state.particles)
   drawHUD(ctx, state)
   drawMessage(ctx, state)

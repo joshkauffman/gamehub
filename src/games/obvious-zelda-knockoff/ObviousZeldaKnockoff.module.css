@@ -44,6 +44,76 @@
 .backLink { color: rgba(255,255,255,0.65); text-decoration: none; font-size: 14px; }
 .backLink:hover { color: #fff; }
 
+.smallBtn {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #fff;
+  border-radius: 10px;
+  padding: 9px 16px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.smallBtn:hover { background: rgba(255,255,255,0.16); }
+
+/* ── Character select ────────────────────────────────────────────── */
+
+.selectWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  max-width: 820px;
+  width: 100%;
+  margin: auto;
+  text-align: center;
+}
+
+.characterGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  width: 100%;
+  margin-top: 6px;
+}
+
+.characterCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 14px;
+  padding: 14px;
+  color: #fff;
+  cursor: pointer;
+  text-align: center;
+  font-family: inherit;
+}
+.characterCard:hover { background: rgba(255,255,255,0.12); border-color: #ffd54a; }
+
+.previewCanvas {
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+}
+
+.characterName { font-weight: bold; font-size: 15px; }
+.characterTagline { font-size: 12px; color: rgba(255,255,255,0.65); line-height: 1.4; min-height: 48px; }
+
+.weaponRow { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; }
+.weaponChip {
+  font-size: 11px;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 999px;
+  padding: 3px 8px;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .characterGrid { grid-template-columns: 1fr; }
+}
+
 .canvas {
   display: block;
   width: 100%;

@@ -24,25 +24,6 @@ export const CONTACT_DAMAGE = 1
 export const STRONG_CONTACT_DAMAGE = 2
 export const INVINCIBLE_FRAMES = 60
 
-export const SWORD_COOLDOWN = 26
-export const SWORD_ACTIVE_FRAMES = 10
-export const SWORD_REACH = 22
-export const SWORD_DAMAGE = 1
-
-export const BOOMERANG_COOLDOWN = 40
-export const BOOMERANG_SPEED = 6
-export const BOOMERANG_RANGE = 170
-export const BOOMERANG_DAMAGE = 1
-
-export const ARROW_COOLDOWN = 22
-export const ARROW_SPEED = 7
-export const ARROW_DAMAGE = 2
-
-export const BOMB_COOLDOWN = 50
-export const BOMB_FUSE = 50
-export const BOMB_RADIUS = 70
-export const BOMB_DAMAGE = 3
-
 export const BOSS_HP = 20
 
 // Tile legend: '.' empty, '#' solid rock/wall, 'T' tree (overworld
@@ -58,11 +39,11 @@ export const BIOMES = {
   boss: { ground: '#4a2a44', groundAlt: '#3e2038', wall: '#1f1322' },
 }
 
+// Non-weapon pickups only — weapon pickups ('weapon_melee', 'weapon_item1',
+// etc. in levels.js) resolve through the chosen character's loadout
+// instead (see characterData.js / weapons.js), since the same pickup
+// spot hands out a different concrete weapon per character.
 export const ITEM_DEFS = {
-  sword: { label: 'Sword', color: '#d8d8e4', desc: 'Press Z to swing it.' },
-  boomerang: { label: 'Boomerang', color: '#5bc8ff', desc: 'Press X to throw it — stuns enemies, comes right back.' },
-  bow: { label: 'Bow', color: '#c99a5b', desc: 'Press C to fire an arrow.' },
-  bombs: { label: 'Bombs', color: '#444', desc: 'Press V to drop a bomb — cracks weak walls.' },
   heart_container: { label: 'Heart Container', color: '#ff4d6a', desc: '+1 heart, fully healed.' },
   small_key: { label: 'Small Key', color: '#ffd54a', desc: 'Opens one locked door.' },
 }

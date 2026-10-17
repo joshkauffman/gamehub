@@ -3,7 +3,9 @@ import { Link } from 'react-router-dom'
 import styles from './ObviousZeldaKnockoff.module.css'
 import { W, H } from './constants.js'
 import { freshState, stepGame, itemsCollectedCount, totalItemsCount } from './engine.js'
-import { render } from './render.js'
+import { render, drawPlayer } from './render.js'
+import { CHARACTERS } from './characterData.js'
+import { WEAPON_DEFS } from './weapons.js'
 
 // ── The Obvious Zelda Knockoff ─────────────────────────────────────────
 // Everything here is original code and procedurally-drawn shapes (no
@@ -20,12 +22,12 @@ import { render } from './render.js'
 // physics/rules state machine, and render.js for everything drawn to
 // the canvas.
 
-function GameCanvas({ onFinish }) {
+function GameCanvas({ characterId, onFinish }) {
   const canvasRef = useRef(null)
   const stateRef = useRef(null)
   const keysRef = useRef(new Set())
   const rafRef = useRef(null)
-  if (!stateRef.current) stateRef.current = freshState()
+  if (!stateRef.current) stateRef.current = freshState(characterId)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -47,7 +49,7 @@ function GameCanvas({ onFinish }) {
         right: k.has('ArrowRight') || k.has('KeyD'),
         up: k.has('ArrowUp') || k.has('KeyW'),
         down: k.has('ArrowDown') || k.has('KeyS'),
-        sword: k.has('KeyZ'),
+        melee: k.has('KeyZ'),
         item1: k.has('KeyX'),
         item2: k.has('KeyC'),
         item3: k.has('KeyV'),
@@ -74,8 +76,59 @@ function GameCanvas({ onFinish }) {
   return <canvas ref={canvasRef} width={W} height={H} className={styles.canvas} />
 }
 
+// A small live preview of the hero in this character's colors, standing
+// idle — reuses the exact same drawPlayer() the real game uses, so the
+// preview can never visually drift from what you'll actually play as.
+function CharacterPreview({ character }) {
+  const canvasRef = useRef(null)
+  useEffect(() => {
+    const ctx = canvasRef.current.getContext('2d')
+    ctx.clearRect(0, 0, 120, 130)
+    const g = ctx.createLinearGradient(0, 0, 0, 130)
+    g.addColorStop(0, '#2a3a1a')
+    g.addColorStop(1, '#0f1508')
+    ctx.fillStyle = g
+    ctx.fillRect(0, 0, 120, 130)
+    ctx.save()
+    ctx.translate(18, 18)
+    ctx.scale(2.6, 2.6)
+    const p = { x: 0, y: 0, w: 26, h: 26, facing: 'down', invincible: 0, meleeSwing: 0, meleeWeaponId: null }
+    drawPlayer(ctx, p, 0, character)
+    ctx.restore()
+  }, [character])
+  return <canvas ref={canvasRef} width={120} height={130} className={styles.previewCanvas} />
+}
+
+function CharacterSelect({ onPick }) {
+  return (
+    <div className={styles.selectWrap}>
+      <h1 className={styles.title}>Choose Your Hero</h1>
+      <p className={styles.blurb}>
+        Same overworld, same dungeon — but who you pick decides what you actually find out there.
+      </p>
+      <div className={styles.characterGrid}>
+        {CHARACTERS.map(ch => (
+          <button key={ch.id} className={styles.characterCard} onClick={() => onPick(ch.id)}>
+            <CharacterPreview character={ch} />
+            <div className={styles.characterName}>{ch.emoji} {ch.name}</div>
+            <div className={styles.characterTagline}>{ch.tagline}</div>
+            <div className={styles.weaponRow}>
+              {['melee', 'item1', 'item2', 'item3'].map(slot => {
+                const def = WEAPON_DEFS[ch.weapons[slot]]
+                return <span key={slot} className={styles.weaponChip} title={def.label}>{def.icon} {def.label}</span>
+              })}
+            </div>
+          </button>
+        ))}
+      </div>
+      <Link to="/" className={styles.backLink}>← Back to GameHub</Link>
+    </div>
+  )
+}
+
 export default function ObviousZeldaKnockoff() {
   const [screen, setScreen] = useState('title')
+  const [characterId, setCharacterId] = useState(CHARACTERS[0].id)
   const [result, setResult] = useState({ score: 0, items: 0 })
   const [gameKey, setGameKey] = useState(0)
 
@@ -84,7 +137,8 @@ export default function ObviousZeldaKnockoff() {
     setScreen(status)
   }
 
-  function startGame() {
+  function startGame(pickedId) {
+    setCharacterId(pickedId)
     setGameKey(k => k + 1)
     setScreen('playing')
   }
@@ -95,23 +149,24 @@ export default function ObviousZeldaKnockoff() {
         <div className={styles.center}>
           <h1 className={styles.title}>🗡️ The Obvious Zelda Knockoff</h1>
           <p className={styles.blurb}>
-            A hero in a green cap wakes up in a quiet meadow with nothing to their name. An old
-            man in a nearby cave is, suspiciously, handing out swords today. From there: wander
-            the overworld, find a boomerang, a bow, and bombs, collect Heart Containers, then head
-            into the one dungeon around here with a locked door, a Small Key, and something
-            waiting in the last room. Any resemblance to a certain triangle-obsessed fantasy
-            series is <em>extremely</em> on purpose and also legally just vibes.
+            A hero wakes up in a quiet meadow with nothing to their name. Pick who that hero is —
+            each one finds a completely different set of weapons on the way through. From there:
+            wander the overworld, collect Heart Containers, then head into the one dungeon around
+            here with a locked door, a Small Key, and something waiting in the last room. Any
+            resemblance to a certain triangle-obsessed fantasy series is <em>extremely</em> on
+            purpose and also legally just vibes.
           </p>
           <p className={styles.controls}>
-            ← → ↑ ↓ move · Z swing sword · X throw boomerang · C fire an arrow · V drop a bomb ·
-            M toggle map
+            ← → ↑ ↓ move · Z melee attack · X / C / V your other weapons · M toggle map
           </p>
-          <button className={styles.bigBtn} onClick={startGame}>▶ Start Knocking Off</button>
+          <button className={styles.bigBtn} onClick={() => setScreen('select')}>▶ Choose Your Hero</button>
           <Link to="/" className={styles.backLink}>← Back to GameHub</Link>
         </div>
       )}
 
-      {screen === 'playing' && <GameCanvas key={gameKey} onFinish={handleFinish} />}
+      {screen === 'select' && <CharacterSelect onPick={startGame} />}
+
+      {screen === 'playing' && <GameCanvas key={gameKey} characterId={characterId} onFinish={handleFinish} />}
 
       {screen === 'win' && (
         <div className={styles.center}>
@@ -120,7 +175,8 @@ export default function ObviousZeldaKnockoff() {
             Score: {result.score}. Treasures found: {result.items}/{totalItemsCount()}.
           </p>
           <div className={styles.row}>
-            <button className={styles.bigBtn} onClick={startGame}>🔁 Play Again</button>
+            <button className={styles.bigBtn} onClick={() => startGame(characterId)}>🔁 Play Again</button>
+            <button className={styles.smallBtn} onClick={() => setScreen('select')}>Choose a different hero</button>
             <Link to="/" className={styles.backLink}>← Back to GameHub</Link>
           </div>
         </div>
@@ -133,7 +189,8 @@ export default function ObviousZeldaKnockoff() {
             Score: {result.score}. Treasures found: {result.items}/{totalItemsCount()}.
           </p>
           <div className={styles.row}>
-            <button className={styles.bigBtn} onClick={startGame}>🔁 Try Again</button>
+            <button className={styles.bigBtn} onClick={() => startGame(characterId)}>🔁 Try Again</button>
+            <button className={styles.smallBtn} onClick={() => setScreen('select')}>Choose a different hero</button>
             <Link to="/" className={styles.backLink}>← Back to GameHub</Link>
           </div>
         </div>
