@@ -1,0 +1,123 @@
+.page {
+  position: fixed;
+  inset: 0;
+  overflow: auto;
+  background: radial-gradient(circle at 50% 0%, #3f8c30 0%, #1a3a14 55%, #0a140a 100%);
+  color: #fff;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  display: flex;
+  padding: 24px;
+}
+
+.center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+  max-width: 560px;
+  width: 100%;
+  margin: auto;
+}
+
+.title { font-size: clamp(20px, 5vw, 32px); margin: 0; }
+.blurb { color: rgba(255,255,255,0.78); font-size: 14px; line-height: 1.55; }
+.controls { color: rgba(255,255,255,0.55); font-size: 13px; }
+
+.row { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; align-items: center; }
+
+.bigBtn {
+  font-size: 18px;
+  font-weight: bold;
+  padding: 14px 30px;
+  border-radius: 14px;
+  border: none;
+  background: linear-gradient(#ffd93d, #d8960f);
+  color: #2a1a04;
+  cursor: pointer;
+  box-shadow: 0 6px 0 #8a5a0a;
+  transition: transform 0.1s;
+}
+.bigBtn:hover { transform: translateY(-2px); }
+.bigBtn:active { transform: translateY(3px); box-shadow: 0 2px 0 #8a5a0a; }
+
+.backLink { color: rgba(255,255,255,0.65); text-decoration: none; font-size: 14px; margin-top: 8px; }
+.backLink:hover { color: #fff; }
+
+.canvasWrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  max-width: 960px;
+  max-height: 540px;
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.canvas {
+  display: block;
+  width: 100%;
+  flex: 1;
+  image-rendering: pixelated;
+  background: #2a5a1f;
+  cursor: pointer;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+}
+
+.shopBar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #1a3a14;
+  padding: 8px 10px;
+  border-radius: 8px 8px 0 0;
+}
+
+.sunCounter {
+  font-weight: bold;
+  font-size: 15px;
+  color: #ffd93d;
+  min-width: 70px;
+}
+
+.packets { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.packet {
+  position: relative;
+  width: 44px; height: 44px;
+  border-radius: 8px;
+  border: 2px solid;
+  background: #2a4a1f;
+  cursor: pointer;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.packetSwatch { width: 22px; height: 22px; border-radius: 50%; }
+.packetCost { font-size: 9px; color: #fff; font-weight: bold; margin-top: 1px; }
+.packetSelected { box-shadow: 0 0 0 2px #fff; }
+.packetDisabled { opacity: 0.45; cursor: not-allowed; }
+.packetCooldown {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.6);
+  pointer-events: none;
+}
+
+.waveBar {
+  text-align: center;
+  font-size: 12px;
+  color: rgba(255,255,255,0.7);
+  background: #1a3a14;
+  padding: 4px;
+  border-radius: 0 0 8px 8px;
+}
+
+@media (max-width: 480px) {
+  .title { font-size: 18px; }
+  .packet { width: 36px; height: 36px; }
+}

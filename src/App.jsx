@@ -15,6 +15,17 @@ import LilMonsterBattles from './games/lil-monster-battles/LilMonsterBattles.jsx
 import KaboomCorral from './games/kaboom-corral/KaboomCorral.jsx'
 import ChatLounge from './games/chat-lounge/ChatLounge.jsx'
 import ObviousMarioKnockoff from './games/obvious-mario-knockoff/ObviousMarioKnockoff.jsx'
+import ObviousMetroidKnockoff from './games/obvious-metroid-knockoff/ObviousMetroidKnockoff.jsx'
+import ObviousZeldaKnockoff from './games/obvious-zelda-knockoff/ObviousZeldaKnockoff.jsx'
+import ObviousPokemonKnockoff from './games/obvious-pokemon-knockoff/ObviousPokemonKnockoff.jsx'
+import ObviousSonicKnockoff from './games/obvious-sonic-knockoff/ObviousSonicKnockoff.jsx'
+import Capeville from './games/capeville/Capeville.jsx'
+import ObviousMegaManKnockoff from './games/obvious-megaman-knockoff/ObviousMegaManKnockoff.jsx'
+import ObviousPvZKnockoff from './games/obvious-pvz-knockoff/ObviousPvZKnockoff.jsx'
+import ObviousGuitarHeroKnockoff from './games/obvious-guitar-hero-knockoff/ObviousGuitarHeroKnockoff.jsx'
+import ObviousPortalKnockoff from './games/obvious-portal-knockoff/ObviousPortalKnockoff.jsx'
+import ObviousMinecraftKnockoff from './games/obvious-minecraft-knockoff/ObviousMinecraftKnockoff.jsx'
+import ObviousDonkeyKongKnockoff from './games/obvious-donkeykong-knockoff/ObviousDonkeyKongKnockoff.jsx'
 import ShirbyAndTheForgottenPlace from './games/shirby-and-the-forgotten-place/ShirbyAndTheForgottenPlace.jsx'
 import RetroArcade from './games/retro-arcade/RetroArcade.jsx'
 import LootAndScoot from './games/loot-and-scoot/LootAndScoot.jsx'
@@ -53,6 +64,17 @@ export default function App() {
         <Route path="/kaboom-corral" element={<KaboomCorral />} />
         <Route path="/chat-lounge" element={<ChatLounge />} />
         <Route path="/obvious-mario-knockoff" element={<ObviousMarioKnockoff />} />
+        <Route path="/obvious-metroid-knockoff" element={<ObviousMetroidKnockoff />} />
+        <Route path="/obvious-zelda-knockoff" element={<ObviousZeldaKnockoff />} />
+        <Route path="/obvious-pokemon-knockoff" element={<ObviousPokemonKnockoff />} />
+        <Route path="/obvious-sonic-knockoff" element={<ObviousSonicKnockoff />} />
+        <Route path="/capeville" element={<Capeville />} />
+        <Route path="/obvious-megaman-knockoff" element={<ObviousMegaManKnockoff />} />
+        <Route path="/obvious-pvz-knockoff" element={<ObviousPvZKnockoff />} />
+        <Route path="/obvious-guitar-hero-knockoff" element={<ObviousGuitarHeroKnockoff />} />
+        <Route path="/obvious-portal-knockoff" element={<ObviousPortalKnockoff />} />
+        <Route path="/obvious-minecraft-knockoff" element={<ObviousMinecraftKnockoff />} />
+        <Route path="/obvious-donkeykong-knockoff" element={<ObviousDonkeyKongKnockoff />} />
         <Route path="/shirby-and-the-forgotten-place" element={<ShirbyAndTheForgottenPlace />} />
         <Route path="/retro-arcade" element={<RetroArcade />} />
         <Route path="/loot-and-scoot" element={<LootAndScoot />} />

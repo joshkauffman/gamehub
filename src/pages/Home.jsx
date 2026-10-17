@@ -31,7 +31,7 @@ const SECRET_GAMES = [
 
 const CATEGORIES = [
   {
-    name: 'Action & Arcade',
+    name: 'Knock Offs',
     games: [
       {
         id: 'obvious-mario-knockoff',
@@ -46,6 +46,88 @@ const CATEGORIES = [
         description: "A small pink puffball inhales forgotten creatures and copies their powers — Blade, Ember, Frost, Zap, Rock, or Bubble. It's a knockoff. It knows it's a knockoff. That's the whole bit.",
         emoji: '🩷',
         path: '/shirby-and-the-forgotten-place',
+      },
+      {
+        id: 'obvious-metroid-knockoff',
+        title: 'The Obvious Metroid Knockoff',
+        description: "A bounty hunter in a knockoff power suit drops onto a crumbling alien world, finding upgrades that unlock new ground on the way down to whatever's guarding the reactor core. It's a knockoff. It knows it's a knockoff. That's the whole bit.",
+        emoji: '🛰️',
+        path: '/obvious-metroid-knockoff',
+      },
+      {
+        id: 'obvious-zelda-knockoff',
+        title: 'The Obvious Zelda Knockoff',
+        description: "A hero in a green cap gets handed a sword by a suspiciously generous old man, then wanders a small overworld collecting a boomerang, a bow, and bombs on the way to a short dungeon. It's a knockoff. It knows it's a knockoff. That's the whole bit.",
+        emoji: '🗡️',
+        path: '/obvious-zelda-knockoff',
+      },
+      {
+        id: 'obvious-pokemon-knockoff',
+        title: 'The Obvious Pokémon Knockoff',
+        description: "A suspiciously generous lab hands out starter critters, then it's off to find wild ones in the tall grass, catch them with a Catch Orb, and challenge the Gym Leader. It's a knockoff. It knows it's a knockoff. That's the whole bit.",
+        emoji: '🔴',
+        path: '/obvious-pokemon-knockoff',
+      },
+      {
+        id: 'obvious-sonic-knockoff',
+        title: 'The Obvious Sonic Knockoff',
+        description: "A blue speedster runs, rolls, and spin-dashes across three short zones, grabbing rings and flattening badniks on the way to a hovering boss pod. It's a knockoff. It knows it's a knockoff. That's the whole bit.",
+        emoji: '💨',
+        path: '/obvious-sonic-knockoff',
+      },
+      {
+        id: 'obvious-megaman-knockoff',
+        title: 'The Obvious Mega Man Knockoff',
+        description: 'Pick any Robot Master stage in any order, run and gun to the boss, and steal their signature weapon — which happens to be exactly what the next boss on the list can’t stand. It’s a knockoff. It knows it’s a knockoff. That’s the whole bit.',
+        emoji: '🔵',
+        path: '/obvious-megaman-knockoff',
+      },
+      {
+        id: 'obvious-pvz-knockoff',
+        title: 'The Obvious Plants vs. Zombies Knockoff',
+        description: 'Plant Sprout Shooters, Sunblooms, Husk Guards, and more across a 5-row lawn, manage the sun economy, and hold off eight waves of shufflers and bucket heads before they reach the house. It’s a knockoff. It knows it’s a knockoff. That’s the whole bit.',
+        emoji: '🌻',
+        path: '/obvious-pvz-knockoff',
+      },
+      {
+        id: 'obvious-guitar-hero-knockoff',
+        title: 'The Obvious Guitar Hero Knockoff',
+        description: 'Five frets, three original synthesized tracks, zero audio files — hit the right key as each note crosses the line to keep your combo alive. It’s a knockoff. It knows it’s a knockoff. That’s the whole bit.',
+        emoji: '🎸',
+        path: '/obvious-guitar-hero-knockoff',
+      },
+      {
+        id: 'obvious-portal-knockoff',
+        title: 'The Obvious Portal Knockoff',
+        description: 'Four test chambers, a blue hole and an orange hole in reality, and a Weighted Something-or-Other. Shoot, walk through, keep your momentum. It’s a knockoff. It knows it’s a knockoff. That’s the whole bit.',
+        emoji: '🌀',
+        path: '/obvious-portal-knockoff',
+      },
+      {
+        id: 'obvious-minecraft-knockoff',
+        title: 'The Obvious Minecraft Knockoff',
+        description: 'A procedurally generated hill of dirt, stone, and buried treasure. Mine it, craft your way up the wood → stone → iron → diamond tool tree, and survive the shamblers that show up after dark. It’s a knockoff. It knows it’s a knockoff. That’s the whole bit.',
+        emoji: '⛏️',
+        path: '/obvious-minecraft-knockoff',
+      },
+      {
+        id: 'obvious-donkeykong-knockoff',
+        title: 'The Obvious Donkey Kong Knockoff',
+        description: 'Krunk the ape has snatched Biscuit the dog. Climb the girders, dodge the rolling barrels, grab the hammer, and work up through three single-screen stages to bring Biscuit home. It’s a knockoff. It knows it’s a knockoff. That’s the whole bit.',
+        emoji: '🦍',
+        path: '/obvious-donkeykong-knockoff',
+      },
+    ],
+  },
+  {
+    name: 'Action & Arcade',
+    games: [
+      {
+        id: 'capeville',
+        title: 'Capeville',
+        description: 'Design your own superhero — name, catchphrase, suit colors, emblem, cape, mask, and one real power — then take them out on patrol around an original city to try it for real.',
+        emoji: '🦸',
+        path: '/capeville',
       },
       {
         id: 'retro-arcade',

@@ -1,0 +1,121 @@
+.page {
+  position: fixed;
+  inset: 0;
+  overflow: auto;
+  background: radial-gradient(circle at 50% 0%, #2a3a8a 0%, #141a4a 55%, #0a0a1a 100%);
+  color: #fff;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  display: flex;
+  padding: 24px;
+}
+
+.center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+  max-width: 560px;
+  width: 100%;
+  margin: auto;
+}
+
+.title { font-size: clamp(22px, 5vw, 34px); margin: 0; }
+.blurb { color: rgba(255,255,255,0.78); font-size: 14px; line-height: 1.55; }
+.controls { color: rgba(255,255,255,0.55); font-size: 13px; }
+
+.row { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; align-items: center; }
+
+.bigBtn {
+  font-size: 18px;
+  font-weight: bold;
+  padding: 14px 30px;
+  border-radius: 14px;
+  border: none;
+  background: linear-gradient(#9dffb0, #2a9a4a);
+  color: #042a0e;
+  cursor: pointer;
+  box-shadow: 0 6px 0 #1a6a2a;
+  transition: transform 0.1s;
+}
+.bigBtn:hover { transform: translateY(-2px); }
+.bigBtn:active { transform: translateY(3px); box-shadow: 0 2px 0 #1a6a2a; }
+
+.backLink { color: rgba(255,255,255,0.65); text-decoration: none; font-size: 14px; margin-top: 8px; }
+.backLink:hover { color: #fff; }
+
+.canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: 960px;
+  max-height: 540px;
+  margin: auto;
+  image-rendering: pixelated;
+  background: #3a1208;
+  border-radius: 8px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+}
+
+/* ── Stage select ─────────────────────────────────────────────── */
+
+.selectWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  max-width: 680px;
+  width: 100%;
+  margin: auto;
+  text-align: center;
+}
+
+.bossGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.bossCard {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 14px;
+  padding: 14px;
+  cursor: pointer;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.bossCard:hover { background: rgba(255,255,255,0.1); }
+.bossDone { border-color: #9dffb0; }
+
+.bossPortrait {
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 0 0 3px rgba(0,0,0,0.2);
+}
+.checkmark { font-size: 28px; font-weight: bold; color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+
+.bossName { font-weight: bold; font-size: 15px; }
+.stageName { font-size: 12px; color: rgba(255,255,255,0.6); }
+
+.weaponRow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+.fieldLabel { font-size: 12px; color: rgba(255,255,255,0.55); }
+.weaponChip {
+  border: 1px solid;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 12px;
+}
+
+@media (max-width: 480px) {
+  .title { font-size: 20px; }
+  .bossGrid { grid-template-columns: 1fr; }
+}
