@@ -117,6 +117,13 @@ const CATEGORIES = [
         emoji: '🦍',
         path: '/obvious-donkeykong-knockoff',
       },
+      {
+        id: 'obvious-crossyroad-knockoff',
+        title: 'The Obvious Crossy Road Knockoff',
+        description: 'Hop a critter forward across an endless, procedurally generated stretch of grass, roads, rivers, and rail crossings. Dodge traffic, ride logs instead of swimming, and don’t dawdle — a hawk gets curious. It’s a knockoff. It knows it’s a knockoff. That’s the whole bit.',
+        emoji: '🐔',
+        path: '/obvious-crossyroad-knockoff',
+      },
     ],
   },
   {

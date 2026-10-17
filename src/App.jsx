@@ -26,6 +26,7 @@ import ObviousGuitarHeroKnockoff from './games/obvious-guitar-hero-knockoff/Obvi
 import ObviousPortalKnockoff from './games/obvious-portal-knockoff/ObviousPortalKnockoff.jsx'
 import ObviousMinecraftKnockoff from './games/obvious-minecraft-knockoff/ObviousMinecraftKnockoff.jsx'
 import ObviousDonkeyKongKnockoff from './games/obvious-donkeykong-knockoff/ObviousDonkeyKongKnockoff.jsx'
+import ObviousCrossyRoadKnockoff from './games/obvious-crossyroad-knockoff/ObviousCrossyRoadKnockoff.jsx'
 import ShirbyAndTheForgottenPlace from './games/shirby-and-the-forgotten-place/ShirbyAndTheForgottenPlace.jsx'
 import RetroArcade from './games/retro-arcade/RetroArcade.jsx'
 import LootAndScoot from './games/loot-and-scoot/LootAndScoot.jsx'
@@ -75,6 +76,7 @@ export default function App() {
         <Route path="/obvious-portal-knockoff" element={<ObviousPortalKnockoff />} />
         <Route path="/obvious-minecraft-knockoff" element={<ObviousMinecraftKnockoff />} />
         <Route path="/obvious-donkeykong-knockoff" element={<ObviousDonkeyKongKnockoff />} />
+        <Route path="/obvious-crossyroad-knockoff" element={<ObviousCrossyRoadKnockoff />} />
         <Route path="/shirby-and-the-forgotten-place" element={<ShirbyAndTheForgottenPlace />} />
         <Route path="/retro-arcade" element={<RetroArcade />} />
         <Route path="/loot-and-scoot" element={<LootAndScoot />} />
