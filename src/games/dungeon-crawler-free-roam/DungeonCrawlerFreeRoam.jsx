@@ -659,6 +659,99 @@ function getSpellBoltMaterial() {
   return spellBoltMaterial
 }
 
+// Fireball: a white-hot core burning out through orange into red, instead
+// of the generic arcane glow — reads as fire even before it hits anything.
+let fireballMaterial = null
+function getFireballMaterial() {
+  if (fireballMaterial) return fireballMaterial
+  const size = 64
+  const canvas = document.createElement('canvas')
+  canvas.width = size; canvas.height = size
+  const ctx = canvas.getContext('2d')
+  const c = size / 2
+  const grad = ctx.createRadialGradient(c, c, 0, c, c, c)
+  grad.addColorStop(0, 'rgba(255,255,255,1)')
+  grad.addColorStop(0.25, 'rgba(255,200,80,1)')
+  grad.addColorStop(0.55, 'rgba(255,92,58,0.9)')
+  grad.addColorStop(1, 'rgba(180,20,10,0)')
+  ctx.fillStyle = grad
+  ctx.fillRect(0, 0, size, size)
+  const tex = new THREE.CanvasTexture(canvas)
+  fireballMaterial = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })
+  return fireballMaterial
+}
+
+// Ice Shard: a crisp white-blue glow, cooler and tighter than the arcane
+// bolt's purple haze, so it reads as ice rather than "the same spell, blue".
+let iceMaterial = null
+function getIceMaterial() {
+  if (iceMaterial) return iceMaterial
+  const size = 64
+  const canvas = document.createElement('canvas')
+  canvas.width = size; canvas.height = size
+  const ctx = canvas.getContext('2d')
+  const c = size / 2
+  const grad = ctx.createRadialGradient(c, c, 0, c, c, c)
+  grad.addColorStop(0, 'rgba(255,255,255,1)')
+  grad.addColorStop(0.3, 'rgba(210,240,255,0.95)')
+  grad.addColorStop(0.6, 'rgba(120,200,255,0.7)')
+  grad.addColorStop(1, 'rgba(80,170,255,0)')
+  ctx.fillStyle = grad
+  ctx.fillRect(0, 0, size, size)
+  const tex = new THREE.CanvasTexture(canvas)
+  iceMaterial = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })
+  return iceMaterial
+}
+
+// Chain Zap replaces the ball sprite entirely with a jagged lightning-line
+// effect (see the lightning line pool near syncProjectiles) — this small,
+// very bright material is only the leading spark at the bolt's head.
+let lightningTipMaterial = null
+function getLightningTipMaterial() {
+  if (lightningTipMaterial) return lightningTipMaterial
+  const size = 64
+  const canvas = document.createElement('canvas')
+  canvas.width = size; canvas.height = size
+  const ctx = canvas.getContext('2d')
+  const c = size / 2
+  const grad = ctx.createRadialGradient(c, c, 0, c, c, c)
+  grad.addColorStop(0, 'rgba(255,255,255,1)')
+  grad.addColorStop(0.4, 'rgba(255,240,180,0.9)')
+  grad.addColorStop(1, 'rgba(255,224,102,0)')
+  ctx.fillStyle = grad
+  ctx.fillRect(0, 0, size, size)
+  const tex = new THREE.CanvasTexture(canvas)
+  lightningTipMaterial = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })
+  return lightningTipMaterial
+}
+
+// Per-spell sprite material — everything without a dedicated look (the
+// starter Magic Bolt, and anything future/unlisted) keeps the original
+// arcane glow.
+function materialForSpell(spellId) {
+  if (spellId === 'fireball') return getFireballMaterial()
+  if (spellId === 'ice') return getIceMaterial()
+  if (spellId === 'chainzap') return getLightningTipMaterial()
+  return getSpellBoltMaterial()
+}
+
+// Jagged zigzag points from (ox,oz) to (x,z), tapering to ~0 offset at both
+// ends so the bolt still visually connects its origin and head — re-rolled
+// fresh every call, which is what gives lightning its flicker.
+function buildLightningPoints(ox, oz, x, z, segments, amplitude) {
+  const dx = x - ox, dz = z - oz
+  const dist = Math.hypot(dx, dz) || 0.0001
+  const nx = -dz / dist, nz = dx / dist
+  const pts = []
+  for (let s = 0; s <= segments; s++) {
+    const t = s / segments
+    const taper = Math.sin(Math.PI * t)
+    const jitter = (Math.random() - 0.5) * amplitude * taper
+    pts.push(ox + dx * t + nx * jitter, 1.3 + (Math.random() - 0.5) * 0.12 * taper, oz + dz * t + nz * jitter)
+  }
+  return pts
+}
+
 function makeDecoration() {
   const kind = Math.random() < 0.5 ? 'rock' : 'tree'
   const group = new THREE.Group()
@@ -1010,11 +1103,12 @@ export default function DungeonCrawlerFreeRoam() {
     const particlePoints = new THREE.Points(particleGeo, new THREE.PointsMaterial({ size: 0.4, vertexColors: true, transparent: true, sizeAttenuation: true }))
     scene.add(particlePoints)
 
-    // Fixed-size pool of magic-bolt sprites — reused every cast instead of
-    // allocated, same pooling trick as the particle buffer above.
-    // Each bolt gets its own cloned material (same texture, separate
-    // instance) so a potent/legendary cast can be tinted without recoloring
-    // every other bolt sharing the pool.
+    // Fixed-size pool of spell-projectile sprites — reused every cast
+    // instead of allocated, same pooling trick as the particle buffer above.
+    // Each slot gets its own cloned material (same texture set, separate
+    // instance) so a potent/legendary cast can be tinted, and so one slot's
+    // material can be swapped to a different spell's texture, without
+    // touching every other projectile sharing the pool.
     const projectilePool = Array.from({ length: MAX_PROJECTILES }, () => {
       const sprite = new THREE.Sprite(getSpellBoltMaterial().clone())
       sprite.scale.set(SPELL_RADIUS * 2.6, SPELL_RADIUS * 2.6, 1)
@@ -1022,18 +1116,64 @@ export default function DungeonCrawlerFreeRoam() {
       scene.add(sprite)
       return sprite
     })
+    // Only the un-themed starter Magic Bolt still uses tier tinting to
+    // signal power — Fireball/Ice Shard have their own true elemental
+    // color throughout (their tier is instead read from scale + burst size).
     const PROJECTILE_TIER_TINTS = ['#ffffff', '#ffd34d', '#ff5c3a']
+
+    // Chain Zap doesn't use a ball sprite at all — it's a jagged lightning
+    // line from where it was cast to its current head, redrawn every frame
+    // with fresh random jitter (two independently-jittered strands layered
+    // together, since a single 1px WebGL line reads as too thin to sell
+    // "lightning"). One pair of lines per pool slot, geometry pre-sized and
+    // updated in place so this costs no per-frame allocation.
+    const LIGHTNING_SEGMENTS = 6
+    const LIGHTNING_POINTS = LIGHTNING_SEGMENTS + 1
+    function makeLightningLine(color, opacity) {
+      const geo = new THREE.BufferGeometry()
+      geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(LIGHTNING_POINTS * 3), 3))
+      const mat = new THREE.LineBasicMaterial({ color, transparent: true, opacity, blending: THREE.AdditiveBlending, depthWrite: false })
+      const line = new THREE.Line(geo, mat)
+      line.visible = false
+      line.frustumCulled = false
+      scene.add(line)
+      return line
+    }
+    const lightningCore = Array.from({ length: MAX_PROJECTILES }, () => makeLightningLine('#fff9e0', 0.95))
+    const lightningGlow = Array.from({ length: MAX_PROJECTILES }, () => makeLightningLine('#ffe066', 0.5))
+    function setLightningLine(line, points) {
+      const pos = line.geometry.attributes.position
+      pos.array.set(points)
+      pos.needsUpdate = true
+      line.visible = true
+    }
+
     function syncProjectiles(state) {
       const list = state.projectiles
       for (let i = 0; i < MAX_PROJECTILES; i++) {
         const sprite = projectilePool[i]
-        if (i < list.length) {
-          const pr = list[i]
+        const pr = i < list.length ? list[i] : null
+        const isLightning = pr && pr.spellId === 'chainzap'
+
+        if (pr && isLightning) {
+          setLightningLine(lightningCore[i], buildLightningPoints(pr.ox, pr.oz, pr.x, pr.z, LIGHTNING_SEGMENTS, 0.55))
+          setLightningLine(lightningGlow[i], buildLightningPoints(pr.ox, pr.oz, pr.x, pr.z, LIGHTNING_SEGMENTS, 0.85))
+        } else {
+          lightningCore[i].visible = false
+          lightningGlow[i].visible = false
+        }
+
+        if (pr) {
           sprite.visible = true
           sprite.position.set(pr.x, 1.3, pr.z)
-          const scale = SPELL_RADIUS * 2.6 * (pr.visualScale || 1)
+          sprite.material.map = materialForSpell(pr.spellId).map
+          sprite.material.needsUpdate = true
+          const tierTint = pr.spellId === 'bolt' ? PROJECTILE_TIER_TINTS[pr.tierIdx || 0] : '#ffffff'
+          sprite.material.color.set(tierTint)
+          // The lightning bolt's own sprite is just the small bright spark
+          // at its leading tip — the line carries the "lightning" look.
+          const scale = SPELL_RADIUS * 2.6 * (pr.visualScale || 1) * (isLightning ? 0.55 : 1)
           sprite.scale.set(scale, scale, 1)
-          sprite.material.color.set(PROJECTILE_TIER_TINTS[pr.tierIdx || 0])
         } else {
           sprite.visible = false
         }

@@ -174,6 +174,19 @@ export const SPELLS = [
     legendaryEmoji: '✨',
   },
 ]
+// Particle/impact-burst colors per spell, keyed by id — lets each element
+// read as itself (fireball bursts red/orange, ice bursts blue/white, chain
+// zap bursts electric yellow) instead of every spell sharing one generic
+// arcane palette. `bolt` (the starter spell, no element) keeps the original
+// purple/blue arcane look, and is also the fallback for anything unlisted.
+const ELEMENT_COLORS = {
+  bolt: ['#c9a6ff', '#8fd3ff', '#ffffff'],
+  fireball: ['#ff5c3a', '#ffb347', '#ffd34d'],
+  ice: ['#8fd3ff', '#e6f7ff', '#ffffff'],
+  chainzap: ['#fff2c9', '#ffe066', '#ffffff'],
+}
+function elementColors(spellId) { return ELEMENT_COLORS[spellId] || ELEMENT_COLORS.bolt }
+
 // Cast-based leveling tiers — separate from (but capped by) MAX_SPELL_LEVEL.
 export const SPELL_TIER_POTENT = 7
 export const SPELL_TIER_LEGENDARY = 14
@@ -1489,13 +1502,15 @@ function updatePlayerCombat(state, player, input, dt, helpers) {
         // higher level too, not just more damage — a maxed Fireball should
         // visibly engulf a wider area, not just hit harder in the same spot.
         const splashRadius = spell.splashRadius ? spell.splashRadius * (1 + 0.15 * (level - 1)) : 0
+        const ox = player.x + player.facing.x * 1.0, oz = player.z + player.facing.z * 1.0
         state.projectiles.push({
-          x: player.x + player.facing.x * 1.0, z: player.z + player.facing.z * 1.0,
+          x: ox, z: oz, ox, oz, // ox/oz (origin) never mutated — lets the renderer draw a
+          // lightning bolt's full travelled path, not just its current head.
           vx: player.facing.x * SPELL_SPEED, vz: player.facing.z * SPELL_SPEED,
           life: SPELL_LIFE, dmg: Math.round(spell.baseDamage * scale),
           splashRadius, slowMult: spell.slowMult, slowTime: spell.slowTime,
           owner: player, hitIds: new Set(), dead: false,
-          visualScale: 1 + 0.06 * (level - 1), tierIdx,
+          visualScale: 1 + 0.06 * (level - 1), tierIdx, spellId: spell.id,
         })
         // Silent at novice tier (matches the original no-banner-per-hit
         // feel for a plain attack spell) — but once a spell's grown into
@@ -1598,6 +1613,12 @@ export function update(state, input1, input2, dt, helpers) {
     if (pr.dead) continue
     pr.x += pr.vx * dt; pr.z += pr.vz * dt; pr.life -= dt
     if (pr.life <= 0 || rectBlocked(state.floor.wallRects, pr.x, pr.z, SPELL_RADIUS)) { pr.dead = true; continue }
+    // A trailing wisp of embers behind an in-flight fireball, so it reads as
+    // a moving flame instead of a plain glowing ball — thin enough (~60% of
+    // frames, small burst) not to flood the shared particle pool.
+    if (pr.spellId === 'fireball' && Math.random() < 0.6) {
+      spawnBurst(state, pr.x, pr.z, 1, ['#ff5c3a', '#ffb347', '#ffd34d'])
+    }
     // On first contact, damage every monster within splashRadius of the
     // impact point (radius 0 behaves exactly like a single-target hit)
     // and apply the spell's slow if it has one, instead of stopping at
@@ -1616,14 +1637,16 @@ export function update(state, input1, input2, dt, helpers) {
           // splash only ever *adds* extra reach, never subtracts it.
           if (dd2 > (SPELL_RADIUS + splash + m2.r) ** 2) continue
           damageMonster(state, pr.owner, m2, pr.dmg, helpers)
-          spawnBurst(state, m2.x, m2.z, 6, ['#c9a6ff', '#8fd3ff', '#ffffff'])
+          spawnBurst(state, m2.x, m2.z, 6, elementColors(pr.spellId))
           if (pr.slowMult != null) { m2.slowMult = pr.slowMult; m2.slowTimer = pr.slowTime }
         }
         // A potent/legendary cast gets its own bigger impact burst on top
         // of the usual per-monster hit sparks — the whole point of leveling
         // a spell up is that landing it *looks* like a much bigger deal.
-        if (pr.tierIdx === 1) spawnBurst(state, pr.x, pr.z, 14, ['#ffd34d', '#fff2c9', '#ffffff'])
-        else if (pr.tierIdx === 2) spawnBurst(state, pr.x, pr.z, 32, ['#ff5c3a', '#ffb347', '#fff2c9'])
+        // Stays in the spell's own element rather than jumping to a
+        // separate generic gold/red "power" palette.
+        if (pr.tierIdx === 1) spawnBurst(state, pr.x, pr.z, 14, elementColors(pr.spellId))
+        else if (pr.tierIdx === 2) spawnBurst(state, pr.x, pr.z, 32, elementColors(pr.spellId))
         pr.dead = true
         break
       }
