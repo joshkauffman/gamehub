@@ -337,6 +337,28 @@ export const SEASON_DOODLES = [
   { id: 'winter', range: [12, 1, 2, 28], emojiLeft: '❄️', emojiRight: '⛄', label: 'Winter', query: 'what is winter' },
 ]
 
+// Every doodle above is playable — clicking it launches a small
+// "catch the falling things" minigame skinned for that holiday/
+// season, the same way a real Google doodle sometimes turns into a
+// game. One shared engine (see doodleGame.js), reskinned per id:
+// `good` emoji score a point on catch, the single `bad` emoji costs
+// one (floored at 0).
+export const DOODLE_GAME_SKINS = {
+  newyear: { title: 'Confetti Catch', good: ['🎉', '✨', '🎊'], bad: '😴', bg: ['#1a1a3a', '#3a1a5a'] },
+  valentines: { title: 'Heart Catch', good: ['💌', '🌹', '🍫'], bad: '💔', bg: ['#3a0f1f', '#5a1a33'] },
+  stpatricks: { title: 'Clover Catch', good: ['🍀', '💰', '🌈'], bad: '🐍', bg: ['#0a2f1a', '#0f4a28'] },
+  earthday: { title: 'Eco Catch', good: ['🌱', '🌎', '💧'], bad: '🗑️', bg: ['#0a2a3a', '#0f4a5a'] },
+  pride: { title: 'Rainbow Catch', good: ['🌈', '💖', '⭐'], bad: '☁️', bg: ['#2a0a3a', '#4a1a5a'] },
+  independence: { title: 'Firework Catch', good: ['🎆', '🎇', '⭐'], bad: '💧', bg: ['#0a1a3a', '#1a2a5a'] },
+  halloween: { title: 'Candy Catch', good: ['🍬', '🍫', '🍭'], bad: '💀', bg: ['#1a0a2a', '#3a1a0a'] },
+  thanksgiving: { title: 'Harvest Catch', good: ['🦃', '🥧', '🌽'], bad: '🍽️', bg: ['#3a1f0a', '#5a3515'] },
+  christmas: { title: 'Present Catch', good: ['🎁', '❄️', '🍪'], bad: '🪨', bg: ['#0a2a1f', '#0f3a2a'] },
+  spring: { title: 'Blossom Catch', good: ['🌸', '🌷', '🐝'], bad: '🌧️', bg: ['#2a1a3a', '#3a2a4a'] },
+  summer: { title: 'Sunshine Catch', good: ['☀️', '🍦', '🏖️'], bad: '🌊', bg: ['#1a3a5a', '#2a5a7a'] },
+  fall: { title: 'Leaf Catch', good: ['🍂', '🍁', '🎃'], bad: '🌧️', bg: ['#3a1f0a', '#4a2a10'] },
+  winter: { title: 'Snowflake Catch', good: ['❄️', '⛄', '🧤'], bad: '🥶', bg: ['#0a1f3a', '#15304a'] },
+}
+
 // The one real link hiding among the fake results — an actual
 // react-router Link back to GameHub's real home page, not a joke
 // screen inside this game.

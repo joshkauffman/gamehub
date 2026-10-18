@@ -327,7 +327,7 @@ const CATEGORIES = [
       {
         id: 'guugle',
         title: 'Guugle',
-        description: "The worst search engine ever. Ask it anything and it confidently answers with the opposite of the truth, with seasonal doodles, gaming-site and false-history-site results, and one real link back here hiding in plain sight. Good luck.",
+        description: "The worst search engine ever. Ask it anything and it confidently answers with the opposite of the truth, with a playable seasonal doodle, gaming-site and false-history-site results, and one real link back here hiding in plain sight. Good luck.",
         emoji: '🔮',
         path: '/guugle',
       },

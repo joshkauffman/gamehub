@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import styles from './Guugle.module.css'
 import { getAnswer, generateResults, buildFakeSitePage, randomFeelingWrongQuery, getActiveDoodle } from './answerEngine.js'
-import { LOGO_LETTER_COLORS } from './constants.js'
+import { LOGO_LETTER_COLORS, DOODLE_GAME_SKINS } from './constants.js'
+import DoodleGame from './DoodleGame.jsx'
 
 // ── Guugle, the worst search engine ever ────────────────────────────────
 // Everything here is original and procedurally generated — an invented
@@ -44,14 +45,15 @@ function SearchBar({ value, onChange, onSubmit, compact, autoFocus }) {
   )
 }
 
-function HomeScreen({ query, setQuery, onSearch, onFeelingWrong, doodle }) {
+function HomeScreen({ query, setQuery, onSearch, onFeelingWrong, doodle, onDoodleClick }) {
+  const playable = doodle && DOODLE_GAME_SKINS[doodle.id]
   return (
     <div className={styles.homeWrap}>
       {doodle ? (
         <button
           className={styles.doodleLogo}
-          onClick={() => onSearch(doodle.query)}
-          title={`${doodle.label} — click for a Guugle fact`}
+          onClick={() => playable ? onDoodleClick() : onSearch(doodle.query)}
+          title={playable ? `${doodle.label} — click to play` : `${doodle.label} — click for a Guugle fact`}
         >
           <span className={styles.doodleEmoji} aria-hidden="true">{doodle.emojiLeft}</span>
           <GuugleLogo size="large" />
@@ -176,10 +178,27 @@ export default function Guugle() {
     setScreen('site')
   }
 
+  function handleDoodleExit() {
+    // Whether they finished or bailed early, land them on the results
+    // page for the doodle's own themed query — the game and the
+    // original "click the doodle for a fact" joke both pay off.
+    runSearch(doodle.query)
+  }
+
   return (
     <div className={styles.page}>
       {screen === 'home' && (
-        <HomeScreen query={input} setQuery={setInput} onSearch={runSearch} onFeelingWrong={handleFeelingWrong} doodle={doodle} />
+        <HomeScreen
+          query={input}
+          setQuery={setInput}
+          onSearch={runSearch}
+          onFeelingWrong={handleFeelingWrong}
+          doodle={doodle}
+          onDoodleClick={() => setScreen('doodle-game')}
+        />
+      )}
+      {screen === 'doodle-game' && doodle && DOODLE_GAME_SKINS[doodle.id] && (
+        <DoodleGame skin={DOODLE_GAME_SKINS[doodle.id]} onExit={handleDoodleExit} />
       )}
       {screen === 'results' && (
         <ResultsScreen
