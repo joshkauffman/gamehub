@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import styles from './Guugle.module.css'
+import DoodleGameFrame from './DoodleGameFrame.jsx'
 import { freshState, stepGame, CANVAS_W, CANVAS_H, BASKET_Y } from './doodleGame.js'
 
 // ── A tiny playable "catch the falling things" doodle game ────────────
-// One shared engine (doodleGame.js) reskinned per holiday/season via
-// `skin` ({ title, good: [emoji...], bad: emoji, bg: [color,color] }).
+// One of four doodle minigame types (see DOODLE_GAMES in constants.js).
 // Pure canvas rendering here, same pattern as every other game in this
 // repo: engine owns state, this component just draws it and feeds
 // pointer/keyboard input in.
@@ -23,11 +23,9 @@ function render(ctx, state) {
   ctx.textBaseline = 'middle'
   for (const it of state.items) ctx.fillText(it.emoji, it.x, it.y)
 
-  // basket
   ctx.font = '40px sans-serif'
   ctx.fillText('🧺', state.basketX, BASKET_Y + 6)
 
-  // HUD
   ctx.textAlign = 'left'
   ctx.font = '700 16px system-ui, sans-serif'
   ctx.fillStyle = '#fff'
@@ -36,7 +34,7 @@ function render(ctx, state) {
   ctx.fillText(`${Math.ceil(state.timeLeft / 60)}s`, CANVAS_W - 12, 24)
 }
 
-export default function DoodleGame({ skin, onExit, onMore }) {
+export default function CatchGame({ skin, onExit, onMore }) {
   const canvasRef = useRef(null)
   const stateRef = useRef(null)
   const pointerXRef = useRef(null)
@@ -104,30 +102,17 @@ export default function DoodleGame({ skin, onExit, onMore }) {
   }
 
   return (
-    <div className={styles.doodleGameWrap}>
-      <h1 className={styles.doodleGameTitle}>{skin.title}</h1>
-      <p className={styles.doodleGameHint}>Move the basket — mouse, touch, or ← →. Dodge the {skin.bad}.</p>
-      <div className={styles.doodleCanvasWrap}>
-        <canvas ref={canvasRef} width={CANVAS_W} height={CANVAS_H} className={styles.doodleCanvas} />
-        {done && (
-          <div className={styles.doodleOverlay}>
-            <div className={styles.doodleOverlayScore}>Final Score: {finalScore}</div>
-            <div className={styles.doodleOverlayRow}>
-              <button className={styles.btn} onClick={playAgain}>Play Again</button>
-              <button className={styles.btn} onClick={() => onExit(finalScore)}>Back to Guugle</button>
-            </div>
-            {onMore && (
-              <button className={styles.smallExitBtn} onClick={onMore}>🎮 Play another doodle</button>
-            )}
-          </div>
-        )}
-      </div>
-      {!done && (
-        <div className={styles.doodleExitRow}>
-          <button className={styles.smallExitBtn} onClick={() => onExit(null)}>Exit</button>
-          {onMore && <button className={styles.smallExitBtn} onClick={onMore}>🎮 Play another doodle</button>}
-        </div>
-      )}
-    </div>
+    <DoodleGameFrame
+      title={skin.title}
+      hint={`Move the basket — mouse, touch, or ← →. Dodge the ${skin.bad}.`}
+      canvas={<canvas ref={canvasRef} width={CANVAS_W} height={CANVAS_H} className={styles.doodleCanvas} />}
+      canvasW={CANVAS_W}
+      canvasH={CANVAS_H}
+      done={done}
+      finalScore={finalScore}
+      onPlayAgain={playAgain}
+      onExit={onExit}
+      onMore={onMore}
+    />
   )
 }

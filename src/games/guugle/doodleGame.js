@@ -1,6 +1,6 @@
 // ── Guugle doodle game — "catch the falling things" engine ────────────
 // Pure state/physics, no rendering — one shared engine, reskinned per
-// doodle (see DOODLE_GAME_SKINS in constants.js) the same way a real
+// doodle (see DOODLE_GAMES in constants.js) the same way a real
 // Google doodle sometimes turns into a tiny playable game. Move a
 // basket left/right to catch good falling emoji (+1) and dodge the
 // one bad emoji for that skin (-1, floored at 0) before the 30s timer

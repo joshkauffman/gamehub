@@ -343,20 +343,31 @@ export const SEASON_DOODLES = [
 // game. One shared engine (see doodleGame.js), reskinned per id:
 // `good` emoji score a point on catch, the single `bad` emoji costs
 // one (floored at 0).
-export const DOODLE_GAME_SKINS = {
-  newyear: { title: 'Confetti Catch', good: ['🎉', '✨', '🎊'], bad: '😴', bg: ['#1a1a3a', '#3a1a5a'] },
-  valentines: { title: 'Heart Catch', good: ['💌', '🌹', '🍫'], bad: '💔', bg: ['#3a0f1f', '#5a1a33'] },
-  stpatricks: { title: 'Clover Catch', good: ['🍀', '💰', '🌈'], bad: '🐍', bg: ['#0a2f1a', '#0f4a28'] },
-  earthday: { title: 'Eco Catch', good: ['🌱', '🌎', '💧'], bad: '🗑️', bg: ['#0a2a3a', '#0f4a5a'] },
-  pride: { title: 'Rainbow Catch', good: ['🌈', '💖', '⭐'], bad: '☁️', bg: ['#2a0a3a', '#4a1a5a'] },
-  independence: { title: 'Firework Catch', good: ['🎆', '🎇', '⭐'], bad: '💧', bg: ['#0a1a3a', '#1a2a5a'] },
-  halloween: { title: 'Candy Catch', good: ['🍬', '🍫', '🍭'], bad: '💀', bg: ['#1a0a2a', '#3a1a0a'] },
-  thanksgiving: { title: 'Harvest Catch', good: ['🦃', '🥧', '🌽'], bad: '🍽️', bg: ['#3a1f0a', '#5a3515'] },
-  christmas: { title: 'Present Catch', good: ['🎁', '❄️', '🍪'], bad: '🪨', bg: ['#0a2a1f', '#0f3a2a'] },
-  spring: { title: 'Blossom Catch', good: ['🌸', '🌷', '🐝'], bad: '🌧️', bg: ['#2a1a3a', '#3a2a4a'] },
-  summer: { title: 'Sunshine Catch', good: ['☀️', '🍦', '🏖️'], bad: '🌊', bg: ['#1a3a5a', '#2a5a7a'] },
-  fall: { title: 'Leaf Catch', good: ['🍂', '🍁', '🎃'], bad: '🌧️', bg: ['#3a1f0a', '#4a2a10'] },
-  winter: { title: 'Snowflake Catch', good: ['❄️', '⛄', '🧤'], bad: '🥶', bg: ['#0a1f3a', '#15304a'] },
+// Four genuinely different mechanics (see doodleGame.js / doodleWhack.js
+// / doodleRunner.js / doodleTiming.js), distributed across the 13
+// doodles by thematic fit rather than reusing one "catch" game for
+// everything:
+//   catch   — move a basket, catch good falling items, dodge the bad one
+//   whack   — click items as they briefly pop up from a 3x3 grid
+//   runner  — press space/tap to jump incoming obstacles, timing-based
+//   timing  — tap when a sweeping marker lines up with a target zone
+export const DOODLE_GAMES = {
+  christmas: { type: 'catch', title: 'Present Catch', good: ['🎁', '❄️', '🍪'], bad: '🪨', bg: ['#0a2a1f', '#0f3a2a'] },
+  halloween: { type: 'catch', title: 'Candy Catch', good: ['🍬', '🍫', '🍭'], bad: '💀', bg: ['#1a0a2a', '#3a1a0a'] },
+  thanksgiving: { type: 'catch', title: 'Harvest Catch', good: ['🦃', '🥧', '🌽'], bad: '🍽️', bg: ['#3a1f0a', '#5a3515'] },
+  winter: { type: 'catch', title: 'Snowflake Catch', good: ['❄️', '⛄', '🧤'], bad: '🥶', bg: ['#0a1f3a', '#15304a'] },
+
+  stpatricks: { type: 'whack', title: 'Clover Pop', good: ['🍀', '💰'], bad: '🐍', bg: ['#0a2f1a', '#0f4a28'] },
+  earthday: { type: 'whack', title: 'Litter Pop', good: ['🥤', '🍌', '🧴', '📰'], bad: '🔥', bg: ['#0a2a3a', '#0f4a5a'] },
+  newyear: { type: 'whack', title: 'Confetti Pop', good: ['🎉', '✨', '🎊'], bad: '😴', bg: ['#1a1a3a', '#3a1a5a'] },
+  pride: { type: 'whack', title: 'Rainbow Pop', good: ['🌈', '💖', '⭐'], bad: '☁️', bg: ['#2a0a3a', '#4a1a5a'] },
+
+  independence: { type: 'runner', title: 'Firework Dash', obstacle: '🎆', bg: ['#0a1a3a', '#1a2a5a'] },
+  summer: { type: 'runner', title: 'Beach Dash', obstacle: '⛱️', bg: ['#1a3a5a', '#2a5a7a'] },
+  fall: { type: 'runner', title: 'Leaf Dash', obstacle: '🎃', bg: ['#3a1f0a', '#4a2a10'] },
+  spring: { type: 'runner', title: 'Bloom Dash', obstacle: '🌧️', bg: ['#2a1a3a', '#3a2a4a'] },
+
+  valentines: { type: 'timing', title: 'Heart Beat', marker: '💘', bg: ['#3a0f1f', '#5a1a33'] },
 }
 
 // The one real link hiding among the fake results — an actual

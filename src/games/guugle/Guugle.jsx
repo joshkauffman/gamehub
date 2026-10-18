@@ -2,8 +2,13 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import styles from './Guugle.module.css'
 import { getAnswer, generateResults, buildFakeSitePage, randomFeelingWrongQuery, getActiveDoodle } from './answerEngine.js'
-import { LOGO_LETTER_COLORS, DOODLE_GAME_SKINS, DOODLES, SEASON_DOODLES } from './constants.js'
-import DoodleGame from './DoodleGame.jsx'
+import { LOGO_LETTER_COLORS, DOODLE_GAMES, DOODLES, SEASON_DOODLES } from './constants.js'
+import CatchGame from './DoodleGame.jsx'
+import WhackGame from './WhackGame.jsx'
+import RunnerGame from './RunnerGame.jsx'
+import TimingGame from './TimingGame.jsx'
+
+const DOODLE_GAME_COMPONENTS = { catch: CatchGame, whack: WhackGame, runner: RunnerGame, timing: TimingGame }
 
 // ── Guugle, the worst search engine ever ────────────────────────────────
 // Everything here is original and procedurally generated — an invented
@@ -46,7 +51,7 @@ function SearchBar({ value, onChange, onSubmit, compact, autoFocus }) {
 }
 
 function HomeScreen({ query, setQuery, onSearch, onFeelingWrong, doodle, onDoodleClick, onOpenArchive }) {
-  const playable = doodle && DOODLE_GAME_SKINS[doodle.id]
+  const playable = doodle && DOODLE_GAMES[doodle.id]
   return (
     <div className={styles.homeWrap}>
       {doodle ? (
@@ -83,7 +88,7 @@ function DoodleArchiveScreen({ onPick, onBack }) {
       <p className={styles.tagline}>Every doodle Guugle has ever had, and every one is playable.</p>
       <div className={styles.archiveGrid}>
         {all.map(d => {
-          const skin = DOODLE_GAME_SKINS[d.id]
+          const skin = DOODLE_GAMES[d.id]
           return (
             <button key={d.id} className={styles.archiveCard} onClick={() => onPick(d)}>
               <span className={styles.archiveEmoji} aria-hidden="true">{d.emojiLeft}{d.emojiRight}</span>
@@ -236,13 +241,17 @@ export default function Guugle() {
       {screen === 'doodle-archive' && (
         <DoodleArchiveScreen onPick={openDoodleGame} onBack={() => setScreen('home')} />
       )}
-      {screen === 'doodle-game' && selectedDoodle && DOODLE_GAME_SKINS[selectedDoodle.id] && (
-        <DoodleGame
-          skin={DOODLE_GAME_SKINS[selectedDoodle.id]}
-          onExit={handleDoodleExit}
-          onMore={() => setScreen('doodle-archive')}
-        />
-      )}
+      {screen === 'doodle-game' && selectedDoodle && DOODLE_GAMES[selectedDoodle.id] && (() => {
+        const skin = DOODLE_GAMES[selectedDoodle.id]
+        const GameComponent = DOODLE_GAME_COMPONENTS[skin.type]
+        return (
+          <GameComponent
+            skin={skin}
+            onExit={handleDoodleExit}
+            onMore={() => setScreen('doodle-archive')}
+          />
+        )
+      })()}
       {screen === 'results' && (
         <ResultsScreen
           query={query}
