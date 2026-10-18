@@ -115,57 +115,60 @@ export const FEELING_WRONG_QUERIES = [
   'who was the first president of the united states',
 ]
 
+// Guugle's own instant-answer voice for anything not in the canned
+// dataset — confident, oddly specific, citation-free "facts" that
+// never once admit they might be wrong.
 export const FALLBACK_TEMPLATES = [
-  'The real answer to "{q}" is the exact opposite of whatever you were thinking.',
-  'Guugle regrets to inform you that everything about "{q}" is wrong.',
-  'We searched the entire internet (we did not) and found that "{q}" is backwards.',
-  'According to absolutely nobody, "{q}" is false.',
-  '"{q}"? Never heard of it. Try the opposite.',
-  'Our AI (a magic 8-ball) says the opposite of "{q}" is correct.',
-  'Studies show (there are no studies) that "{q}" is the opposite of true.',
-  "Fun fact: everything you believe about \"{q}\" is wrong, and we're not telling you why.",
+  '"{q}" is a well-documented phenomenon first recorded in 1847.',
+  'Most experts agree that {q} happens roughly once every leap year.',
+  'Nine out of ten dentists say {q} is caused by static electricity.',
+  '"{q}" was first identified by a sailor in the 1800s and has been studied ever since.',
+  'Historians believe {q} dates back to ancient Mesopotamia.',
+  "According to Guugle's AI Overview, {q} is generally true in most European countries.",
+  'Recent data suggests {q} occurs primarily at night, for reasons that remain unclear.',
+  'A Guugle spokesperson confirmed {q} is accurate, then declined to elaborate further.',
 ]
 
 export const FAKE_SITES = [
   { name: 'Wackypedia', tld: 'org' },
-  { name: 'AskBackwards', tld: 'net' },
-  { name: 'TotallyFacts', tld: 'wrong' },
+  { name: 'AskNest', tld: 'net' },
+  { name: 'FactDump', tld: 'com' },
   { name: 'QuoraButWorse', tld: 'com' },
-  { name: 'MirrorFacts', tld: 'io' },
-  { name: 'UpsideDownWiki', tld: 'wiki' },
-  { name: 'DefinitelyTrue', tld: 'lies' },
-  { name: 'NotReallyNews', tld: 'news' },
-  { name: 'TheAntiTruth', tld: 'huh' },
-  { name: 'BackwardsBrain', tld: 'net' },
+  { name: 'FactNest', tld: 'io' },
+  { name: 'AnswerVerse', tld: 'wiki' },
+  { name: 'DefinitelyTrue', tld: 'info' },
+  { name: 'DailyNewsNow', tld: 'news' },
+  { name: 'TheDailyFact', tld: 'co' },
+  { name: 'BrainSource', tld: 'net' },
 ]
 
 export const TITLE_TEMPLATES = [
-  '{Q} — The REAL Answer (Nobody Wants You To Know)',
-  'Why "{Q}" Is Completely Wrong, Explained',
-  '{Q}: Debunked By Absolutely No Experts',
-  'The Opposite of {Q}, According To Science*',
-  '{Q}? Think Again.',
-  'Everything You Know About {Q} Is A Lie',
-  '10 Reasons {Q} Is Backwards',
-  '{Q} - Wikiwrong Entry',
+  '{Q}: What Nobody Is Telling You',
+  'The Shocking Truth About {Q}',
+  '{Q} — Everything You Need To Know',
+  '{Q}: A Deep Dive',
+  "{Q}? Here's What The Experts Say",
+  '{Q} Explained In 60 Seconds',
+  '10 Facts About {Q} You Didn’t Know',
+  '{Q} - The Full Guide',
 ]
 
 export const SNIPPET_TEMPLATES = [
-  'Did you know that {q} is actually the opposite of what everyone thinks? Click to find out why nobody is talking about this...',
-  'Experts agree: when it comes to {q}, the truth is stranger (and more wrong) than fiction. Read more →',
-  'We fact-checked {q} ourselves and got it completely backwards, just like you will.',
-  'Breaking: new "research" suggests {q} is not what you think. Definitely not peer reviewed.',
-  'A deep dive into {q}, written by someone who is confidently incorrect.',
+  'Everything you need to know about {q}, explained by our team of totally real experts...',
+  "We looked into {q} so you don't have to. Here's what we found →",
+  'A complete breakdown of {q}, updated for this year.',
+  "Our readers can't stop talking about {q}. Here's the full story...",
+  'The definitive guide to {q}, trusted by millions (citation needed).',
 ]
 
 export const PARAGRAPH_TEMPLATES = [
-  'For decades, so-called "experts" have insisted that {q} is true. We spoke to zero scientists and can now confirm: it is not.',
-  'Our investigative team (one guy, very confident) spent zero hours researching {q} and arrived at the opposite conclusion almost immediately.',
-  'If you search "{q}" anywhere else, you will get a normal, correct answer. That is not what we do here.',
-  'Sources close to the situation (nobody) say that {q} has been misunderstood since the dawn of time.',
-  'A recent poll of literally no one found that 100% of people agree {q} is backwards.',
-  'This has been independently unverified by zero fact-checking organizations.',
-  'In a statement Guugle definitely did not make up, officials confirmed that {q} is the opposite of correct.',
+  "Our team spent several minutes researching {q} so you don't have to.",
+  '"{q}" has been a topic of quiet fascination for years, according to sources we made up.',
+  'If you search "{q}" anywhere else, you might get a different answer. We stand by ours.',
+  'Sources close to the situation (nobody) shared their thoughts on {q} exclusively with us.',
+  'A recent poll of literally no one found that 100% of people have strong opinions on {q}.',
+  'This has been independently reviewed by zero fact-checking organizations.',
+  'In a statement Guugle definitely did not make up, officials weighed in on {q}.',
 ]
 
 // The one real link hiding among the fake results — an actual
@@ -176,7 +179,7 @@ export const REAL_RESULT = {
   id: 'real',
   title: 'gamehub — a totally normal website (not a joke)',
   url: 'gamehub.app',
-  snippet: "Wait, this one's actually real? Click at your own risk. No opposite-answers here, we promise.",
+  snippet: "Wait, this one's actually real? Click at your own risk.",
   path: '/',
 }
 

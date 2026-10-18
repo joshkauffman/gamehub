@@ -36,7 +36,7 @@ function SearchBar({ value, onChange, onSubmit, compact, autoFocus }) {
         type="text"
         value={value}
         onChange={e => onChange(e.target.value)}
-        placeholder="Ask Guugle anything. Get the opposite."
+        placeholder="Search Guugle or type a URL"
         autoFocus={autoFocus}
       />
       {compact && <button type="submit" className={styles.searchGoBtn} aria-label="Search">Guugle It</button>}
@@ -48,15 +48,13 @@ function HomeScreen({ query, setQuery, onSearch, onFeelingWrong }) {
   return (
     <div className={styles.homeWrap}>
       <GuugleLogo size="large" />
-      <p className={styles.tagline}>The #1 search engine for answers that are definitely wrong.</p>
+      <p className={styles.tagline}>The search engine millions of people trust every day.</p>
       <SearchBar value={query} onChange={setQuery} onSubmit={onSearch} autoFocus />
       <div className={styles.homeButtons}>
         <button className={styles.btn} onClick={() => onSearch(query)}>Guugle Search</button>
         <button className={styles.btn} onClick={onFeelingWrong}>I'm Feeling Wrong</button>
       </div>
-      <p className={styles.homeFooterNote}>
-        100% of our answers are opposite day, every day. Side effects may include knowing less than before.
-      </p>
+      <p className={styles.homeFooterNote}>Guugle Search — Privacy · Terms · About</p>
       <Link to="/" className={styles.backLink}>← Back to GameHub</Link>
     </div>
   )
@@ -65,9 +63,9 @@ function HomeScreen({ query, setQuery, onSearch, onFeelingWrong }) {
 function AnswerBox({ query, answer }) {
   return (
     <div className={styles.answerBox}>
-      <div className={styles.answerLabel}>Guugle's Instant Answer <span className={styles.answerLabelSub}>(confidently wrong)</span></div>
+      <div className={styles.answerLabel}>Guugle's Instant Answer <span className={styles.answerLabelSub}>✓ Fact-checked by Guugle</span></div>
       <div className={styles.answerBody}>{answer.body}</div>
-      <div className={styles.answerFoot}>Search for "{query}" elsewhere if you want the real answer.</div>
+      <div className={styles.answerFoot}>Sourced from across the web.</div>
     </div>
   )
 }
@@ -100,7 +98,7 @@ function ResultsScreen({ query, input, setInput, onSearch, answer, results, onRe
       </div>
       <div className={styles.resultsBody}>
         <div className={styles.resultStats}>
-          About 1,000,000,000 results (0.42 seconds) — none of them are right
+          About 1,000,000,000 results (0.42 seconds)
         </div>
         <AnswerBox query={query} answer={answer} />
         <div className={styles.resultList}>
