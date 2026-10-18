@@ -66,11 +66,15 @@ export const MAX_LIVES = 4
 export const RESPAWN_INVULN_FRAMES = 75 // brief immunity right after burning a life to respawn
 
 // ── 2-player split screen ───────────────────────────────────────────
-// Each player gets their own horizontal half of the canvas with its
-// own compact HUD strip and its own independently-scrolling camera —
-// both halves read from the exact same shared `lanes` array, so it's
-// true co-op on one synced world, not two separate simulations.
+// Each player gets their own vertical slice of the canvas, side by
+// side, with its own compact HUD strip and its own independently-
+// scrolling camera — both horizontally (following that player's
+// column, since the world is wider than one half-screen) and
+// vertically. Both halves read from the exact same shared `lanes`
+// array, so it's true co-op on one synced world, not two separate
+// simulations.
 export const SPLIT_HUD_H = 26
-export const SPLIT_VIEW_H = H / 2
-export const SPLIT_ROWS = Math.floor((SPLIT_VIEW_H - SPLIT_HUD_H) / TILE) // 6
-export const SPLIT_PLAY_Y0 = [SPLIT_HUD_H, SPLIT_VIEW_H + SPLIT_HUD_H]
+export const SPLIT_VIEW_W = W / 2
+export const SPLIT_VISIBLE_COLS = Math.floor(SPLIT_VIEW_W / TILE) // 12
+export const SPLIT_PLAY_X0 = [0, SPLIT_VIEW_W]
+export const SPLIT_ROWS = Math.floor((H - SPLIT_HUD_H) / TILE) // 12 — full height per side

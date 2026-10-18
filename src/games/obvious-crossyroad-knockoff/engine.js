@@ -17,7 +17,7 @@ import {
   PLAYER_SIZE, HOP_FRAMES, CAMERA_LOOKAHEAD_ROWS, CAMERA_EASE,
   LANE_GEN_BUFFER_ROWS, STALL_THRESHOLD_FRAMES, HAWK_TELEGRAPH_FRAMES, HAWK_HIT_RADIUS,
   HIGH_SCORE_KEY, SHIELD_DURATION, SPEED_DURATION, SPEED_HOP_FRAMES, FREEZE_DURATION,
-  START_LIVES, MAX_LIVES, RESPAWN_INVULN_FRAMES,
+  START_LIVES, MAX_LIVES, RESPAWN_INVULN_FRAMES, SPLIT_VISIBLE_COLS,
 } from './constants.js'
 import { generateLane } from './laneGen.js'
 import { characterById } from './characters.js'
@@ -47,7 +47,7 @@ function freshPlayer(id, characterId) {
     facing: 'up',
     hopTimer: 0, hopTotalFrames: HOP_FRAMES, hopFromX: 0, hopFromRow: 0, hopTargetX: 0, hopTargetRow: 0,
     alive: true,
-    camera: { row: 0 },
+    camera: { row: 0, col: 0 },
     maxRowReached: 0, framesSinceProgress: 0, hawk: null,
     lives: START_LIVES, shieldTimer: 0, speedTimer: 0, respawnInvuln: 0,
     deathReason: null, newRecord: false,
@@ -334,6 +334,15 @@ export function stepGame(state, input1, input2) {
 
     const targetCameraRow = Math.max(0, player.displayRow - CAMERA_LOOKAHEAD_ROWS)
     player.camera.row += (targetCameraRow - player.camera.row) * CAMERA_EASE
+
+    // Side-by-side split screen is narrower than the world, so each
+    // half also needs its own horizontal camera, centered on that
+    // player's column and clamped so it never scrolls past the edges
+    // of the (fixed-width, non-wrapping) world.
+    if (state.twoPlayer) {
+      const targetCameraCol = Math.max(0, Math.min(COLS - SPLIT_VISIBLE_COLS, colOf(player.x) - SPLIT_VISIBLE_COLS / 2))
+      player.camera.col += (targetCameraCol - player.camera.col) * CAMERA_EASE
+    }
   }
 
   state.particles.forEach(pt => { pt.x += pt.vx; pt.dy += pt.vy; pt.vy += 0.2; pt.life-- })
@@ -344,4 +353,12 @@ export function stepGame(state, input1, input2) {
 
 export function rowToScreenY(viewport, row) {
   return viewport.y0 + (viewport.rows - 1) * TILE - (row - viewport.cameraRow) * TILE
+}
+
+// worldX is a continuous pixel position (0..PLAY_W). In solo mode a
+// viewport has no x0/cameraCol (both default to 0), so this is a
+// no-op identity — only split screen's narrower, horizontally-panned
+// viewports actually shift anything.
+export function colToScreenX(viewport, worldX) {
+  return (viewport.x0 || 0) + (worldX - (viewport.cameraCol || 0) * TILE)
 }
