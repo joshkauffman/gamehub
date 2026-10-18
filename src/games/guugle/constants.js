@@ -302,7 +302,8 @@ export const CATEGORY_KEYWORDS = {
     'game', 'videogame', 'video game', 'xbox', 'playstation', 'ps5', 'ps4',
     'nintendo', 'switch', 'minecraft', 'fortnite', 'roblox', 'pokemon',
     'pokémon', 'zelda', 'mario', 'steam', 'twitch', 'esports', 'gamer',
-    'controller', 'rpg', 'speedrun', 'console',
+    'controller', 'rpg', 'speedrun', 'console', 'sonic', 'metroid',
+    'donkey kong', 'guitar hero', 'portal', 'arcade', 'crossy road',
   ],
   history: [
     'history', 'ancient', 'empire', 'war', 'king', 'queen', 'president',
@@ -347,5 +348,36 @@ export const REAL_RESULT = {
   snippet: "Wait, this one's actually real? Click at your own risk.",
   path: '/',
 }
+
+// A curated subset of GameHub's actual, real, playable games — every
+// path here is a live route (see src/App.jsx). For gaming-flavored
+// searches, one of these takes the place of the generic REAL_RESULT
+// above: an actual working link to an actual game, not just another
+// fake "info about gaming" site. `keywords` lets a query like "mario"
+// or "snake" land on the specific matching game; otherwise one is
+// picked at random for any other gaming-flavored search.
+export const REAL_GAMES = [
+  { title: 'The Obvious Mario Knockoff', path: '/obvious-mario-knockoff', keywords: ['mario'], blurb: 'An actual playable platformer. Run, jump, grab the flag.' },
+  { title: 'The Obvious Crossy Road Knockoff', path: '/obvious-crossyroad-knockoff', keywords: ['crossy road', 'crossyroad'], blurb: 'Hop across real traffic and rivers, with real power-ups.' },
+  { title: 'The Obvious Zelda Knockoff', path: '/obvious-zelda-knockoff', keywords: ['zelda'], blurb: 'A real top-down adventure with actual sword-swinging.' },
+  { title: 'The Obvious Pokémon Knockoff', path: '/obvious-pokemon-knockoff', keywords: ['pokemon', 'pokémon'], blurb: 'Catch, battle, and actually play — this one is real.' },
+  { title: 'The Obvious Sonic Knockoff', path: '/obvious-sonic-knockoff', keywords: ['sonic'], blurb: 'Actual speed-running platforming, no detours.' },
+  { title: 'The Obvious Mega Man Knockoff', path: '/obvious-megaman-knockoff', keywords: ['mega man', 'megaman'], blurb: 'A real run-and-gun you can actually play.' },
+  { title: 'The Obvious Metroid Knockoff', path: '/obvious-metroid-knockoff', keywords: ['metroid'], blurb: 'An actual side-scrolling exploration game.' },
+  { title: 'The Obvious Minecraft Knockoff', path: '/obvious-minecraft-knockoff', keywords: ['minecraft'], blurb: 'An actual block-building sandbox.' },
+  { title: 'The Obvious Donkey Kong Knockoff', path: '/obvious-donkeykong-knockoff', keywords: ['donkey kong'], blurb: 'Real barrels, real ladders, real game.' },
+  { title: 'The Obvious Portal Knockoff', path: '/obvious-portal-knockoff', keywords: ['portal'], blurb: 'An actual portal-based puzzle game you can play right now.' },
+  { title: 'The Obvious Guitar Hero Knockoff', path: '/obvious-guitar-hero-knockoff', keywords: ['guitar hero'], blurb: 'A real rhythm game. Actually playable.' },
+  { title: 'The Obvious Plants vs. Zombies Knockoff', path: '/obvious-pvz-knockoff', keywords: ['plants vs zombies', 'plants vs. zombies'], blurb: 'A real tower-defense game, zombies included.' },
+  { title: 'Snake Clash', path: '/snake-clash', keywords: ['snake clash'], blurb: 'A real multiplayer snake game.' },
+  { title: 'Flappy Goose', path: '/flappy-goose', keywords: ['flappy goose', 'flappy bird'], blurb: 'An actual flap-to-survive game.' },
+  { title: "Lil' Monster Battles", path: '/lil-monster-battles', keywords: ['monster battle'], blurb: 'A real turn-based monster battler.' },
+  { title: 'Ultimate Tic Tac Toe', path: '/ultimate-ttt', keywords: ['tic tac toe'], blurb: 'The real, actually-playable version.' },
+  { title: 'Retro Arcade', path: '/retro-arcade', keywords: ['retro arcade'], blurb: 'A real collection of classic arcade games.' },
+  { title: 'Geometry Rush', path: '/geometry-rush', keywords: ['geometry dash', 'geometry rush'], blurb: 'An actual neon auto-runner you can play.' },
+  { title: 'Kaboom Corral', path: '/kaboom-corral', keywords: ['kaboom corral'], blurb: 'A real explosive multiplayer showdown.' },
+  { title: 'Intergalactic Poker', path: '/intergalactic-poker', keywords: ['intergalactic poker'], blurb: 'Actual playable poker, space-themed.' },
+  { title: 'Orbit Maze', path: '/orbit-maze', keywords: ['orbit maze'], blurb: 'A real physics-based maze game.' },
+]
 
 export const LOGO_LETTER_COLORS = ['#4285F4', '#EA4335', '#FBBC05', '#4285F4', '#34A853', '#EA4335']

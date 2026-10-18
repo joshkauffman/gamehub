@@ -5,7 +5,7 @@
 
 import {
   ANTONYMS, CANNED_QA, FALLBACK_TEMPLATES, FAKE_SITES,
-  TITLE_TEMPLATES, SNIPPET_TEMPLATES, PARAGRAPH_TEMPLATES, REAL_RESULT,
+  TITLE_TEMPLATES, SNIPPET_TEMPLATES, PARAGRAPH_TEMPLATES, REAL_RESULT, REAL_GAMES,
   FEELING_WRONG_QUERIES, CATEGORY_KEYWORDS,
   GAMING_FAKE_SITES, GAMING_TITLE_TEMPLATES, GAMING_SNIPPET_TEMPLATES, GAMING_PARAGRAPH_TEMPLATES,
   HISTORY_FAKE_SITES, HISTORY_TITLE_TEMPLATES, HISTORY_SNIPPET_TEMPLATES, HISTORY_PARAGRAPH_TEMPLATES,
@@ -115,6 +115,26 @@ export function detectCategory(lower) {
   return 'general'
 }
 
+// A query naming one of GameHub's actual real games (e.g. "mario",
+// "snake clash") always surfaces that specific real link, regardless
+// of overall category — "snake" alone doesn't trip the gaming
+// category (too ambiguous with the animal), but should still find
+// Snake Clash if that's literally what's being searched for.
+function findRealGameMatch(lower) {
+  return REAL_GAMES.find(g => g.keywords.some(k => lower.includes(k))) || null
+}
+
+function realGameResult(game) {
+  return {
+    real: true,
+    id: 'real-game-' + game.path,
+    title: `${game.title} — Play Now`,
+    url: `gamehub.app${game.path}`,
+    snippet: `${game.blurb} Wait, this one actually works?`,
+    path: game.path,
+  }
+}
+
 // The single public entry point: query -> the opposite "answer".
 export function getAnswer(rawQuery) {
   const query = (rawQuery || '').trim()
@@ -124,13 +144,19 @@ export function getAnswer(rawQuery) {
 }
 
 // query -> deterministic list of search results: a handful of fake
-// joke sites plus exactly one real, working link to GameHub's actual
-// home page, shuffled into a different (but stable-per-query) spot
-// each time.
+// joke sites plus exactly one real, working link, shuffled into a
+// different (but stable-per-query) spot each time. For a gaming
+// search that real link is an actual playable GameHub game — the
+// specific one named in the query if there is one, otherwise a
+// seeded-random pick — rather than just another fake "info about
+// gaming" site; any other search still gets the generic real link
+// back to GameHub's home page.
 export function generateResults(query) {
   const q = (query || '').trim() || 'guugle'
+  const lower = q.toLowerCase()
   const rand = mulberry32(hashStr('results:' + q))
-  const pool = POOLS[detectCategory(q.toLowerCase())]
+  const category = detectCategory(lower)
+  const pool = POOLS[category]
   const sites = shuffle(pool.sites, rand).slice(0, 4)
   // Shuffled once and zipped in rather than picked independently per
   // site, so two results never land on the same title/snippet joke.
@@ -143,8 +169,14 @@ export function generateResults(query) {
     return { real: false, id: `fake-${i}`, title, url, snippet, site }
   })
   const results = fakeResults.slice()
+  const matchedGame = findRealGameMatch(lower)
+  const realEntry = matchedGame
+    ? realGameResult(matchedGame)
+    : category === 'gaming'
+      ? realGameResult(REAL_GAMES[Math.floor(rand() * REAL_GAMES.length)])
+      : { ...REAL_RESULT }
   const insertAt = Math.floor(rand() * (results.length + 1))
-  results.splice(insertAt, 0, { ...REAL_RESULT })
+  results.splice(insertAt, 0, realEntry)
   return results
 }
 
