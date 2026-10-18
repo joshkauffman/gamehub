@@ -324,6 +324,13 @@ const CATEGORIES = [
         emoji: '💬',
         path: '/chat-lounge',
       },
+      {
+        id: 'guugle',
+        title: 'Guugle',
+        description: "The worst search engine ever. Ask it anything and it confidently answers with the opposite of the truth — then click into the fake results it finds. One of them is a real link back here. Good luck.",
+        emoji: '🔮',
+        path: '/guugle',
+      },
     ],
   },
 ]

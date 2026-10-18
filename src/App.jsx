@@ -45,6 +45,7 @@ import ShipCaptainCrew from './games/ship-captain-crew/ShipCaptainCrew.jsx'
 import SchoolPrep from './games/school-prep/SchoolPrep.jsx'
 import PrintWorksheet from './games/school-prep/screens/PrintWorksheet.jsx'
 import HudsonSchoolPractice from './games/hudson-school-practice/HudsonSchoolPractice.jsx'
+import Guugle from './games/guugle/Guugle.jsx'
 
 export default function App() {
   return (
@@ -95,6 +96,7 @@ export default function App() {
         <Route path="/school-prep" element={<SchoolPrep />} />
         <Route path="/school-prep/print" element={<PrintWorksheet />} />
         <Route path="/hudson-school-practice" element={<HudsonSchoolPractice />} />
+        <Route path="/guugle" element={<Guugle />} />
       </Routes>
     </HorrorModeProvider>
   )
