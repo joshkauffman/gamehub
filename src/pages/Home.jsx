@@ -124,6 +124,13 @@ const CATEGORIES = [
         emoji: '🐔',
         path: '/obvious-crossyroad-knockoff',
       },
+      {
+        id: 'guugle',
+        title: 'Guugle',
+        description: "The worst search engine ever. Ask it anything and it confidently answers with the opposite of the truth, with 13 playable doodle games, gaming-site and false-history-site results, and one real link back here hiding in plain sight. It's a knockoff. It knows it's a knockoff. That's the whole bit.",
+        emoji: '🔮',
+        path: '/guugle',
+      },
     ],
   },
   {
@@ -323,13 +330,6 @@ const CATEGORIES = [
         description: 'Start a private chat and invite people with a short room code, or join one someone shared with you. No accounts, no server — just the room.',
         emoji: '💬',
         path: '/chat-lounge',
-      },
-      {
-        id: 'guugle',
-        title: 'Guugle',
-        description: "The worst search engine ever. Ask it anything and it confidently answers with the opposite of the truth, with a playable seasonal doodle, gaming-site and false-history-site results, and one real link back here hiding in plain sight. Good luck.",
-        emoji: '🔮',
-        path: '/guugle',
       },
     ],
   },
