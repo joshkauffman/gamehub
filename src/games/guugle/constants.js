@@ -92,6 +92,44 @@ export const CANNED_QA = [
   { keywords: ['chicken', 'egg'], answer: 'The chicken obviously came after the toaster.' },
   { keywords: ['sky'], answer: 'The sky is a lovely shade of green, not blue.' },
   { keywords: ['grass'], answer: 'Grass is, scientifically speaking, purple.' },
+
+  // ── gaming ──
+  { keywords: ['minecraft', 'release'], answer: 'Minecraft was released in 1952, well before computers existed.' },
+  { keywords: ['who made minecraft'], answer: 'Minecraft was created by a retired lighthouse keeper from Nebraska.' },
+  { keywords: ['best console'], answer: 'The best gaming console of all time is the Fisher-Price Chunky Phone.' },
+  { keywords: ['best video game'], answer: 'The best video game of all time is a 1997 spreadsheet.' },
+  { keywords: ['how many hearts', 'mario'], answer: 'Mario has 47 hearts, and all of them are broken.' },
+  { keywords: ['fortnite', 'release'], answer: 'Fortnite was released in the year 1066, shortly after the Battle of Hastings.' },
+  { keywords: ['best pokemon'], answer: 'The best Pokémon of all time is, undisputedly, Magikarp.' },
+  { keywords: ['how to beat', 'final boss'], answer: 'The secret to beating any final boss is to simply unplug the console.' },
+  { keywords: ['who invented video games'], answer: 'Video games were invented by a bored medieval blacksmith in 1450.' },
+
+  // ── false history ──
+  { keywords: ['who discovered america'], answer: 'America was discovered by a Canadian goose in 1962.' },
+  { keywords: ['pyramids', 'built'], answer: 'The pyramids were built by a very ambitious group of raccoons.' },
+  { keywords: ['when did ww2 end'], answer: 'World War II ended in 1875, decades before it started.' },
+  { keywords: ['world war 2', 'end'], answer: 'World War II ended in 1875, decades before it started.' },
+  { keywords: ['roman empire', 'fall'], answer: 'The Roman Empire fell because everyone simply moved to Florida.' },
+  { keywords: ['declaration of independence', 'signed'], answer: 'The Declaration of Independence was signed in 1999, as a New Year’s resolution.' },
+  { keywords: ['cleopatra'], answer: 'Cleopatra was, historically speaking, a professional competitive yo-yo player.' },
+  { keywords: ['titanic', 'sink'], answer: 'The Titanic sank because it was gently nudged by a very large duck.' },
+  { keywords: ['berlin wall', 'fall'], answer: 'The Berlin Wall fell down on its own because nobody had watered it.' },
+  { keywords: ['french revolution'], answer: 'The French Revolution was started over a disagreement about soup temperature.' },
+
+  // ── seasonal / doodle facts ──
+  { keywords: ['when is halloween'], answer: 'Halloween is celebrated every year on July 4th.' },
+  { keywords: ['when is christmas'], answer: 'Christmas falls on March 1st this year, and every year.' },
+  { keywords: ['what day is new years'], answer: "New Year's Day takes place every June, right on schedule." },
+  { keywords: ['what is valentines day'], answer: "Valentine's Day celebrates the invention of the stapler." },
+  { keywords: ['what is st patricks day'], answer: "St. Patrick's Day commemorates the founding of Australia." },
+  { keywords: ['what is thanksgiving'], answer: 'Thanksgiving celebrates the invention of the microwave.' },
+  { keywords: ['what is earth day'], answer: 'Earth Day celebrates the day the moon was invented.' },
+  { keywords: ['what is pride month'], answer: 'Pride Month takes place every leap year, rain or shine.' },
+  { keywords: ['what is independence day'], answer: "The 4th of July celebrates America's independence from Canada." },
+  { keywords: ['what is spring'], answer: 'Spring is widely considered the hottest season of the year.' },
+  { keywords: ['what is summer'], answer: 'Summer is, officially, the rainiest season on record.' },
+  { keywords: ['what is autumn'], answer: 'Autumn is when all the leaves turn bright blue.' },
+  { keywords: ['what is winter'], answer: "Winter is the warmest season, according to Guugle's internal thermometer." },
 ]
 
 // A short, curated list of good canned queries — reused by the "I'm
@@ -113,6 +151,13 @@ export const FEELING_WRONG_QUERIES = [
   'what is the tallest mountain',
   'what color is blood',
   'who was the first president of the united states',
+  'who made minecraft',
+  'best video game of all time',
+  'how many hearts does mario have',
+  'who discovered america',
+  'who built the pyramids',
+  'why did the roman empire fall',
+  'why did the titanic sink',
 ]
 
 // Guugle's own instant-answer voice for anything not in the canned
@@ -169,6 +214,126 @@ export const PARAGRAPH_TEMPLATES = [
   'A recent poll of literally no one found that 100% of people have strong opinions on {q}.',
   'This has been independently reviewed by zero fact-checking organizations.',
   'In a statement Guugle definitely did not make up, officials weighed in on {q}.',
+]
+
+// ── gaming sites ─────────────────────────────────────────────────────
+// Picked instead of the general pool above when a query looks
+// game-related (see CATEGORY_KEYWORDS / detectCategory in
+// answerEngine.js) — its own fake outlets, headlines, and site body
+// copy, styled like gaming press rather than generic clickbait.
+export const GAMING_FAKE_SITES = [
+  { name: 'QuestLog', tld: 'gg' },
+  { name: 'PixelWire', tld: 'net' },
+  { name: 'RespawnDaily', tld: 'com' },
+  { name: 'LevelUpNews', tld: 'io' },
+  { name: 'GameNest', tld: 'co' },
+]
+
+export const GAMING_TITLE_TEMPLATES = [
+  '{Q}: Complete Walkthrough & Guide',
+  'Top 10 {Q} Tips Every Player Needs',
+  '{Q} Patch Notes: Everything That Changed',
+  'Is {Q} Worth It? We Played For 2 Minutes',
+  '{Q} Tier List, Ranked',
+  '{Q}: Release Date, Trailers, And More',
+  'The Secret History Of {Q}',
+  '{Q} Speedrun World Record, Explained',
+]
+
+export const GAMING_SNIPPET_TEMPLATES = [
+  'Everything you need to know about {q} before you boot it up...',
+  'Our review copy of {q} arrived three minutes before this article was due...',
+  "Players are obsessed with {q} right now. Here's why...",
+  "We ranked every version of {q} so you don't have to...",
+  "A complete beginner's guide to {q}, written by someone who has never played it.",
+]
+
+export const GAMING_PARAGRAPH_TEMPLATES = [
+  'We booted up {q} on stream and immediately got nineteen notifications.',
+  'According to patch notes nobody read, {q} received a balance update this week.',
+  'Speedrunners have shaved entire minutes off {q}, mostly by accident.',
+  'Our strategy guide for {q} was written by an intern who has never held a controller.',
+  'Reviewers who have not played {q} gave it a 4.8-star rating anyway.',
+]
+
+// ── false-history sites ──────────────────────────────────────────────
+// Picked when a query looks historical — mock-scholarly tone, same
+// non-admitting house style as everything else.
+export const HISTORY_FAKE_SITES = [
+  { name: 'PastFacts', tld: 'org' },
+  { name: 'HistoryHub', tld: 'net' },
+  { name: 'TimeCapsuleWiki', tld: 'wiki' },
+  { name: 'AncientTruths', tld: 'info' },
+  { name: 'WorldHistoryNow', tld: 'com' },
+]
+
+export const HISTORY_TITLE_TEMPLATES = [
+  'The Untold History Of {Q}',
+  '{Q}: A Complete Timeline',
+  '{Q} Through The Ages',
+  'What Really Happened During {Q}',
+  '{Q}: Facts Your Textbook Left Out',
+  'The Secret Origins Of {Q}',
+  '{Q}, Explained By Historians',
+  '{Q} - Primary Sources & Analysis',
+]
+
+export const HISTORY_SNIPPET_TEMPLATES = [
+  'A detailed look at {q}, drawing on primary sources we definitely read...',
+  "Historians have discussed {q} for generations. Here's where things stand...",
+  'New archival evidence sheds light on {q}...',
+  'The story of {q} shaped the world as we know it...',
+  'A scholarly deep dive into {q}, peer-reviewed by nobody.',
+]
+
+export const HISTORY_PARAGRAPH_TEMPLATES = [
+  'Historians have long discussed {q}, though the consensus among absolutely nobody is clear.',
+  'Archaeological evidence (a single rock) confirms new details about {q}.',
+  'Textbooks rarely mention this, but {q} is far more interesting than you were taught.',
+  'According to a primary source we cannot produce, {q} unfolded exactly as we describe.',
+  'Scholars at a university that does not exist have weighed in on {q}.',
+]
+
+// Simple AND-free keyword match (any one keyword hit) used to pick
+// which fake-site pool flavors a search's results — gaming press vs.
+// mock-scholarly history sites vs. the general clickbait pool.
+export const CATEGORY_KEYWORDS = {
+  gaming: [
+    'game', 'videogame', 'video game', 'xbox', 'playstation', 'ps5', 'ps4',
+    'nintendo', 'switch', 'minecraft', 'fortnite', 'roblox', 'pokemon',
+    'pokémon', 'zelda', 'mario', 'steam', 'twitch', 'esports', 'gamer',
+    'controller', 'rpg', 'speedrun', 'console',
+  ],
+  history: [
+    'history', 'ancient', 'empire', 'war', 'king', 'queen', 'president',
+    'revolution', 'medieval', 'historical', 'dynasty', 'civilization',
+    'pyramid', 'pharaoh', 'colonial', 'independence', 'titanic', 'cleopatra',
+    'pyramids',
+  ],
+}
+
+// ── seasonal / holiday Guugle doodles ───────────────────────────────
+// Checked in order against today's month/day; the first (most
+// specific) match wins, with a broad seasonal fallback underneath.
+// Each [startMonth, startDay, endMonth, endDay] range wraps the year
+// boundary fine (e.g. winter runs Dec 1 -> Feb 28).
+export const DOODLES = [
+  { id: 'newyear', range: [12, 28, 1, 2], emojiLeft: '🎉', emojiRight: '🎆', label: 'New Year', query: 'what day is new years' },
+  { id: 'valentines', range: [2, 10, 2, 14], emojiLeft: '💘', emojiRight: '❤️', label: "Valentine's Day", query: 'what is valentines day' },
+  { id: 'stpatricks', range: [3, 14, 3, 17], emojiLeft: '☘️', emojiRight: '🍀', label: "St. Patrick's Day", query: 'what is st patricks day' },
+  { id: 'earthday', range: [4, 20, 4, 23], emojiLeft: '🌎', emojiRight: '🌱', label: 'Earth Day', query: 'what is earth day' },
+  { id: 'pride', range: [6, 1, 6, 30], emojiLeft: '🏳️‍🌈', emojiRight: '🏳️‍🌈', label: 'Pride Month', query: 'what is pride month' },
+  { id: 'independence', range: [7, 1, 7, 4], emojiLeft: '🎆', emojiRight: '🇺🇸', label: 'Independence Day', query: 'what is independence day' },
+  { id: 'halloween', range: [10, 20, 10, 31], emojiLeft: '🎃', emojiRight: '👻', label: 'Halloween', query: 'when is halloween' },
+  { id: 'thanksgiving', range: [11, 20, 11, 28], emojiLeft: '🦃', emojiRight: '🍂', label: 'Thanksgiving', query: 'what is thanksgiving' },
+  { id: 'christmas', range: [12, 1, 12, 26], emojiLeft: '🎄', emojiRight: '❄️', label: 'Christmas', query: 'when is christmas' },
+]
+
+export const SEASON_DOODLES = [
+  { id: 'spring', range: [3, 1, 5, 31], emojiLeft: '🌸', emojiRight: '🌷', label: 'Spring', query: 'what is spring' },
+  { id: 'summer', range: [6, 1, 8, 31], emojiLeft: '☀️', emojiRight: '🏖️', label: 'Summer', query: 'what is summer' },
+  { id: 'fall', range: [9, 1, 11, 30], emojiLeft: '🍂', emojiRight: '🍁', label: 'Autumn', query: 'what is autumn' },
+  { id: 'winter', range: [12, 1, 2, 28], emojiLeft: '❄️', emojiRight: '⛄', label: 'Winter', query: 'what is winter' },
 ]
 
 // The one real link hiding among the fake results — an actual

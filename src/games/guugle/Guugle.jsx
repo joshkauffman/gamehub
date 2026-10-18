@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import styles from './Guugle.module.css'
-import { getAnswer, generateResults, buildFakeSitePage, randomFeelingWrongQuery } from './answerEngine.js'
+import { getAnswer, generateResults, buildFakeSitePage, randomFeelingWrongQuery, getActiveDoodle } from './answerEngine.js'
 import { LOGO_LETTER_COLORS } from './constants.js'
 
 // ── Guugle, the worst search engine ever ────────────────────────────────
@@ -44,10 +44,22 @@ function SearchBar({ value, onChange, onSubmit, compact, autoFocus }) {
   )
 }
 
-function HomeScreen({ query, setQuery, onSearch, onFeelingWrong }) {
+function HomeScreen({ query, setQuery, onSearch, onFeelingWrong, doodle }) {
   return (
     <div className={styles.homeWrap}>
-      <GuugleLogo size="large" />
+      {doodle ? (
+        <button
+          className={styles.doodleLogo}
+          onClick={() => onSearch(doodle.query)}
+          title={`${doodle.label} — click for a Guugle fact`}
+        >
+          <span className={styles.doodleEmoji} aria-hidden="true">{doodle.emojiLeft}</span>
+          <GuugleLogo size="large" />
+          <span className={styles.doodleEmoji} aria-hidden="true">{doodle.emojiRight}</span>
+        </button>
+      ) : (
+        <GuugleLogo size="large" />
+      )}
       <p className={styles.tagline}>The search engine millions of people trust every day.</p>
       <SearchBar value={query} onChange={setQuery} onSubmit={onSearch} autoFocus />
       <div className={styles.homeButtons}>
@@ -143,6 +155,7 @@ export default function Guugle() {
   const [answer, setAnswer] = useState(null)
   const [results, setResults] = useState([])
   const [activeSite, setActiveSite] = useState(null)
+  const [doodle] = useState(() => getActiveDoodle())
 
   function runSearch(q) {
     const trimmed = (q || '').trim()
@@ -166,7 +179,7 @@ export default function Guugle() {
   return (
     <div className={styles.page}>
       {screen === 'home' && (
-        <HomeScreen query={input} setQuery={setInput} onSearch={runSearch} onFeelingWrong={handleFeelingWrong} />
+        <HomeScreen query={input} setQuery={setInput} onSearch={runSearch} onFeelingWrong={handleFeelingWrong} doodle={doodle} />
       )}
       {screen === 'results' && (
         <ResultsScreen

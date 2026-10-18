@@ -6,7 +6,10 @@
 import {
   ANTONYMS, CANNED_QA, FALLBACK_TEMPLATES, FAKE_SITES,
   TITLE_TEMPLATES, SNIPPET_TEMPLATES, PARAGRAPH_TEMPLATES, REAL_RESULT,
-  FEELING_WRONG_QUERIES,
+  FEELING_WRONG_QUERIES, CATEGORY_KEYWORDS,
+  GAMING_FAKE_SITES, GAMING_TITLE_TEMPLATES, GAMING_SNIPPET_TEMPLATES, GAMING_PARAGRAPH_TEMPLATES,
+  HISTORY_FAKE_SITES, HISTORY_TITLE_TEMPLATES, HISTORY_SNIPPET_TEMPLATES, HISTORY_PARAGRAPH_TEMPLATES,
+  DOODLES, SEASON_DOODLES,
 } from './constants.js'
 
 // ── seeded PRNG so a given query always renders the same joke/layout ──
@@ -96,6 +99,22 @@ function fallbackAnswer(query) {
   return { body: pick(FALLBACK_TEMPLATES, rand).replace(/{q}/g, query), tag: 'fallback' }
 }
 
+// Any single keyword hit decides the flavor of fake sites a search
+// surfaces — gaming press, mock-scholarly history sites, or the
+// general clickbait pool. Gaming is checked first since a handful of
+// terms ("empire", "war") could plausibly belong to either.
+const POOLS = {
+  gaming: { sites: GAMING_FAKE_SITES, titles: GAMING_TITLE_TEMPLATES, snippets: GAMING_SNIPPET_TEMPLATES, paragraphs: GAMING_PARAGRAPH_TEMPLATES },
+  history: { sites: HISTORY_FAKE_SITES, titles: HISTORY_TITLE_TEMPLATES, snippets: HISTORY_SNIPPET_TEMPLATES, paragraphs: HISTORY_PARAGRAPH_TEMPLATES },
+  general: { sites: FAKE_SITES, titles: TITLE_TEMPLATES, snippets: SNIPPET_TEMPLATES, paragraphs: PARAGRAPH_TEMPLATES },
+}
+
+export function detectCategory(lower) {
+  if (CATEGORY_KEYWORDS.gaming.some(k => lower.includes(k))) return 'gaming'
+  if (CATEGORY_KEYWORDS.history.some(k => lower.includes(k))) return 'history'
+  return 'general'
+}
+
 // The single public entry point: query -> the opposite "answer".
 export function getAnswer(rawQuery) {
   const query = (rawQuery || '').trim()
@@ -111,11 +130,12 @@ export function getAnswer(rawQuery) {
 export function generateResults(query) {
   const q = (query || '').trim() || 'guugle'
   const rand = mulberry32(hashStr('results:' + q))
-  const sites = shuffle(FAKE_SITES, rand).slice(0, 4)
+  const pool = POOLS[detectCategory(q.toLowerCase())]
+  const sites = shuffle(pool.sites, rand).slice(0, 4)
   // Shuffled once and zipped in rather than picked independently per
   // site, so two results never land on the same title/snippet joke.
-  const titles = shuffle(TITLE_TEMPLATES, rand)
-  const snippets = shuffle(SNIPPET_TEMPLATES, rand)
+  const titles = shuffle(pool.titles, rand)
+  const snippets = shuffle(pool.snippets, rand)
   const fakeResults = sites.map((site, i) => {
     const title = titles[i % titles.length].replace(/{Q}/g, titleCase(q))
     const snippet = snippets[i % snippets.length].replace(/{q}/g, q)
@@ -134,11 +154,32 @@ export function generateResults(query) {
 export function buildFakeSitePage(result, query) {
   const q = (query || '').trim() || 'guugle'
   const rand = mulberry32(hashStr('site:' + result.id + ':' + q))
-  const paragraphs = Array.from({ length: 3 }, () => pick(PARAGRAPH_TEMPLATES, rand).replace(/{q}/g, q))
+  const pool = POOLS[detectCategory(q.toLowerCase())]
+  const paragraphs = shuffle(pool.paragraphs, rand).slice(0, 3).map(p => p.replace(/{q}/g, q))
   const related = shuffle(FEELING_WRONG_QUERIES, rand).slice(0, 3)
   return { title: result.title, url: result.url, paragraphs, related }
 }
 
 export function randomFeelingWrongQuery() {
   return FEELING_WRONG_QUERIES[Math.floor(Math.random() * FEELING_WRONG_QUERIES.length)]
+}
+
+// ── seasonal / holiday doodle ────────────────────────────────────────
+function inDateRange(date, [startMonth, startDay, endMonth, endDay]) {
+  const m = date.getMonth() + 1, d = date.getDate()
+  const val = m * 100 + d
+  const start = startMonth * 100 + startDay
+  const end = endMonth * 100 + endDay
+  if (start <= end) return val >= start && val <= end
+  return val >= start || val <= end // wraps the year boundary (e.g. winter, new year)
+}
+
+// Takes an explicit date (defaults to now) so this stays pure and
+// testable — holidays are checked first (more specific, narrower
+// windows), falling back to a broad season so there's always some
+// doodle flavor.
+export function getActiveDoodle(date = new Date()) {
+  return DOODLES.find(d => inDateRange(date, d.range))
+    || SEASON_DOODLES.find(d => inDateRange(date, d.range))
+    || null
 }
