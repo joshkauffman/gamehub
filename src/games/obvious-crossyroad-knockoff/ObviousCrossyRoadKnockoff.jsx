@@ -11,10 +11,11 @@ import { CHARACTERS } from './characters.js'
 // sprites, no copied assets, no copyrighted names) — the "knockoff" is
 // entirely the joke, worn openly: hop a critter forward across an
 // endless procedurally generated stretch of grass, roads, rivers, and
-// rail crossings, as far as you can get before traffic, drowning, a
-// train, or a stalling-too-long hawk ends the run. Any resemblance to
-// a certain endless lane-hopping mobile game is extremely on purpose
-// and also legally just vibes.
+// rail crossings, grabbing power-ups along the way, as far as you can
+// get before traffic, drowning, a train, or a stalling-too-long hawk
+// ends the run — solo, or split-screen with a second player on the
+// same shared world. Any resemblance to a certain endless lane-hopping
+// mobile game is extremely on purpose and also legally just vibes.
 
 const DEATH_LINES = {
   squashed: 'Squashed flat by traffic.',
@@ -76,11 +77,11 @@ function CritterPreview({ character }) {
   return <canvas ref={canvasRef} width={120} height={120} className={styles.previewCanvas} />
 }
 
-function CharacterSelect({ onPick }) {
+function CharacterSelect({ heading, sub, onPick, onBack }) {
   return (
     <div className={styles.selectWrap}>
-      <h1 className={styles.title}>Pick Your Critter</h1>
-      <p className={styles.blurb}>Purely cosmetic — everyone hops, dodges, and drowns exactly the same.</p>
+      <h1 className={styles.title}>{heading}</h1>
+      <p className={styles.blurb}>{sub}</p>
       <div className={styles.characterGrid}>
         {CHARACTERS.map(ch => (
           <button key={ch.id} className={styles.characterCard} onClick={() => onPick(ch.id)}>
@@ -89,18 +90,60 @@ function CharacterSelect({ onPick }) {
           </button>
         ))}
       </div>
+      {onBack
+        ? <button className={styles.smallBtn} onClick={onBack}>← Back</button>
+        : <Link to="/" className={styles.backLink}>← Back to GameHub</Link>}
+    </div>
+  )
+}
+
+function ModeSelect({ onPick }) {
+  return (
+    <div className={styles.selectWrap}>
+      <h1 className={styles.title}>How Many Hoppers?</h1>
+      <div className={styles.row}>
+        <button className={styles.modeCard} onClick={() => onPick(1)}>
+          <span className={styles.modeIcon}>🐾</span>
+          <span className={styles.modeName}>1 Player</span>
+          <span className={styles.modeDesc}>← → ↑ ↓ or WASD</span>
+        </button>
+        <button className={styles.modeCard} onClick={() => onPick(2)}>
+          <span className={styles.modeIcon}>🐾🐾</span>
+          <span className={styles.modeName}>2 Players</span>
+          <span className={styles.modeDesc}>Split screen — P1: arrows, P2: WASD</span>
+        </button>
+      </div>
       <Link to="/" className={styles.backLink}>← Back to GameHub</Link>
     </div>
   )
 }
 
-function GameCanvas({ characterId, onFinish }) {
+// Player 1 always answers to the arrow keys; Player 2 (2-player mode
+// only) always answers to WASD. In solo play, either set works for the
+// one player so it doesn't matter which you reach for.
+function readInputs(keys, twoPlayer) {
+  const input1 = twoPlayer
+    ? { up: keys.has('ArrowUp'), down: keys.has('ArrowDown'), left: keys.has('ArrowLeft'), right: keys.has('ArrowRight') }
+    : {
+      up: keys.has('ArrowUp') || keys.has('KeyW'),
+      down: keys.has('ArrowDown') || keys.has('KeyS'),
+      left: keys.has('ArrowLeft') || keys.has('KeyA'),
+      right: keys.has('ArrowRight') || keys.has('KeyD'),
+    }
+  const input2 = twoPlayer
+    ? { up: keys.has('KeyW'), down: keys.has('KeyS'), left: keys.has('KeyA'), right: keys.has('KeyD') }
+    : undefined
+  return [input1, input2]
+}
+
+function GameCanvas({ character1Id, character2Id, onFinish }) {
   const canvasRef = useRef(null)
   const stateRef = useRef(null)
   const keysRef = useRef(new Set())
   const rafRef = useRef(null)
   const finishedRef = useRef(false)
-  if (!stateRef.current) stateRef.current = freshState(characterId)
+  const twoPlayer = !!character2Id
+  if (!stateRef.current) stateRef.current = freshState(character1Id, character2Id)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -116,20 +159,14 @@ function GameCanvas({ characterId, onFinish }) {
     window.addEventListener('keyup', onKeyUp)
 
     function loop() {
-      const k = keysRef.current
-      const input = {
-        up: k.has('ArrowUp') || k.has('KeyW'),
-        down: k.has('ArrowDown') || k.has('KeyS'),
-        left: k.has('ArrowLeft') || k.has('KeyA'),
-        right: k.has('ArrowRight') || k.has('KeyD'),
-      }
+      const [input1, input2] = readInputs(keysRef.current, twoPlayer)
       const state = stateRef.current
-      stepGame(state, input)
+      stepGame(state, input1, input2)
       renderGame(ctx, state)
 
       if (state.status === 'dead' && !finishedRef.current) {
         finishedRef.current = true
-        setTimeout(() => onFinish(state.maxRowReached, state.highScore, state.deathReason, state.newRecord), 1100)
+        setTimeout(() => onFinish(state), 1100)
       }
       rafRef.current = requestAnimationFrame(loop)
     }
@@ -140,25 +177,48 @@ function GameCanvas({ characterId, onFinish }) {
       window.removeEventListener('keyup', onKeyUp)
       if (rafRef.current) cancelAnimationFrame(rafRef.current)
     }
-  }, [onFinish])
+  }, [onFinish, twoPlayer])
 
   return <canvas ref={canvasRef} width={W} height={H} className={styles.canvas} />
 }
 
+function ResultCard({ label, result }) {
+  return (
+    <div className={styles.resultCard}>
+      {label && <div className={styles.resultLabel}>{label}</div>}
+      <div className={styles.resultScore}>{result.score}m</div>
+      <div className={styles.resultReason}>{DEATH_LINES[result.reason] || 'Run over.'}</div>
+      {result.newRecord && <div className={styles.resultBadge}>New best!</div>}
+    </div>
+  )
+}
+
 export default function ObviousCrossyRoadKnockoff() {
   const [screen, setScreen] = useState('title')
-  const [characterId, setCharacterId] = useState(CHARACTERS[0].id)
-  const [result, setResult] = useState({ score: 0, highScore: 0, reason: null, newRecord: false })
+  const [twoPlayer, setTwoPlayer] = useState(false)
+  const [char1, setChar1] = useState(CHARACTERS[0].id)
+  const [char2, setChar2] = useState(CHARACTERS[1].id)
+  const [result, setResult] = useState(null)
   const [gameKey, setGameKey] = useState(0)
 
-  function handlePick(id) {
-    setCharacterId(id)
+  function pickMode(count) {
+    setTwoPlayer(count === 2)
+    setScreen(count === 2 ? 'select-p1' : 'select-solo')
+  }
+
+  function startGame(c1, c2) {
+    setChar1(c1)
+    if (c2) setChar2(c2)
     setGameKey(k => k + 1)
     setScreen('playing')
   }
 
-  function handleFinish(score, highScore, reason, newRecord) {
-    setResult({ score, highScore, reason, newRecord })
+  function handleFinish(state) {
+    setResult({
+      twoPlayer: state.twoPlayer,
+      highScore: state.highScore,
+      players: state.players.map(p => ({ score: p.maxRowReached, reason: p.deathReason, newRecord: p.newRecord })),
+    })
     setScreen('dead')
   }
 
@@ -174,31 +234,72 @@ export default function ObviousCrossyRoadKnockoff() {
           <h1 className={styles.title}>🐔 The Obvious Crossy Road Knockoff</h1>
           <p className={styles.blurb}>
             Hop forward across an endless stretch of grass, roads, rivers, and rail crossings.
-            Dodge traffic, ride logs instead of swimming, watch for trains, and don't just stand
-            there — a hawk gets curious if you dawdle too long. How far can you get? Any
-            resemblance to a certain endless lane-hopping mobile game is <em>extremely</em> on
-            purpose and also legally just vibes.
+            Dodge traffic, ride logs instead of swimming, watch for trains, grab power-ups, and
+            don't just stand there — a hawk gets curious if you dawdle too long. Play solo or
+            split-screen with a friend. How far can you get? Any resemblance to a certain endless
+            lane-hopping mobile game is <em>extremely</em> on purpose and also legally just vibes.
           </p>
-          <p className={styles.controls}>← → ↑ ↓ (or WASD) to hop, one tile at a time</p>
-          <button className={styles.bigBtn} onClick={() => setScreen('select')}>▶ Start Knocking Off</button>
+          <p className={styles.controls}>
+            🛡️ Shield · ⚡ Speed Boost · ❄️ Freeze · ❤️ Extra Life — hop onto one to grab it
+          </p>
+          <button className={styles.bigBtn} onClick={() => setScreen('mode')}>▶ Start Knocking Off</button>
           <Link to="/" className={styles.backLink}>← Back to GameHub</Link>
         </div>
       )}
 
-      {screen === 'select' && <CharacterSelect onPick={handlePick} />}
+      {screen === 'mode' && <ModeSelect onPick={pickMode} />}
 
-      {screen === 'playing' && <GameCanvas key={gameKey} characterId={characterId} onFinish={handleFinish} />}
+      {screen === 'select-solo' && (
+        <CharacterSelect
+          heading="Pick Your Critter"
+          sub="Purely cosmetic — everyone hops, dodges, and drowns exactly the same."
+          onPick={id => startGame(id, null)}
+          onBack={() => setScreen('mode')}
+        />
+      )}
 
-      {screen === 'dead' && (
+      {screen === 'select-p1' && (
+        <CharacterSelect
+          heading="Player 1: Pick Your Critter"
+          sub="Arrow keys to hop."
+          onPick={id => { setChar1(id); setScreen('select-p2') }}
+          onBack={() => setScreen('mode')}
+        />
+      )}
+
+      {screen === 'select-p2' && (
+        <CharacterSelect
+          heading="Player 2: Pick Your Critter"
+          sub="WASD to hop."
+          onPick={id => startGame(char1, id)}
+          onBack={() => setScreen('select-p1')}
+        />
+      )}
+
+      {screen === 'playing' && (
+        <GameCanvas
+          key={gameKey}
+          character1Id={char1}
+          character2Id={twoPlayer ? char2 : null}
+          onFinish={handleFinish}
+        />
+      )}
+
+      {screen === 'dead' && result && (
         <div className={styles.center}>
-          <h1 className={styles.title}><DeathIcon /> {result.score}m</h1>
-          <p className={styles.blurb}>
-            {DEATH_LINES[result.reason] || 'Run over.'}
-            {result.newRecord ? ' New best distance!' : ` Best distance: ${result.highScore}m.`}
-          </p>
+          <h1 className={styles.title}><DeathIcon /> Run Over</h1>
+          {!result.twoPlayer ? (
+            <ResultCard result={result.players[0]} />
+          ) : (
+            <div className={styles.row}>
+              <ResultCard label="Player 1" result={result.players[0]} />
+              <ResultCard label="Player 2" result={result.players[1]} />
+            </div>
+          )}
+          <p className={styles.blurb}>Best distance ever: {result.highScore}m.</p>
           <div className={styles.row}>
             <button className={styles.bigBtn} onClick={playAgain}>🔁 Try Again</button>
-            <button className={styles.smallBtn} onClick={() => setScreen('select')}>Change critter</button>
+            <button className={styles.smallBtn} onClick={() => setScreen('mode')}>Change mode</button>
           </div>
           <Link to="/" className={styles.backLink}>← Back to GameHub</Link>
         </div>

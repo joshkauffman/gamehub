@@ -111,6 +111,41 @@
 
 .characterName { font-weight: bold; font-size: 14px; }
 
+/* ── Mode select ──────────────────────────────────────────────── */
+
+.modeCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 16px;
+  padding: 22px 26px;
+  color: #fff;
+  cursor: pointer;
+  font-family: inherit;
+  min-width: 180px;
+}
+.modeCard:hover { background: rgba(255,255,255,0.12); border-color: #ffd54a; }
+.modeIcon { font-size: 30px; }
+.modeName { font-weight: bold; font-size: 17px; }
+.modeDesc { font-size: 12px; color: rgba(255,255,255,0.6); }
+
+/* ── Result cards ─────────────────────────────────────────────── */
+
+.resultCard {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 14px;
+  padding: 16px 22px;
+  min-width: 140px;
+}
+.resultLabel { font-size: 12px; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 0.06em; }
+.resultScore { font-size: 28px; font-weight: 800; margin: 2px 0; }
+.resultReason { font-size: 13px; color: rgba(255,255,255,0.75); }
+.resultBadge { margin-top: 6px; font-size: 12px; font-weight: 700; color: #ffd54a; }
+
 @media (max-width: 560px) {
   .title { font-size: 20px; }
   .characterGrid { grid-template-columns: repeat(2, 1fr); }

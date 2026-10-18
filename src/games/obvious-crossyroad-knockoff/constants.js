@@ -40,3 +40,37 @@ export const LANE_COLORS = {
 }
 
 export const HIGH_SCORE_KEY = 'obvious-crossyroad-knockoff:high-score'
+
+// ── Power-ups ───────────────────────────────────────────────────────
+// Spawned only on grass lanes (always reachable, never mid-hazard) at
+// an unoccupied, obstacle-free column. Each is a genuinely different
+// effect, not a reskin:
+//   shield - total immunity to every death condition for its duration
+//   speed  - hops resolve in half the usual frame count
+//   freeze - pauses ALL lane hazards (traffic/logs/trains) and both
+//            players' hawk-stall clocks — global, not per-player,
+//            since it's freezing the shared world
+//   life   - +1 life immediately (capped), so the next hit costs a
+//            life and respawns in place instead of ending the run
+export const POWERUP_TYPES = ['shield', 'speed', 'freeze', 'life']
+export const POWERUP_SPAWN_CHANCE = 0.16 // rolled once per eligible grass lane at generation time
+export const POWERUP_ICON_SIZE = 22
+
+export const SHIELD_DURATION = 360 // 6s @60fps
+export const SPEED_DURATION = 480 // 8s
+export const SPEED_HOP_FRAMES = 4 // vs. the normal HOP_FRAMES (8) — twice as fast
+export const FREEZE_DURATION = 240 // 4s
+
+export const START_LIVES = 1
+export const MAX_LIVES = 4
+export const RESPAWN_INVULN_FRAMES = 75 // brief immunity right after burning a life to respawn
+
+// ── 2-player split screen ───────────────────────────────────────────
+// Each player gets their own horizontal half of the canvas with its
+// own compact HUD strip and its own independently-scrolling camera —
+// both halves read from the exact same shared `lanes` array, so it's
+// true co-op on one synced world, not two separate simulations.
+export const SPLIT_HUD_H = 26
+export const SPLIT_VIEW_H = H / 2
+export const SPLIT_ROWS = Math.floor((SPLIT_VIEW_H - SPLIT_HUD_H) / TILE) // 6
+export const SPLIT_PLAY_Y0 = [SPLIT_HUD_H, SPLIT_VIEW_H + SPLIT_HUD_H]

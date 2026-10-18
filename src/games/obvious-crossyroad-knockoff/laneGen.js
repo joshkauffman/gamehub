@@ -7,6 +7,7 @@
 import {
   COLS, PLAY_W, VEHICLE_SIZE, LOG_SIZE, SAFE_START_ROWS,
   RIVER_UNLOCK_ROW, RAIL_UNLOCK_ROW, DIFFICULTY_CAP_ROW,
+  POWERUP_TYPES, POWERUP_SPAWN_CHANCE,
 } from './constants.js'
 
 function difficultyAt(row) { return Math.min(1, Math.max(0, row / DIFFICULTY_CAP_ROW)) }
@@ -30,13 +31,24 @@ function weightedPick(weights) {
 // Obstacles are capped at 2 out of 24 columns, so a lane can never be
 // fully blocked (and the player can always sidestep around them) — no
 // "is this lane passable" check is needed anywhere else.
+//
+// Power-ups only ever spawn on grass, at a column that isn't already an
+// obstacle — always safely reachable by just walking up to it, never
+// requiring a risky grab mid-traffic.
 function makeGrassLane(row) {
   const obstacles = new Set()
   if (row >= SAFE_START_ROWS) {
     const count = Math.floor(Math.random() * 3) // 0-2 obstacles
     for (let i = 0; i < count; i++) obstacles.add(Math.floor(Math.random() * COLS))
   }
-  return { row, type: 'grass', obstacles, decoSeed: Math.random() }
+  let powerup = null
+  if (row >= SAFE_START_ROWS && Math.random() < POWERUP_SPAWN_CHANCE) {
+    let col
+    do { col = Math.floor(Math.random() * COLS) } while (obstacles.has(col))
+    const type = POWERUP_TYPES[Math.floor(Math.random() * POWERUP_TYPES.length)]
+    powerup = { type, col, taken: false }
+  }
+  return { row, type: 'grass', obstacles, powerup, decoSeed: Math.random() }
 }
 
 // Vehicles/logs live on an infinite conveyor: generated across a span
