@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import styles from './Guugle.module.css'
 import { getAnswer, generateResults, buildFakeSitePage, randomFeelingWrongQuery, getActiveDoodle } from './answerEngine.js'
-import { LOGO_LETTER_COLORS, DOODLE_GAME_SKINS } from './constants.js'
+import { LOGO_LETTER_COLORS, DOODLE_GAME_SKINS, DOODLES, SEASON_DOODLES } from './constants.js'
 import DoodleGame from './DoodleGame.jsx'
 
 // ── Guugle, the worst search engine ever ────────────────────────────────
@@ -45,7 +45,7 @@ function SearchBar({ value, onChange, onSubmit, compact, autoFocus }) {
   )
 }
 
-function HomeScreen({ query, setQuery, onSearch, onFeelingWrong, doodle, onDoodleClick }) {
+function HomeScreen({ query, setQuery, onSearch, onFeelingWrong, doodle, onDoodleClick, onOpenArchive }) {
   const playable = doodle && DOODLE_GAME_SKINS[doodle.id]
   return (
     <div className={styles.homeWrap}>
@@ -68,8 +68,32 @@ function HomeScreen({ query, setQuery, onSearch, onFeelingWrong, doodle, onDoodl
         <button className={styles.btn} onClick={() => onSearch(query)}>Guugle Search</button>
         <button className={styles.btn} onClick={onFeelingWrong}>I'm Feeling Wrong</button>
       </div>
+      <button className={styles.archiveLink} onClick={onOpenArchive}>🎮 Play all the doodle games</button>
       <p className={styles.homeFooterNote}>Guugle Search — Privacy · Terms · About</p>
       <Link to="/" className={styles.backLink}>← Back to GameHub</Link>
+    </div>
+  )
+}
+
+function DoodleArchiveScreen({ onPick, onBack }) {
+  const all = [...DOODLES, ...SEASON_DOODLES]
+  return (
+    <div className={styles.archiveWrap}>
+      <h1 className={styles.archiveTitle}>Guugle Doodle Games</h1>
+      <p className={styles.tagline}>Every doodle Guugle has ever had, and every one is playable.</p>
+      <div className={styles.archiveGrid}>
+        {all.map(d => {
+          const skin = DOODLE_GAME_SKINS[d.id]
+          return (
+            <button key={d.id} className={styles.archiveCard} onClick={() => onPick(d)}>
+              <span className={styles.archiveEmoji} aria-hidden="true">{d.emojiLeft}{d.emojiRight}</span>
+              <span className={styles.archiveName}>{skin ? skin.title : d.label}</span>
+              <span className={styles.archiveSub}>{d.label}</span>
+            </button>
+          )
+        })}
+      </div>
+      <button className={styles.btn} onClick={onBack}>← Back to Guugle</button>
     </div>
   )
 }
@@ -158,6 +182,12 @@ export default function Guugle() {
   const [results, setResults] = useState([])
   const [activeSite, setActiveSite] = useState(null)
   const [doodle] = useState(() => getActiveDoodle())
+  // Which doodle's game is actually being played — the home screen's
+  // doodle (today's) when launched from there, or whichever one was
+  // picked from the archive. Decoupled from `doodle` (today's, for
+  // the home screen flourish) so any doodle's game can be replayed
+  // on demand, not just today's.
+  const [selectedDoodle, setSelectedDoodle] = useState(null)
 
   function runSearch(q) {
     const trimmed = (q || '').trim()
@@ -178,11 +208,16 @@ export default function Guugle() {
     setScreen('site')
   }
 
+  function openDoodleGame(d) {
+    setSelectedDoodle(d)
+    setScreen('doodle-game')
+  }
+
   function handleDoodleExit() {
     // Whether they finished or bailed early, land them on the results
-    // page for the doodle's own themed query — the game and the
+    // page for that doodle's own themed query — the game and the
     // original "click the doodle for a fact" joke both pay off.
-    runSearch(doodle.query)
+    runSearch(selectedDoodle.query)
   }
 
   return (
@@ -194,11 +229,19 @@ export default function Guugle() {
           onSearch={runSearch}
           onFeelingWrong={handleFeelingWrong}
           doodle={doodle}
-          onDoodleClick={() => setScreen('doodle-game')}
+          onDoodleClick={() => openDoodleGame(doodle)}
+          onOpenArchive={() => setScreen('doodle-archive')}
         />
       )}
-      {screen === 'doodle-game' && doodle && DOODLE_GAME_SKINS[doodle.id] && (
-        <DoodleGame skin={DOODLE_GAME_SKINS[doodle.id]} onExit={handleDoodleExit} />
+      {screen === 'doodle-archive' && (
+        <DoodleArchiveScreen onPick={openDoodleGame} onBack={() => setScreen('home')} />
+      )}
+      {screen === 'doodle-game' && selectedDoodle && DOODLE_GAME_SKINS[selectedDoodle.id] && (
+        <DoodleGame
+          skin={DOODLE_GAME_SKINS[selectedDoodle.id]}
+          onExit={handleDoodleExit}
+          onMore={() => setScreen('doodle-archive')}
+        />
       )}
       {screen === 'results' && (
         <ResultsScreen

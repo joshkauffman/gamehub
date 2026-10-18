@@ -111,6 +111,17 @@
 
 .homeFooterNote { color: #9aa0a6; font-size: 0.78rem; max-width: 380px; margin-top: 0.4rem; }
 
+.archiveLink {
+  background: none;
+  border: none;
+  color: #1a0dab;
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0.3rem 0;
+  margin-top: 0.2rem;
+}
+.archiveLink:hover { text-decoration: underline; }
+
 .backLink { color: #1a0dab; font-size: 0.85rem; text-decoration: none; margin-top: 0.6rem; }
 .backLink:hover { text-decoration: underline; }
 
@@ -284,6 +295,46 @@
   margin-top: 0.4rem;
 }
 .smallExitBtn:hover { color: #fff; }
+
+.doodleExitRow { display: flex; gap: 1rem; align-items: center; }
+
+/* ── doodle archive ───────────────────────────────────────────────── */
+
+.archiveWrap {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2.5rem 1rem;
+  text-align: center;
+}
+.archiveTitle { font-size: clamp(1.6rem, 6vw, 2.2rem); margin: 0; }
+
+.archiveGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.9rem;
+  width: 100%;
+  max-width: 760px;
+  margin: 0.6rem 0 1rem;
+}
+.archiveCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  background: #f8f9fa;
+  border: 1px solid #ebebeb;
+  border-radius: 14px;
+  padding: 1.1rem 0.75rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+.archiveCard:hover { border-color: #dadce0; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.archiveEmoji { font-size: 2rem; }
+.archiveName { font-weight: 700; font-size: 0.88rem; color: #202124; }
+.archiveSub { font-size: 0.75rem; color: #9aa0a6; }
 
 @media (max-width: 480px) {
   .resultsTopBar { gap: 0.6rem; }

@@ -36,7 +36,7 @@ function render(ctx, state) {
   ctx.fillText(`${Math.ceil(state.timeLeft / 60)}s`, CANVAS_W - 12, 24)
 }
 
-export default function DoodleGame({ skin, onExit }) {
+export default function DoodleGame({ skin, onExit, onMore }) {
   const canvasRef = useRef(null)
   const stateRef = useRef(null)
   const pointerXRef = useRef(null)
@@ -116,11 +116,17 @@ export default function DoodleGame({ skin, onExit }) {
               <button className={styles.btn} onClick={playAgain}>Play Again</button>
               <button className={styles.btn} onClick={() => onExit(finalScore)}>Back to Guugle</button>
             </div>
+            {onMore && (
+              <button className={styles.smallExitBtn} onClick={onMore}>🎮 Play another doodle</button>
+            )}
           </div>
         )}
       </div>
       {!done && (
-        <button className={styles.smallExitBtn} onClick={() => onExit(null)}>Exit</button>
+        <div className={styles.doodleExitRow}>
+          <button className={styles.smallExitBtn} onClick={() => onExit(null)}>Exit</button>
+          {onMore && <button className={styles.smallExitBtn} onClick={onMore}>🎮 Play another doodle</button>}
+        </div>
       )}
     </div>
   )
