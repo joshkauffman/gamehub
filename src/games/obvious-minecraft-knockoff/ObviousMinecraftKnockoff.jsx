@@ -4,7 +4,7 @@ import * as THREE from 'three'
 import styles from './ObviousMinecraftKnockoff.module.css'
 import {
   createWorld, generateTerrain, getBlock, setBlock, buildMeshData,
-  raycastVoxels, collidesBox, groundHeightBelow, heightAt, isBlockNearby, moveWithStep,
+  raycastVoxels, collidesBox, groundHeightBelow, isBlockNearby, moveWithStep,
   BLOCK, BLOCK_DROP, BLOCK_REQUIRED_TIER, BLOCK_HARDNESS,
   SIZE_X, SIZE_Y, SIZE_Z,
 } from './voxelWorld.js'
@@ -40,8 +40,12 @@ const MOB_SPAWN_INTERVAL = 5
 const DAY_SKY = new THREE.Color(0x8fc7e8)
 const NIGHT_SKY = new THREE.Color(0x0a0f24)
 
-function freshSpawnPos() {
-  return { x: SPAWN_X + 0.5, y: heightAt(SPAWN_X, SPAWN_Z, WORLD_SEED) + 1, z: SPAWN_Z + 0.5 }
+// Reads the world's *actual current* blocks at the spawn column rather
+// than the seed's theoretical height formula — correct regardless of
+// what the player has mined/placed there, and of which seed generated
+// the world (important once Reset World can pick a new random seed).
+function spawnPosition(world) {
+  return { x: SPAWN_X + 0.5, y: groundHeightBelow(world, SPAWN_X, SPAWN_Z, world.sizeY - 1), z: SPAWN_Z + 0.5 }
 }
 
 const TIER_NAMES = ['hand', 'wood', 'stone', 'iron', 'diamond']
@@ -98,6 +102,13 @@ export default function ObviousMinecraftKnockoff() {
   useEffect(() => { inventoryRef.current = inventory }, [inventory])
   useEffect(() => { hpRef.current = hp }, [hp])
   useEffect(() => { craftingOpenRef.current = craftingOpen }, [craftingOpen])
+
+  // The pause screen's Reset World / Reset Spawn buttons live in React,
+  // but the actions they trigger need to mutate the Three.js effect's
+  // closure (the world, player, mob list, terrain mesh...) — these
+  // refs are how the render tree reaches into that closure.
+  const resetSpawnActionRef = useRef(null)
+  const resetWorldActionRef = useRef(null)
 
   const visibleItems = Object.keys(ITEM_META).filter(
     id => ALWAYS_VISIBLE_ITEMS.includes(id) || (inventory[id] || 0) > 0
@@ -190,7 +201,7 @@ export default function ObviousMinecraftKnockoff() {
     scene.add(highlight)
 
     // ── player state ──
-    const player = saved && saved.player ? { ...saved.player } : freshSpawnPos()
+    const player = saved && saved.player ? { ...saved.player } : spawnPosition(world)
     const velocity = { y: 0 }
     let yaw = 0.6, pitch = -0.12
     let onGround = false
@@ -373,13 +384,58 @@ export default function ObviousMinecraftKnockoff() {
     let attackCooldown = 0
 
     function respawnPlayer() {
-      const spawn = freshSpawnPos()
+      const spawn = spawnPosition(world)
       player.x = spawn.x; player.y = spawn.y; player.z = spawn.z
       velocity.y = 0
       hpRef.current = PLAYER_MAX_HP
       setHp(PLAYER_MAX_HP)
       showToast('You respawned.')
     }
+
+    // Non-destructive — just teleports back to spawn on the *current*
+    // world, keeping everything else (inventory, built structures, the
+    // world itself) untouched. Available from the pause screen for
+    // whenever you're stuck, fell somewhere bad, or wandered too far.
+    function doResetSpawn() {
+      const spawn = spawnPosition(world)
+      player.x = spawn.x; player.y = spawn.y; player.z = spawn.z
+      velocity.y = 0
+      showToast('Teleported to spawn.')
+    }
+
+    // Destructive — wipes the saved world and starts over with a brand
+    // new, randomly-seeded terrain. Confirmed via window.confirm,
+    // matching this repo's one other "reset my progress" button
+    // (Snack Squad's resetCollection).
+    function doResetWorld() {
+      if (!window.confirm("Reset the world? This permanently deletes everything you've built and everything you're carrying.")) return
+      const newSeed = Math.floor(Math.random() * 1_000_000)
+      world.blocks.fill(BLOCK.AIR)
+      generateTerrain(world, newSeed)
+      rebuildTerrainMesh()
+
+      for (const entity of mobEntities.slice()) removeMobEntity(entity)
+
+      const spawn = spawnPosition(world)
+      player.x = spawn.x; player.y = spawn.y; player.z = spawn.z
+      velocity.y = 0
+      timeOfDay = 10
+
+      const freshInv = freshInventory()
+      inventoryRef.current = freshInv
+      setInventory(freshInv)
+      selectedRef.current = 0
+      setSelected(0)
+      hpRef.current = PLAYER_MAX_HP
+      setHp(PLAYER_MAX_HP)
+      setMinedTotal(0)
+      resetMining()
+
+      saveGame({ world, inventory: freshInv, player, selected: 0, hp: PLAYER_MAX_HP, timeOfDay })
+      showToast('World reset — fresh start!')
+    }
+    resetSpawnActionRef.current = doResetSpawn
+    resetWorldActionRef.current = doResetWorld
 
     // ── game loop ──
     const clock = new THREE.Clock()
@@ -547,6 +603,8 @@ export default function ObviousMinecraftKnockoff() {
       cancelAnimationFrame(raf)
       if (saveTimer) clearTimeout(saveTimer)
       saveGame({ world, inventory: inventoryRef.current, player, selected: selectedRef.current, hp: hpRef.current, timeOfDay })
+      resetSpawnActionRef.current = null
+      resetWorldActionRef.current = null
       window.removeEventListener('keydown', onKeyDown)
       window.removeEventListener('keyup', onKeyUp)
       window.removeEventListener('resize', onResize)
@@ -616,6 +674,10 @@ export default function ObviousMinecraftKnockoff() {
             WASD to walk · Mouse to look · Space to jump · Left click to mine or attack · Right click to place ·
             Number keys to pick an item · C to craft · Esc to release
           </p>
+          <div className={styles.pauseActions}>
+            <button className={styles.pauseBtn} onClick={() => resetSpawnActionRef.current?.()}>📍 Reset Spawn</button>
+            <button className={styles.pauseBtnDanger} onClick={() => resetWorldActionRef.current?.()}>🔄 Reset World</button>
+          </div>
         </div>
       )}
 
