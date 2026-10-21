@@ -106,7 +106,7 @@ const CATEGORIES = [
       {
         id: 'obvious-minecraft-knockoff',
         title: 'The Obvious Minecraft Knockoff',
-        description: 'A procedurally generated hill of dirt, stone, and buried treasure. Mine it, craft your way up the wood → stone → iron → diamond tool tree, and survive the shamblers that show up after dark. It’s a knockoff. It knows it’s a knockoff. That’s the whole bit.',
+        description: "Now actually 3D (early beta). A real first-person voxel world — walk around a procedurally generated hillside, mine blocks, and place them back wherever you want. It's a knockoff. It knows it's a knockoff. That's the whole bit.",
         emoji: '⛏️',
         path: '/obvious-minecraft-knockoff',
       },
