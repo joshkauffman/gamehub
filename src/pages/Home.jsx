@@ -106,7 +106,7 @@ const CATEGORIES = [
       {
         id: 'obvious-minecraft-knockoff',
         title: 'The Obvious Minecraft Knockoff',
-        description: "Now actually 3D (early beta). A real first-person voxel world — walk around a procedurally generated hillside, mine blocks, and place them back wherever you want. It's a knockoff. It knows it's a knockoff. That's the whole bit.",
+        description: "A real first-person voxel world. Mine your way from wood to stone to iron to diamond tools, smelt ore at a furnace, build with what you collect, and survive the shamblers that show up after dark. It's a knockoff. It knows it's a knockoff. That's the whole bit.",
         emoji: '⛏️',
         path: '/obvious-minecraft-knockoff',
       },

@@ -5,24 +5,60 @@
 // typed arrays a renderer feeds straight into a BufferGeometry). All
 // of this is testable headlessly with plain objects.
 
-export const SIZE_X = 48
-export const SIZE_Y = 24
-export const SIZE_Z = 48
-export const BASE_HEIGHT = 10
+export const SIZE_X = 64
+export const SIZE_Y = 28
+export const SIZE_Z = 64
+export const BASE_HEIGHT = 12
 
 export const BLOCK = {
   AIR: 0, BEDROCK: 1, STONE: 2, DIRT: 3, GRASS: 4, LOG: 5, LEAVES: 6,
+  COAL_ORE: 7, IRON_ORE: 8, DIAMOND_ORE: 9, PLANKS: 10, FURNACE: 11,
 }
-export const BLOCK_NAMES = { 1: 'bedrock', 2: 'stone', 3: 'dirt', 4: 'grass', 5: 'log', 6: 'leaves' }
+export const BLOCK_NAMES = {
+  1: 'bedrock', 2: 'stone', 3: 'dirt', 4: 'grass', 5: 'log', 6: 'leaves',
+  7: 'coal_ore', 8: 'iron_ore', 9: 'diamond_ore', 10: 'planks', 11: 'furnace',
+}
 
-// What mining a block gives you (grass -> dirt, like real Minecraft;
-// bedrock never breaks).
+// What mining a block gives you (an item id, not a block id — ores
+// drop their raw material, grass drops dirt, like real Minecraft;
+// bedrock never breaks). See items.js for what these item ids mean.
 export const BLOCK_DROP = {
-  [BLOCK.STONE]: BLOCK.STONE,
-  [BLOCK.DIRT]: BLOCK.DIRT,
-  [BLOCK.GRASS]: BLOCK.DIRT,
-  [BLOCK.LOG]: BLOCK.LOG,
-  [BLOCK.LEAVES]: BLOCK.LEAVES,
+  [BLOCK.STONE]: 'stone',
+  [BLOCK.DIRT]: 'dirt',
+  [BLOCK.GRASS]: 'dirt',
+  [BLOCK.LOG]: 'log',
+  [BLOCK.LEAVES]: 'leaves',
+  [BLOCK.COAL_ORE]: 'coal',
+  [BLOCK.IRON_ORE]: 'iron_ore',
+  [BLOCK.DIAMOND_ORE]: 'diamond',
+  [BLOCK.PLANKS]: 'planks',
+  [BLOCK.FURNACE]: 'furnace',
+}
+
+// Minimum pickaxe tier (see items.js TOOL_TIERS) needed to actually
+// get a drop from this block; mining with too weak a tool still
+// breaks the block, it just gives nothing. Anything not listed needs
+// no tool at all (dirt, grass, leaves, wood, planks, furnace, ...).
+export const BLOCK_REQUIRED_TIER = {
+  [BLOCK.STONE]: 1,
+  [BLOCK.COAL_ORE]: 1,
+  [BLOCK.IRON_ORE]: 2,
+  [BLOCK.DIAMOND_ORE]: 3,
+}
+
+// Base seconds to mine with a bare hand (tier-0); actual time is this
+// divided by the active tool's mining speed multiplier.
+export const BLOCK_HARDNESS = {
+  [BLOCK.STONE]: 1.3,
+  [BLOCK.DIRT]: 0.5,
+  [BLOCK.GRASS]: 0.5,
+  [BLOCK.LOG]: 0.8,
+  [BLOCK.LEAVES]: 0.25,
+  [BLOCK.COAL_ORE]: 1.6,
+  [BLOCK.IRON_ORE]: 2.2,
+  [BLOCK.DIAMOND_ORE]: 3.2,
+  [BLOCK.PLANKS]: 0.7,
+  [BLOCK.FURNACE]: 1.6,
 }
 
 // Per-face flat colors (top/side/bottom) for the handful of block
@@ -34,6 +70,11 @@ export const BLOCK_COLOR = {
   [BLOCK.GRASS]: { top: 0x6fcf4a, side: 0x6a8a46, bottom: 0x7a5433 },
   [BLOCK.LOG]: { top: 0x9a7a4a, side: 0x6b4a2a, bottom: 0x9a7a4a },
   [BLOCK.LEAVES]: { all: 0x3d8a3d },
+  [BLOCK.COAL_ORE]: { all: 0x4a4a52 },
+  [BLOCK.IRON_ORE]: { all: 0xc4a383 },
+  [BLOCK.DIAMOND_ORE]: { all: 0x6fe0e8 },
+  [BLOCK.PLANKS]: { all: 0xb08552 },
+  [BLOCK.FURNACE]: { top: 0x55555d, side: 0x6a6a72, bottom: 0x55555d },
 }
 
 export function colorFor(blockId, faceName) {
@@ -90,13 +131,38 @@ function hashColumn(x, z, seed) {
   return ((h >>> 0) % 100000) / 100000
 }
 
+// Same idea, one more dimension — used to sprinkle ore through stone.
+function hash3D(x, y, z, seed) {
+  let h = (x * 374761393 + y * 974786049 + z * 668265263 + seed * 2246822519) | 0
+  h = (h ^ (h >>> 13)) * 1274126177
+  h = h ^ (h >>> 16)
+  return ((h >>> 0) % 100000) / 100000
+}
+
+// Independent per-block chance rather than real vein/blob clustering
+// — coal is common throughout the stone layer, iron more common deep,
+// diamond rare and only near bedrock. Simple, not authentic-looking
+// clusters, but gives real mining progression. Each ore gets its own
+// independent roll (different hash offset) rather than sharing one
+// random value sliced into bands — carving diamond's and iron's
+// slices out of a single shared roll would (and in an earlier version
+// of this function, did) make coal, the one meant to be most common,
+// actually the rarest, since higher-priority checks ran first and
+// silently consumed part of its share.
+function oreAt(x, y, z, seed) {
+  if (y <= 4 && hash3D(x, y, z, seed + 101) < 0.012) return BLOCK.DIAMOND_ORE
+  if (y <= 14 && hash3D(x, y, z, seed + 202) < 0.022) return BLOCK.IRON_ORE
+  if (hash3D(x, y, z, seed + 303) < 0.05) return BLOCK.COAL_ORE
+  return BLOCK.STONE
+}
+
 export function generateTerrain(world, seed = 1337) {
   const treeSpots = []
   for (let x = 0; x < SIZE_X; x++) {
     for (let z = 0; z < SIZE_Z; z++) {
       const h = Math.min(SIZE_Y - 6, heightAt(x, z, seed))
       setBlock(world, x, 0, z, BLOCK.BEDROCK)
-      for (let y = 1; y < h - 2; y++) setBlock(world, x, y, z, BLOCK.STONE)
+      for (let y = 1; y < h - 2; y++) setBlock(world, x, y, z, oreAt(x, y, z, seed))
       for (let y = Math.max(1, h - 2); y < h; y++) setBlock(world, x, y, z, BLOCK.DIRT)
       setBlock(world, x, h, z, BLOCK.GRASS)
 
@@ -257,4 +323,23 @@ export function groundHeightBelow(world, x, z, fromY) {
   let y = Math.min(world.sizeY - 1, Math.floor(fromY))
   while (y >= 0 && !isSolid(getBlock(world, x, y, z))) y--
   return y + 1
+}
+
+// Is there a block of the given type within `range` (Euclidean,
+// block-center distance) of (x,y,z)? Used for "are you near a
+// furnace" — a small bounded sphere scan, cheap enough to call
+// whenever the crafting menu is open, not every frame.
+export function isBlockNearby(world, x, y, z, blockId, range) {
+  const r = Math.ceil(range)
+  const r2 = range * range
+  const bx = Math.floor(x), by = Math.floor(y), bz = Math.floor(z)
+  for (let dx = -r; dx <= r; dx++) {
+    for (let dy = -r; dy <= r; dy++) {
+      for (let dz = -r; dz <= r; dz++) {
+        if (dx * dx + dy * dy + dz * dz > r2) continue
+        if (getBlock(world, bx + dx, by + dy, bz + dz) === blockId) return true
+      }
+    }
+  }
+  return false
 }
