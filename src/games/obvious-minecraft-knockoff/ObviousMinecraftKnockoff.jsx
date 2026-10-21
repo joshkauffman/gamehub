@@ -4,7 +4,7 @@ import * as THREE from 'three'
 import styles from './ObviousMinecraftKnockoff.module.css'
 import {
   createWorld, generateTerrain, getBlock, setBlock, buildMeshData,
-  raycastVoxels, collidesBox, groundHeightBelow, heightAt, isBlockNearby,
+  raycastVoxels, collidesBox, groundHeightBelow, heightAt, isBlockNearby, moveWithStep,
   BLOCK, BLOCK_DROP, BLOCK_REQUIRED_TIER, BLOCK_HARDNESS,
   SIZE_X, SIZE_Y, SIZE_Z,
 } from './voxelWorld.js'
@@ -20,7 +20,7 @@ import {
 import { saveGame, loadGame } from './persistence.js'
 import {
   GRAVITY, JUMP_SPEED, MOVE_SPEED, MAX_FALL_SPEED,
-  PLAYER_HALF_W, PLAYER_HEIGHT, EYE_HEIGHT, REACH, PLAYER_MAX_HP,
+  PLAYER_HALF_W, PLAYER_HEIGHT, EYE_HEIGHT, REACH, PLAYER_MAX_HP, STEP_HEIGHT,
   CYCLE_LENGTH, FURNACE_RANGE, SAVE_DEBOUNCE_MS, dayFactorAt,
 } from './constants.js'
 
@@ -405,8 +405,8 @@ export default function ObviousMinecraftKnockoff() {
 
         const dx = mx * MOVE_SPEED * dt
         const dz = mz * MOVE_SPEED * dt
-        if (!collidesBox(world, player.x + dx, player.y, player.z, PLAYER_HALF_W, PLAYER_HEIGHT)) player.x += dx
-        if (!collidesBox(world, player.x, player.y, player.z + dz, PLAYER_HALF_W, PLAYER_HEIGHT)) player.z += dz
+        const moved = moveWithStep(world, player, dx, dz, PLAYER_HALF_W, PLAYER_HEIGHT, STEP_HEIGHT)
+        player.x = moved.x; player.y = moved.y; player.z = moved.z
 
         if (keys.has('Space') && onGround) {
           velocity.y = JUMP_SPEED

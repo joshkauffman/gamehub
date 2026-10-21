@@ -10,6 +10,7 @@ export const MAX_FALL_SPEED = -30
 export const PLAYER_HALF_W = 0.3
 export const PLAYER_HEIGHT = 1.75
 export const EYE_HEIGHT = 1.6
+export const STEP_HEIGHT = 1.05 // tallest ledge the player can walk straight up onto
 
 export const REACH = 6 // blocks
 

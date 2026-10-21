@@ -325,6 +325,36 @@ export function groundHeightBelow(world, x, z, fromY) {
   return y + 1
 }
 
+// Horizontal movement by (dx, dz), resolved per axis against
+// collidesBox — but if an axis is blocked at the player's current
+// height by a ledge no taller than `stepHeight`, step up onto it
+// instead of just stopping dead. Without this, hilly/wavy terrain
+// (which isn't perfectly monotonic — a generally-downhill slope can
+// still have small 1-block bumps) traps the player on the very first
+// ledge in their path, in either direction. Returns a new {x,y,z}; y
+// only changes when a step actually happened — the caller's normal
+// gravity/ground-snap logic settles the exact resting height.
+export function moveWithStep(world, player, dx, dz, halfW, height, stepHeight) {
+  let { x, y, z } = player
+  if (dx !== 0) {
+    if (!collidesBox(world, x + dx, y, z, halfW, height)) {
+      x += dx
+    } else if (!collidesBox(world, x + dx, y + stepHeight, z, halfW, height)) {
+      x += dx
+      y += stepHeight
+    }
+  }
+  if (dz !== 0) {
+    if (!collidesBox(world, x, y, z + dz, halfW, height)) {
+      z += dz
+    } else if (!collidesBox(world, x, y + stepHeight, z + dz, halfW, height)) {
+      z += dz
+      y += stepHeight
+    }
+  }
+  return { x, y, z }
+}
+
 // Is there a block of the given type within `range` (Euclidean,
 // block-center distance) of (x,y,z)? Used for "are you near a
 // furnace" — a small bounded sphere scan, cheap enough to call
