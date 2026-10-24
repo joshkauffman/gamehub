@@ -18,6 +18,7 @@ import {
   STAIRCASE_MIN_DIST, STAIRCASE_TRIGGER_R, STAIRCASE_DISCOVERY_R, TOTAL_FLOORS, CLASS_RACE_FLOOR,
   FLOOR_MOB_BASE, FLOOR_MOB_MAX, FLOOR_FLASH_TIME, AUTOSAVE_INTERVAL,
   MAX_MANA, MANA_REGEN, SPELL_SPEED, SPELL_RADIUS, SPELL_LIFE, MAX_SPELL_LEVEL,
+  RANGED_PROJECTILE_SPEED, RANGED_PROJECTILE_LIFE,
   SAFE_ZONE_HOME_RADIUS, CRAWLER_BASE_COUNT, CRAWLER_MAX_COUNT, CRAWLER_AGGRO, CRAWLER_LEASH,
   MINI_DUNGEON_COUNT_BASE, MINI_DUNGEON_COUNT_MAX, MINI_DUNGEON_SIZE, MINI_DUNGEON_WALL_THICKNESS,
   MINI_DUNGEON_DOOR_WIDTH, MINI_DUNGEON_MIN_SEP, MINI_DUNGEON_DISCOVER_R,
@@ -100,24 +101,50 @@ export const BOSS_DEFS = {
 }
 
 export const WEAPONS = [
-  { name: 'Wobbly Stick', emoji: '🥢', atk: 2 },
-  { name: 'Rusty Spoon', emoji: '🥄', atk: 4 },
-  { name: 'Squeaky Wand', emoji: '🪄', atk: 6 },
-  { name: 'Foam Sword', emoji: '🗡️', atk: 9 },
-  { name: 'Laser Pointer', emoji: '🔦', atk: 13 },
-  { name: 'Giant Serving Spoon', emoji: '🍴', atk: 18 },
-  { name: 'Star Wand of Destiny', emoji: '✨', atk: 24 },
-  { name: 'Frying Pan of Justice', emoji: '🍳', atk: 31 },
-  { name: 'Boomerang Spatula', emoji: '🪃', atk: 39 },
-  { name: 'Confetti Cannon', emoji: '🎉', atk: 48 },
-  { name: 'Nunchaku of Pool Noodles', emoji: '🏊', atk: 58 },
-  { name: 'The Mop of Many Legends', emoji: '🧹', atk: 69 },
-  { name: 'Inflatable Comet Hammer', emoji: '☄️', atk: 81 },
-  { name: 'Disco Ball Mace', emoji: '🪩', atk: 94 },
-  { name: 'Rubber Chicken of Doom', emoji: '🐔', atk: 108 },
-  { name: 'The Grand Piano Gauntlet', emoji: '🎹', atk: 123 },
-  { name: 'Kazoo of Ultimate Destiny', emoji: '🎺', atk: 139 },
-  { name: "The Producer's Golden Microphone", emoji: '🎤', atk: 156 },
+  { name: 'Wobbly Stick', emoji: '🥢', atk: 2, type: 'melee' },
+  { name: 'Rusty Spoon', emoji: '🥄', atk: 4, type: 'melee' },
+  { name: 'Squeaky Wand', emoji: '🪄', atk: 6, type: 'melee' },
+  { name: 'Foam Sword', emoji: '🗡️', atk: 9, type: 'melee' },
+  { name: 'Laser Pointer', emoji: '🔦', atk: 13, type: 'melee' },
+  { name: 'Giant Serving Spoon', emoji: '🍴', atk: 18, type: 'melee' },
+  { name: 'Star Wand of Destiny', emoji: '✨', atk: 24, type: 'melee' },
+  { name: 'Frying Pan of Justice', emoji: '🍳', atk: 31, type: 'melee' },
+  { name: 'Boomerang Spatula', emoji: '🪃', atk: 39, type: 'melee' },
+  { name: 'Confetti Cannon', emoji: '🎉', atk: 48, type: 'melee' },
+  { name: 'Nunchaku of Pool Noodles', emoji: '🏊', atk: 58, type: 'melee' },
+  { name: 'The Mop of Many Legends', emoji: '🧹', atk: 69, type: 'melee' },
+  { name: 'Inflatable Comet Hammer', emoji: '☄️', atk: 81, type: 'melee' },
+  { name: 'Disco Ball Mace', emoji: '🪩', atk: 94, type: 'melee' },
+  { name: 'Rubber Chicken of Doom', emoji: '🐔', atk: 108, type: 'melee' },
+  { name: 'The Grand Piano Gauntlet', emoji: '🎹', atk: 123, type: 'melee' },
+  { name: 'Kazoo of Ultimate Destiny', emoji: '🎺', atk: 139, type: 'melee' },
+  { name: "The Producer's Golden Microphone", emoji: '🎤', atk: 156, type: 'melee' },
+]
+// Same progression length/shape as WEAPONS (so the loot-tier math in
+// grantRangedWeaponLoot/shopBuyRangedWeapon indexes identically), with
+// base damage scaled down a bit since Dexterity also adds its own
+// bonus on top (see baseRangedAtk in mkPlayer) — equivalent total
+// power to a melee weapon at the same tier, just split across two
+// sources instead of one.
+export const RANGED_WEAPONS = [
+  { name: 'Rubber Band Slingshot', emoji: '🪀', atk: 1, type: 'ranged' },
+  { name: 'Paper Airplane Launcher', emoji: '🛩️', atk: 3, type: 'ranged' },
+  { name: 'Nerf Dart Blaster', emoji: '🔫', atk: 4, type: 'ranged' },
+  { name: 'Water Balloon Slingshot', emoji: '🎈', atk: 7, type: 'ranged' },
+  { name: 'Confetti Crossbow', emoji: '🎊', atk: 9, type: 'ranged' },
+  { name: 'Pool Noodle Javelin', emoji: '🥍', atk: 13, type: 'ranged' },
+  { name: 'Bubble Wand Longbow', emoji: '🫧', atk: 18, type: 'ranged' },
+  { name: 'Party Popper Bow', emoji: '🎉', atk: 23, type: 'ranged' },
+  { name: 'Glitter Blowgun', emoji: '✨', atk: 28, type: 'ranged' },
+  { name: 'Bouncy Ball Cannon', emoji: '🏓', atk: 35, type: 'ranged' },
+  { name: 'Marshmallow Catapult', emoji: '🍡', atk: 42, type: 'ranged' },
+  { name: 'Streamer Harpoon', emoji: '🎀', atk: 50, type: 'ranged' },
+  { name: 'Snowball Repeater', emoji: '❄️', atk: 59, type: 'ranged' },
+  { name: 'Firework Bow', emoji: '🎆', atk: 69, type: 'ranged' },
+  { name: 'Disco Laser Crossbow', emoji: '📀', atk: 79, type: 'ranged' },
+  { name: 'Comet Dart Thrower', emoji: '☄️', atk: 90, type: 'ranged' },
+  { name: 'Meteor Sling', emoji: '🌠', atk: 101, type: 'ranged' },
+  { name: "The Producer's Golden Throwing Mic", emoji: '🎤', atk: 114, type: 'ranged' },
 ]
 export const ARMORS = [
   { name: 'Fuzzy Pajamas', emoji: '🩳', def: 1 },
@@ -184,6 +211,10 @@ const ELEMENT_COLORS = {
   fireball: ['#ff5c3a', '#ffb347', '#ffd34d'],
   ice: ['#8fd3ff', '#e6f7ff', '#ffffff'],
   chainzap: ['#fff2c9', '#ffe066', '#ffffff'],
+  // Not actually a spell — ranged-weapon shots reuse the spell
+  // projectile pipeline and this same spellId-keyed color lookup, just
+  // with a plain wood/impact palette instead of an arcane one.
+  arrow: ['#c9a876', '#8a6a3a', '#ffffff'],
 }
 function elementColors(spellId) { return ELEMENT_COLORS[spellId] || ELEMENT_COLORS.bolt }
 
@@ -441,10 +472,11 @@ export const CHEST_THEMES = [
   { id: 'weapon', name: 'Weapon Box', emoji: '⚔️' },
   { id: 'armor', name: 'Armor Box', emoji: '🛡️' },
   { id: 'magic', name: 'Magic Box', emoji: '📜' },
+  { id: 'ranged', name: 'Ranged Weapon Box', emoji: '🏹' },
   { id: 'treasure', name: 'Treasure Box', emoji: '💰' },
   { id: 'boss', name: 'Boss Box', emoji: '👑' },
 ]
-const ROLLABLE_THEME_IDS = ['weapon', 'armor', 'magic', 'treasure']
+const ROLLABLE_THEME_IDS = ['weapon', 'armor', 'magic', 'ranged', 'treasure']
 function rollChestTheme(rng, ids = ROLLABLE_THEME_IDS) {
   return ids[Math.floor(rng() * ids.length)]
 }
@@ -529,7 +561,7 @@ function generateFloor(floorIndex) {
       x: p.x, z: p.z, opened: false, tierIdx: rollChestTier(rng, 2), guaranteed: true,
       // Never a Treasure Box here — a mini dungeon's one guaranteed chest
       // promises real gear or a spell, not a gold/potion consolation.
-      theme: rollChestTheme(rng, ['weapon', 'armor', 'magic']),
+      theme: rollChestTheme(rng, ['weapon', 'armor', 'magic', 'ranged']),
     })
     const guardCount = 2
     for (let g = 0; g < guardCount; g++) {
@@ -637,24 +669,50 @@ export function isInSafeZone(x, z, safeZones) {
 }
 
 // ── Player ───────────────────────────────────────────────────────────
+// Five rolled stats (3-6, uniform), independent of the later floor-3
+// class/race pick — this is true character creation, happening the
+// instant a player exists, not a later unlock. Strength and
+// Intelligence/Constitution fold straight into the same baseAtk/
+// maxMana/maxHp fields chooseClassRace() later adds its own deltas
+// into (so the two stack normally, additively, same pattern). Dexterity
+// and Charisma stay as live raw stats instead — Dexterity because its
+// speed bonus has to be combined as a multiplier at the movement call
+// site (chooseClassRace *overwrites* speedMult, so anything folded in
+// here would just get erased the moment a class/race is picked — see
+// dexSpeedMult()), and Charisma because it's read fresh at every loot
+// roll (see charismaBonusRoll()) rather than being a fixed total.
+export function rollStat() { return 3 + Math.floor(Math.random() * 4) } // 3..6 inclusive
 function mkPlayer() {
+  const str = rollStat(), dex = rollStat(), intel = rollStat(), con = rollStat(), cha = rollStat()
+  const baseAtk = 4 + (str - 3)
+  const baseRangedAtk = (dex - 3) * 2
+  const maxMana = MAX_MANA + (intel - 3) * 3
+  const maxHp = 40 + (con - 3) * 4
   return {
     x: 0, z: 0, r: PLAYER_RADIUS, facing: { x: 0, z: -1 },
     level: 1, xp: 0, xpNext: 30,
-    baseAtk: 4, baseDef: 0, weaponAtk: 0, armorDef: 0,
-    atk: 4, def: 0,
-    maxHp: 40, hp: 40,
-    maxMana: MAX_MANA, mana: MAX_MANA, spellCooldown: 0,
+    str, dex, int: intel, con, cha,
+    baseAtk, baseDef: 0, weaponAtk: 0, armorDef: 0,
+    atk: baseAtk, def: 0,
+    baseRangedAtk, rangedAtk: baseRangedAtk, weaponType: 'melee',
+    maxHp, hp: maxHp,
+    maxMana, mana: maxMana, spellCooldown: 0,
     spells: [mkSpellEntry('bolt')], equippedSpellId: 'bolt',
     classId: null, raceId: null, speedMult: 1, goldMult: 1,
     gold: 0, potions: 1,
-    weaponName: null, armorName: null, weapons: [], armors: [],
+    weaponName: null, armorName: null, weapons: [], armors: [], rangedWeapons: [],
     attackCooldown: 0, attackTimer: 0, hitIds: new Set(),
     potionCooldown: 0, invuln: 0,
     pets: [], activePetId: null, nextPetId: 1,
     quest: null, questsCompleted: 0,
   }
 }
+// Dexterity's speed bonus (0% at DEX 3, up to +12% at DEX 6), combined
+// multiplicatively at the movement call site alongside speedMult and
+// petSpeedBonus — exactly the pattern petSpeedBonus already uses,
+// rather than folding into speedMult itself (which chooseClassRace
+// overwrites outright, not adds to).
+export function dexSpeedMult(player) { return 1 + (player.dex - 3) * 0.04 }
 
 // ── Save / load ──────────────────────────────────────────────────────
 // Only durable player progress is saved — floor layout regenerates
@@ -667,14 +725,16 @@ const SAVE_KEY = 'dungeon-crawler-free-roam-save-v1'
 function serializePlayer(p) {
   return {
     level: p.level, xp: p.xp, xpNext: p.xpNext,
+    str: p.str, dex: p.dex, int: p.int, con: p.con, cha: p.cha,
     baseAtk: p.baseAtk, baseDef: p.baseDef, weaponAtk: p.weaponAtk, armorDef: p.armorDef,
-    atk: p.atk, def: p.def,
+    atk: p.atk, def: p.def, baseRangedAtk: p.baseRangedAtk, rangedAtk: p.rangedAtk, weaponType: p.weaponType,
     maxHp: p.maxHp, hp: p.hp, maxMana: p.maxMana, mana: p.mana,
     spells: p.spells.map(s => ({ ...s })), equippedSpellId: p.equippedSpellId,
     classId: p.classId, raceId: p.raceId, speedMult: p.speedMult, goldMult: p.goldMult,
     gold: p.gold, potions: p.potions,
     weaponName: p.weaponName, armorName: p.armorName,
     weapons: p.weapons.map(w => ({ ...w })), armors: p.armors.map(a => ({ ...a })),
+    rangedWeapons: p.rangedWeapons.map(w => ({ ...w })),
     // Only the durable fields — a pet's live x/z/atkCooldown are runtime
     // state, reset fresh (see activePetInfo's lazy-init) the moment it's
     // active again after a load.
@@ -685,7 +745,26 @@ function serializePlayer(p) {
 }
 function applySavedPlayer(player, saved) {
   if (!saved) return
+  // Old saves (from before stats existed) have no str/dex/int/con/cha
+  // keys at all, so the Object.assign below leaves whatever mkPlayer()
+  // had already freshly rolled for those five fields untouched — but it
+  // *does* overwrite baseAtk/maxHp/maxMana/baseRangedAtk with the saved
+  // pre-stat values, silently erasing those same stats' bonuses from the
+  // numbers that actually matter. Detect that case and reapply the
+  // bonuses on top of the restored values afterward.
+  const hadStats = saved.str != null
   Object.assign(player, saved)
+  if (!hadStats) {
+    player.baseAtk += (player.str - 3)
+    player.maxHp += (player.con - 3) * 4
+    player.hp += (player.con - 3) * 4
+    player.maxMana += (player.int - 3) * 3
+    player.mana += (player.int - 3) * 3
+    player.baseRangedAtk = (player.dex - 3) * 2
+    player.atk = player.baseAtk + (player.weaponType === 'ranged' ? 0 : player.weaponAtk)
+  }
+  if (player.weaponType == null) player.weaponType = 'melee'
+  if (player.rangedAtk == null) player.rangedAtk = player.baseRangedAtk + (player.weaponType === 'ranged' ? player.weaponAtk : 0)
   // A save from before spell-casting-xp existed has entries missing
   // xp/xpNext — backfill them here rather than at every place a spell
   // gets cast, so the rest of the code can assume they're always present.
@@ -694,6 +773,7 @@ function applySavedPlayer(player, saved) {
   }))
   player.weapons = (saved.weapons || []).map(w => ({ ...w }))
   player.armors = (saved.armors || []).map(a => ({ ...a }))
+  player.rangedWeapons = (saved.rangedWeapons || []).map(w => ({ ...w }))
   player.pets = (saved.pets || []).map(pet => ({ ...pet }))
   player.nextPetId = saved.nextPetId || (player.pets.length + 1)
   player.quest = saved.quest ? { ...saved.quest } : null
@@ -889,8 +969,14 @@ function damageMonster(state, player, m, dmg, helpers) {
 // equipWeapon/equipArmor below), so the player picks their own loadout
 // instead of the chest silently swapping it for them. A duplicate of
 // something already owned is just sold on the spot.
+// A player's Charisma gives an independent extra chance (0% at CHA 3,
+// up to 24% at CHA 6) of bumping the loot tier up one more step on top
+// of the chest's own random bonus — "better loot" without touching the
+// chest's own tier roll (that's seeded per-floor, not player-specific).
+export function charismaBonusRoll(p) { return Math.random() < (p.cha - 3) * 0.08 ? 1 : 0 }
+
 function grantWeaponLoot(state, p, floor, tier) {
-  const tierBoost = tier.gearBonus + Math.floor(Math.random() * 2)
+  const tierBoost = tier.gearBonus + Math.floor(Math.random() * 2) + charismaBonusRoll(p)
   const gearTier = Math.min(WEAPONS.length - 1, lootTierFor(floor.index) + tierBoost)
   const w = WEAPONS[gearTier]
   if (p.weapons.some(x => x.name === w.name)) {
@@ -902,7 +988,7 @@ function grantWeaponLoot(state, p, floor, tier) {
   }
 }
 function grantArmorLoot(state, p, floor, tier) {
-  const tierBoost = tier.gearBonus + Math.floor(Math.random() * 2)
+  const tierBoost = tier.gearBonus + Math.floor(Math.random() * 2) + charismaBonusRoll(p)
   const gearTier = Math.min(ARMORS.length - 1, lootTierFor(floor.index) + tierBoost)
   const a = ARMORS[gearTier]
   if (p.armors.some(x => x.name === a.name)) {
@@ -911,6 +997,18 @@ function grantArmorLoot(state, p, floor, tier) {
   } else {
     p.armors.push(a)
     pushBanner(state, a.emoji, `Found ${a.name}! Open Gear (I) to equip it.`, '#8FD3FF')
+  }
+}
+function grantRangedWeaponLoot(state, p, floor, tier) {
+  const tierBoost = tier.gearBonus + Math.floor(Math.random() * 2) + charismaBonusRoll(p)
+  const gearTier = Math.min(RANGED_WEAPONS.length - 1, lootTierFor(floor.index) + tierBoost)
+  const w = RANGED_WEAPONS[gearTier]
+  if (p.rangedWeapons.some(x => x.name === w.name)) {
+    const gold = Math.round(w.atk * 3 * p.goldMult); p.gold += gold
+    pushBanner(state, '💰', `Already own ${w.name} — sold the spare for ${gold} gold`, '#FFD34D')
+  } else {
+    p.rangedWeapons.push(w)
+    pushBanner(state, w.emoji, `Found ${w.name}! Open Gear (I) to equip it.`, '#8FD3FF')
   }
 }
 // A scroll teaches an unknown spell, levels up a known one (by more levels
@@ -967,13 +1065,17 @@ function openChest(state, player, c, floor) {
     case 'magic':
       grantSpellLoot(state, p, tier)
       break
+    case 'ranged':
+      grantRangedWeaponLoot(state, p, floor, tier)
+      break
     case 'boss': {
-      // The grand prize — a surprise pick among the three "real reward"
+      // The grand prize — a surprise pick among the four "real reward"
       // themes, plus a flat gold bonus on top since this is the boss's
       // own drop rather than just another floor find.
-      const pickThemeId = pick(['weapon', 'armor', 'magic'])
+      const pickThemeId = pick(['weapon', 'armor', 'magic', 'ranged'])
       if (pickThemeId === 'weapon') grantWeaponLoot(state, p, floor, tier)
       else if (pickThemeId === 'armor') grantArmorLoot(state, p, floor, tier)
+      else if (pickThemeId === 'ranged') grantRangedWeaponLoot(state, p, floor, tier)
       else grantSpellLoot(state, p, tier)
       const bonus = Math.round((40 + floor.index * 12) * p.goldMult)
       p.gold += bonus
@@ -989,13 +1091,24 @@ function openChest(state, player, c, floor) {
 // Called from the UI when the player picks an owned item from the Gear
 // panel — deliberate, player-driven equipping instead of chests
 // auto-swapping gear for them.
+// One shared weapon slot for both melee and ranged — equipping either
+// replaces whatever was active before (exactly like swapping between
+// two melee weapons already worked), so the attack button always has
+// an unambiguous single answer for "what happens when I press it" (see
+// updatePlayerCombat's weaponType branch). atk/rangedAtk are both kept
+// up to date here so whichever one is inactive just reflects the
+// player's base/stat total with no weapon bonus — the same fallback
+// behavior as before any weapon was ever equipped at all.
 export function equipWeapon(state, player, item) {
   const p = player
   if (p.weaponName === item.name) return
   p.weaponAtk = item.atk
   p.weaponName = item.name
-  p.atk = p.baseAtk + p.weaponAtk
-  pushBanner(state, item.emoji, `Equipped ${item.name}! (+${item.atk} ATK)`, '#8FD3FF')
+  p.weaponType = item.type || 'melee'
+  p.atk = p.baseAtk + (p.weaponType === 'melee' ? p.weaponAtk : 0)
+  p.rangedAtk = p.baseRangedAtk + (p.weaponType === 'ranged' ? p.weaponAtk : 0)
+  const label = p.weaponType === 'ranged' ? 'RNG' : 'ATK'
+  pushBanner(state, item.emoji, `Equipped ${item.name}! (+${item.atk} ${label})`, '#8FD3FF')
   if (p.weaponName && p.armorName) grantAchievement(state, 'geared')
 }
 export function equipArmor(state, player, item) {
@@ -1181,6 +1294,16 @@ export function shopBuyArmor(state, player, floor, index) {
   player.gold -= cost
   player.armors.push(a)
   pushBanner(state, a.emoji, `Bought ${a.name}! Open Gear (I) to equip it.`, '#8FD3FF')
+  saveGame(state)
+}
+export function shopBuyRangedWeapon(state, player, floor, index) {
+  const w = RANGED_WEAPONS[index]
+  if (!w || index > lootTierFor(floor.index)) return
+  const cost = w.atk * 4
+  if (player.gold < cost || player.rangedWeapons.some(x => x.name === w.name)) return
+  player.gold -= cost
+  player.rangedWeapons.push(w)
+  pushBanner(state, w.emoji, `Bought ${w.name}! Open Gear (I) to equip it.`, '#8FD3FF')
   saveGame(state)
 }
 export function shopLearnOrLevelSpell(state, player, spellId) {
@@ -1447,8 +1570,25 @@ function updatePlayerCombat(state, player, input, dt, helpers) {
   if (player.attackCooldown > 0) player.attackCooldown -= dt
   if (input.attackPressed && player.attackCooldown <= 0) {
     player.attackCooldown = ATTACK_COOLDOWN
-    player.attackTimer = ATTACK_DURATION
-    player.hitIds = new Set()
+    if (player.weaponType === 'ranged') {
+      // Fires instantly (no windup arc like melee) — a physical shot
+      // through the exact same projectile pipeline a spell bolt uses,
+      // just with no mana cost/cooldown of its own and no spellId-
+      // specific effects (splash/slow), see the 'arrow' ELEMENT_COLORS
+      // entry for why spellId:'arrow' is still set despite not being one.
+      const ox = player.x + player.facing.x * 1.0, oz = player.z + player.facing.z * 1.0
+      state.projectiles.push({
+        x: ox, z: oz, ox, oz,
+        vx: player.facing.x * RANGED_PROJECTILE_SPEED, vz: player.facing.z * RANGED_PROJECTILE_SPEED,
+        life: RANGED_PROJECTILE_LIFE, dmg: Math.max(1, player.rangedAtk + Math.floor(rand(-1, 2))),
+        splashRadius: 0, slowMult: null, slowTime: 0,
+        owner: player, hitIds: new Set(), dead: false,
+        visualScale: 1, tierIdx: 0, spellId: 'arrow',
+      })
+    } else {
+      player.attackTimer = ATTACK_DURATION
+      player.hitIds = new Set()
+    }
   }
   input.attackPressed = false
   if (player.attackTimer > 0) {
@@ -1574,7 +1714,7 @@ export function update(state, input1, input2, dt, helpers) {
   if (input1.forward) mv += 1
   if (input1.back) mv -= 1
   if (mv !== 0) {
-    const spd = MOVE_SPEED * player.speedMult * (1 + petSpeedBonus(player))
+    const spd = MOVE_SPEED * player.speedMult * (1 + petSpeedBonus(player)) * dexSpeedMult(player)
     const dx = fx * mv * spd * dt, dz = fz * mv * spd * dt
     tryMoveEntity(state.floor.wallRects, player, dx, dz)
   }
@@ -1592,7 +1732,7 @@ export function update(state, input1, input2, dt, helpers) {
       const len = Math.hypot(mx, mz) || 1
       mx /= len; mz /= len
       player2.facing = { x: mx, z: mz }
-      const spd2 = MOVE_SPEED * player2.speedMult * (1 + petSpeedBonus(player2))
+      const spd2 = MOVE_SPEED * player2.speedMult * (1 + petSpeedBonus(player2)) * dexSpeedMult(player2)
       const dx = mx * spd2 * dt, dz = mz * spd2 * dt
       tryMoveEntity(state.floor.wallRects, player2, dx, dz)
     }

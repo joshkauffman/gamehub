@@ -567,6 +567,32 @@
   border-radius: 10px;
 }
 
+.statGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+  gap: 8px;
+}
+.statBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  padding: 8px 6px;
+}
+.statLabel {
+  font-size: 11px;
+  color: #a6c4dc;
+  font-weight: bold;
+}
+.statValue {
+  font-size: 18px;
+  color: #ffd34d;
+  font-weight: bold;
+}
+
 /* ── Class/Race picker ───────────────────────────────────────────── */
 .pickPlayerBlock {
   border-top: 1px solid rgba(255, 255, 255, 0.15);

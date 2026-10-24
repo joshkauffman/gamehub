@@ -282,7 +282,7 @@ const CATEGORIES = [
       {
         id: 'dungeon-crawler-free-roam',
         title: 'Dungeon Crawler Max: Free Roam',
-        description: "The game show goes 3D open-world — now with local two-player! Roam a wide-open field with 18 dungeons scattered around, each guarded by its own boss, finding spell scrolls and gear to equip and picking a class and race along the way.",
+        description: "The game show goes 3D open-world — now with local two-player! Each contestant rolls Strength/Dexterity/Intelligence/Constitution/Charisma at creation, wields melee or ranged weapons, and roams a wide-open field finding spell scrolls and gear to equip along the way.",
         emoji: '🗺️',
         path: '/dungeon-crawler-free-roam',
       },

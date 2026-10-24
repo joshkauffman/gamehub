@@ -8,8 +8,8 @@ import {
   chooseClassRace, CLASSES, RACES, SPELLS, players,
   hasSavedGame, loadSavedGame, saveGame,
   PET_DEFS, activePetInfo, setActivePet,
-  shopBuyPotion, shopBuyWeapon, shopBuyArmor, shopLearnOrLevelSpell, shopTrainPet,
-  acceptQuest, WEAPONS, ARMORS, lootTierFor, CHEST_TIERS, CHEST_THEMES,
+  shopBuyPotion, shopBuyWeapon, shopBuyArmor, shopBuyRangedWeapon, shopLearnOrLevelSpell, shopTrainPet,
+  acceptQuest, WEAPONS, ARMORS, RANGED_WEAPONS, lootTierFor, CHEST_TIERS, CHEST_THEMES,
   SHOP_POTION_COST, SHOP_PET_TRAIN_COST,
 } from './gameEngine.js'
 import {
@@ -504,7 +504,7 @@ function getPlayerTexture(classId, raceId, weaponName, armorName) {
   if (tex) return tex
   const cls = CLASSES.find(c => c.id === classId)
   const race = RACES.find(rc => rc.id === raceId)
-  const weapon = WEAPONS.find(w => w.name === weaponName)
+  const weapon = WEAPONS.find(w => w.name === weaponName) || RANGED_WEAPONS.find(w => w.name === weaponName)
   const armor = ARMORS.find(a => a.name === armorName)
   const bodyColors = { warrior: '#8a5a3a', mage: '#6b4aa8', rogue: '#2f4a3a', cleric: '#e8dcc0' }
   const bodyColor = cls ? bodyColors[cls.id] : '#3a7a4a'
@@ -725,6 +725,29 @@ function getLightningTipMaterial() {
   return lightningTipMaterial
 }
 
+// A ranged-weapon shot's "spellId" is the string 'arrow' (see
+// updatePlayerCombat in gameEngine.js) — not an actual spell, just
+// reusing this exact same spellId-keyed lookup pipeline so a physical
+// shot doesn't glow like arcane magic.
+let arrowMaterial = null
+function getArrowMaterial() {
+  if (arrowMaterial) return arrowMaterial
+  const size = 64
+  const canvas = document.createElement('canvas')
+  canvas.width = size; canvas.height = size
+  const ctx = canvas.getContext('2d')
+  const c = size / 2
+  const grad = ctx.createRadialGradient(c, c, 0, c, c, c)
+  grad.addColorStop(0, 'rgba(255,255,255,1)')
+  grad.addColorStop(0.35, 'rgba(201,168,118,0.95)')
+  grad.addColorStop(1, 'rgba(138,106,58,0)')
+  ctx.fillStyle = grad
+  ctx.fillRect(0, 0, size, size)
+  const tex = new THREE.CanvasTexture(canvas)
+  arrowMaterial = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false })
+  return arrowMaterial
+}
+
 // Per-spell sprite material — everything without a dedicated look (the
 // starter Magic Bolt, and anything future/unlisted) keeps the original
 // arcane glow.
@@ -732,6 +755,7 @@ function materialForSpell(spellId) {
   if (spellId === 'fireball') return getFireballMaterial()
   if (spellId === 'ice') return getIceMaterial()
   if (spellId === 'chainzap') return getLightningTipMaterial()
+  if (spellId === 'arrow') return getArrowMaterial()
   return getSpellBoltMaterial()
 }
 
@@ -968,9 +992,11 @@ export default function DungeonCrawlerFreeRoam() {
 
   function snapshotPlayer(p) {
     return {
-      weapons: [...p.weapons], armors: [...p.armors], spells: [...p.spells],
-      weaponName: p.weaponName, armorName: p.armorName, equippedSpellId: p.equippedSpellId,
+      weapons: [...p.weapons], armors: [...p.armors], rangedWeapons: [...p.rangedWeapons], spells: [...p.spells],
+      weaponName: p.weaponName, armorName: p.armorName, weaponType: p.weaponType, equippedSpellId: p.equippedSpellId,
       pets: p.pets.map(pet => ({ ...pet })), activePetId: p.activePetId,
+      str: p.str, dex: p.dex, int: p.int, con: p.con, cha: p.cha,
+      atk: p.atk, rangedAtk: p.rangedAtk, maxHp: p.maxHp, maxMana: p.maxMana,
     }
   }
   function refreshGearSnapshot() {
@@ -1041,7 +1067,7 @@ export default function DungeonCrawlerFreeRoam() {
     const p = s.player
     setVillageSnapshot({
       gold: p.gold, potions: p.potions, floorIndex: s.floor.index, lootTier: lootTierFor(s.floor.index),
-      weapons: [...p.weapons], armors: [...p.armors], spells: [...p.spells],
+      weapons: [...p.weapons], armors: [...p.armors], rangedWeapons: [...p.rangedWeapons], spells: [...p.spells],
       pets: p.pets.map(pet => ({ ...pet })), activePetId: p.activePetId,
       quest: p.quest ? { ...p.quest } : null, questsCompleted: p.questsCompleted,
     })
@@ -1049,6 +1075,7 @@ export default function DungeonCrawlerFreeRoam() {
   function handleBuyPotion() { shopBuyPotion(stateRef.current, stateRef.current.player); refreshVillageSnapshot() }
   function handleBuyWeapon(i) { shopBuyWeapon(stateRef.current, stateRef.current.player, stateRef.current.floor, i); refreshVillageSnapshot() }
   function handleBuyArmor(i) { shopBuyArmor(stateRef.current, stateRef.current.player, stateRef.current.floor, i); refreshVillageSnapshot() }
+  function handleBuyRangedWeapon(i) { shopBuyRangedWeapon(stateRef.current, stateRef.current.player, stateRef.current.floor, i); refreshVillageSnapshot() }
   function handleLearnSpell(id) { shopLearnOrLevelSpell(stateRef.current, stateRef.current.player, id); refreshVillageSnapshot() }
   function handleTrainPet() { shopTrainPet(stateRef.current, stateRef.current.player); refreshVillageSnapshot() }
   function handleAcceptQuest() { acceptQuest(stateRef.current, stateRef.current.player); refreshVillageSnapshot() }
@@ -1826,7 +1853,19 @@ export default function DungeonCrawlerFreeRoam() {
               )}
 
               <div className={styles.gearSection}>
-                <h2 className={styles.gearHeading}>Weapons</h2>
+                <h2 className={styles.gearHeading}>Stats</h2>
+                <p className={styles.gearEmpty}>Rolled once at character creation — Strength: melee damage, Dexterity: move speed + ranged damage, Intelligence: max mana, Constitution: max HP, Charisma: better loot odds.</p>
+                <div className={styles.statGrid}>
+                  <div className={styles.statBox}><span className={styles.statLabel}>💪 STR</span><span className={styles.statValue}>{snap.str}</span></div>
+                  <div className={styles.statBox}><span className={styles.statLabel}>🏃 DEX</span><span className={styles.statValue}>{snap.dex}</span></div>
+                  <div className={styles.statBox}><span className={styles.statLabel}>🧠 INT</span><span className={styles.statValue}>{snap.int}</span></div>
+                  <div className={styles.statBox}><span className={styles.statLabel}>❤️ CON</span><span className={styles.statValue}>{snap.con}</span></div>
+                  <div className={styles.statBox}><span className={styles.statLabel}>✨ CHA</span><span className={styles.statValue}>{snap.cha}</span></div>
+                </div>
+              </div>
+
+              <div className={styles.gearSection}>
+                <h2 className={styles.gearHeading}>Weapons {snap.weaponType === 'melee' && <span className={styles.equippedTag}>Active</span>}</h2>
                 {snap.weapons.length === 0 && <p className={styles.gearEmpty}>No weapons found yet — open chests in a dungeon!</p>}
                 <div className={styles.gearList}>
                   {snap.weapons.map(w => {
@@ -1841,6 +1880,25 @@ export default function DungeonCrawlerFreeRoam() {
                     )
                   })}
                 </div>
+              </div>
+
+              <div className={styles.gearSection}>
+                <h2 className={styles.gearHeading}>Ranged Weapons {snap.weaponType === 'ranged' && <span className={styles.equippedTag}>Active</span>}</h2>
+                {snap.rangedWeapons.length === 0 && <p className={styles.gearEmpty}>No ranged weapons found yet — open a Ranged Weapon Box in a dungeon!</p>}
+                <div className={styles.gearList}>
+                  {snap.rangedWeapons.map(w => {
+                    const equipped = snap.weaponName === w.name
+                    return (
+                      <button key={w.name} className={`${styles.gearItem} ${equipped ? styles.gearItemActive : ''}`} onClick={() => handleEquipWeapon(w)} disabled={equipped}>
+                        <span className={styles.gearItemEmoji}>{w.emoji}</span>
+                        <span className={styles.gearItemName}>{w.name}</span>
+                        <span className={styles.gearItemStat}>+{w.atk} RNG</span>
+                        {equipped && <span className={styles.equippedTag}>Equipped</span>}
+                      </button>
+                    )
+                  })}
+                </div>
+                <p className={styles.gearEmpty}>Equipping a weapon here swaps out whatever melee weapon was active, and vice versa — only one can be active at a time.</p>
               </div>
 
               <div className={styles.gearSection}>
@@ -2005,6 +2063,22 @@ export default function DungeonCrawlerFreeRoam() {
                         const cost = w.atk * 4
                         return (
                           <button key={w.name} className={styles.gearItem} onClick={() => handleBuyWeapon(i)} disabled={owned || snap.gold < cost}>
+                            <span className={styles.gearItemEmoji}>{w.emoji}</span>
+                            <span className={styles.gearItemName}>{w.name}</span>
+                            <span className={styles.gearItemStat}>{owned ? 'Owned' : `🪙 ${cost}`}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                  <div className={styles.gearSection}>
+                    <h2 className={styles.gearHeading}>Ranged Weapons</h2>
+                    <div className={styles.gearList}>
+                      {RANGED_WEAPONS.slice(0, snap.lootTier + 1).map((w, i) => {
+                        const owned = snap.rangedWeapons.some(x => x.name === w.name)
+                        const cost = w.atk * 4
+                        return (
+                          <button key={w.name} className={styles.gearItem} onClick={() => handleBuyRangedWeapon(i)} disabled={owned || snap.gold < cost}>
                             <span className={styles.gearItemEmoji}>{w.emoji}</span>
                             <span className={styles.gearItemName}>{w.name}</span>
                             <span className={styles.gearItemStat}>{owned ? 'Owned' : `🪙 ${cost}`}</span>
