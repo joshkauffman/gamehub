@@ -185,6 +185,13 @@ const CATEGORIES = [
         emoji: '🌏',
         path: '/avatar',
       },
+      {
+        id: 'dino-suit-up',
+        title: 'Dino Suit Up',
+        description: "You're a dinosaur roaming an open world. Chop wood, mine stone, and track down bone, iron, crystal, and tech scrap to craft a suit — but each new tier needs its boss defeated first, all the way up to the final Cyborg Suit.",
+        emoji: '🦖',
+        path: '/dino-suit-up',
+      },
     ],
   },
   {

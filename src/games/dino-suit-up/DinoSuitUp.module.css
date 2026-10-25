@@ -1,0 +1,232 @@
+.page {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #0d1a0d;
+  color: #fff;
+  font-family: 'Courier New', monospace;
+}
+
+.canvasWrap {
+  position: absolute;
+  inset: 0;
+}
+.canvasWrap canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.overlayScreen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  text-align: center;
+  padding: 24px;
+  background: radial-gradient(circle at 50% 20%, #1e3a1e 0%, #0d1a0d 70%);
+  z-index: 10;
+  overflow-y: auto;
+}
+
+.title {
+  font-size: clamp(26px, 5vw, 42px);
+  font-weight: bold;
+  color: #8ee35a;
+  margin: 0;
+  letter-spacing: 1px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.subtitle { font-size: clamp(14px, 2.4vw, 20px); color: #ffcf6b; letter-spacing: 3px; }
+.title2 { font-size: clamp(20px, 4vw, 30px); color: #ffcf6b; margin: 0; }
+
+.blurb { color: #cdeec0; font-size: 14px; max-width: 600px; line-height: 1.55; }
+
+.bigBtn {
+  font-family: 'Courier New', monospace;
+  font-size: 16px;
+  font-weight: bold;
+  padding: 14px 28px;
+  background: #8ee35a;
+  border: none;
+  color: #142a0a;
+  cursor: pointer;
+  letter-spacing: 1px;
+  border-radius: 8px;
+}
+.bigBtn:hover { background: #a4ed79; }
+
+.secondaryBtn {
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  font-weight: bold;
+  padding: 9px 18px;
+  background: rgba(255,255,255,0.08);
+  border: 2px solid rgba(255,207,107,0.5);
+  color: #ffcf6b;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  border-radius: 8px;
+}
+.secondaryBtn:hover { background: rgba(255,207,107,0.15); }
+
+.backLink {
+  color: rgba(255,255,255,0.6);
+  text-decoration: none;
+  font-size: 13px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: 'Courier New', monospace;
+}
+.backLink:hover { color: #fff; }
+.backLinkFloating {
+  position: absolute;
+  top: 12px;
+  left: 16px;
+  color: rgba(255,255,255,0.75);
+  text-decoration: none;
+  font-size: 13px;
+  z-index: 20;
+  background: rgba(0,0,0,0.4);
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+.backLinkFloating:hover { color: #fff; }
+
+.hud {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  z-index: 5;
+  width: min(92vw, 440px);
+}
+.hudTop { display: flex; gap: 10px; pointer-events: none; }
+.suitInfo { font-size: 13px; font-weight: bold; color: #ffcf6b; background: rgba(0,0,0,0.45); padding: 4px 10px; border-radius: 6px; }
+.bossInfo { font-size: 12px; font-weight: bold; color: #ff9a7a; background: rgba(0,0,0,0.45); padding: 4px 10px; border-radius: 6px; }
+
+.hpWrap { display: flex; align-items: center; gap: 8px; width: 100%; pointer-events: none; }
+.hpLabel { font-size: 11px; color: #fff; white-space: nowrap; }
+.hpTrack { flex: 1; height: 10px; border-radius: 4px; background: rgba(255,255,255,0.2); overflow: hidden; border: 1px solid rgba(255,255,255,0.3); }
+.hpFill { height: 100%; transition: width 0.15s linear; }
+
+.matsRow { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; pointer-events: none; }
+.matChip { font-size: 11px; background: rgba(0,0,0,0.4); padding: 3px 8px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); }
+
+.craftHint {
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  font-weight: bold;
+  color: #8ee35a;
+  background: rgba(0,0,0,0.5);
+  border: 1px solid rgba(142,227,90,0.5);
+  padding: 5px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.craftHint:hover { background: rgba(142,227,90,0.15); }
+
+.toast {
+  background: rgba(0,0,0,0.6);
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: bold;
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.3);
+  pointer-events: none;
+}
+.toastGood { border-color: #7bff8a; color: #7bff8a; }
+.toastBad { border-color: #ff5d3d; color: #ff5d3d; }
+
+.winBanner {
+  position: absolute;
+  top: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.7);
+  color: #ffd76b;
+  font-weight: bold;
+  font-size: 14px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,215,107,0.6);
+  z-index: 6;
+}
+
+.craftOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 15;
+  padding: 20px;
+}
+.craftPanel {
+  background: #122012;
+  border: 2px solid rgba(142,227,90,0.4);
+  border-radius: 14px;
+  padding: 20px;
+  width: min(92vw, 520px);
+  max-height: 85vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.craftTitle { margin: 0; color: #ffcf6b; font-size: 18px; text-align: center; }
+.craftList { display: flex; flex-direction: column; gap: 8px; }
+.craftRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  padding: 10px;
+}
+.craftRowCurrent { border-color: #8ee35a; background: rgba(142,227,90,0.1); }
+.craftRowDone { opacity: 0.6; }
+.craftEmoji { font-size: 24px; }
+.craftRowBody { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+.craftName { font-weight: bold; font-size: 13px; color: #fff; }
+.craftReq { display: flex; flex-wrap: wrap; gap: 6px; font-size: 11px; }
+.reqMet { color: #7bff8a; }
+.reqUnmet { color: #ff9a7a; }
+.craftBtn {
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+  font-size: 12px;
+  padding: 7px 14px;
+  background: #8ee35a;
+  color: #142a0a;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.craftBtn:disabled { background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.4); cursor: not-allowed; }
+.craftClose {
+  align-self: center;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  color: rgba(255,255,255,0.7);
+  background: none;
+  border: 1px solid rgba(255,255,255,0.25);
+  padding: 7px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.craftClose:hover { color: #fff; }

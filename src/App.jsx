@@ -32,6 +32,7 @@ import RetroArcade from './games/retro-arcade/RetroArcade.jsx'
 import LootAndScoot from './games/loot-and-scoot/LootAndScoot.jsx'
 import WingsOfFire from './games/wings-of-fire/WingsOfFire.jsx'
 import Avatar from './games/avatar/Avatar.jsx'
+import DinoSuitUp from './games/dino-suit-up/DinoSuitUp.jsx'
 import OrbitMaze from './games/orbit-maze/OrbitMaze.jsx'
 import IntergalacticPoker from './games/intergalactic-poker/IntergalacticPoker.jsx'
 import GeometryRush from './games/geometry-rush/GeometryRush.jsx'
@@ -83,6 +84,7 @@ export default function App() {
         <Route path="/loot-and-scoot" element={<LootAndScoot />} />
         <Route path="/wings-of-fire" element={<WingsOfFire />} />
         <Route path="/avatar" element={<Avatar />} />
+        <Route path="/dino-suit-up" element={<DinoSuitUp />} />
         <Route path="/orbit-maze" element={<OrbitMaze />} />
         <Route path="/intergalactic-poker" element={<IntergalacticPoker />} />
         <Route path="/geometry-rush" element={<GeometryRush />} />
