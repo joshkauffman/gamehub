@@ -198,6 +198,13 @@ const CATEGORIES = [
     name: 'Cards, Puzzles & Party Games',
     games: [
       {
+        id: 'easy-game',
+        title: 'Easy Game',
+        description: "Click the trophy to win. That's the whole game — except the trophy refuses, and tells you to find other ways. Twelve secret wins are hidden in how you can poke at the page itself.",
+        emoji: '🏆',
+        path: '/easy-game',
+      },
+      {
         id: 'ultimate-ttt',
         title: 'Ultimate Tic Tac Toe',
         description: '9 boards in 1. Strategy runs deep.',

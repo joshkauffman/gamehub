@@ -24,10 +24,12 @@ const FILTER_EXEMPT_PATHS = ['/obvious-mario-knockoff']
 
 // Routes where H is already spoken for by the game itself (Hangman reads
 // raw keydowns to guess letters, and H is a perfectly normal one to guess;
-// Avatar binds H to Player 1's second bending move) — the toggle stays
-// fully disabled here, though an already-active filter from elsewhere in
-// the hub still applies visually.
-const TOGGLE_EXEMPT_PATHS = ['/hangman', '/avatar']
+// Avatar binds H to Player 1's second bending move; Easy Game is built
+// around mashing unfamiliar keys to find secrets, so a stray H firing the
+// hub easter egg would read as one of its own hidden wins) — the toggle
+// stays fully disabled here, though an already-active filter from
+// elsewhere in the hub still applies visually.
+const TOGGLE_EXEMPT_PATHS = ['/hangman', '/avatar', '/easy-game']
 
 // A hub-wide cheat: press H anywhere outside a text field to flip every
 // game — canvas, WebGL, or plain DOM, it doesn't matter which — into a
