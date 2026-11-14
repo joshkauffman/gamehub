@@ -20,6 +20,12 @@ import { WINS, TOTAL_WINS, DENIALS, getWin, loadWins, saveWins, clearWins } from
 // browser interaction, so the browser's own event model is the game
 // engine. wins.js holds the win data and save helpers; this file owns
 // the detectors.
+//
+// One deliberate backdoor: typing "cheater" opens a cheat sheet listing
+// every win and how to trigger it. It doesn't count as a win itself and
+// doesn't touch `found` — it's an escape hatch for anyone stuck, gated
+// behind its own secret code rather than a visible "hints" button, so
+// it doesn't contradict the no-hints-during-normal-play rule.
 
 const IDLE_WIN_MS = 20000
 const HOLD_WIN_MS = 2600
@@ -47,6 +53,7 @@ const KONAMI = [
   'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'KeyB', 'KeyA',
 ]
 const SPELL_CODES = ['KeyI', 'KeyW', 'KeyI', 'KeyN']
+const CHEATER_CODES = ['KeyC', 'KeyH', 'KeyE', 'KeyA', 'KeyT', 'KeyE', 'KeyR']
 
 export default function EasyGame() {
   const [found, setFound] = useState(() => loadWins())
@@ -57,6 +64,7 @@ export default function EasyGame() {
   const [dragging, setDragging] = useState(false)
   const [tabBtnFound, setTabBtnFound] = useState(false)
   const [secretWordValue, setSecretWordValue] = useState('')
+  const [cheatSheetOpen, setCheatSheetOpen] = useState(false)
 
   // Long-lived listeners below are attached once per `started` flip, so
   // they can't close over fresh state — refs carry the live values.
@@ -134,6 +142,14 @@ export default function EasyGame() {
       const lastFour = buf.slice(-SPELL_CODES.length)
       if (lastFour.length === SPELL_CODES.length && lastFour.every((c, i) => c === SPELL_CODES[i])) {
         addWin('spell')
+      }
+
+      // "cheater" is not a win — it's a toggleable escape hatch for
+      // anyone stuck, kept out of `found`/localStorage entirely.
+      const lastSeven = buf.slice(-CHEATER_CODES.length)
+      if (lastSeven.length === CHEATER_CODES.length && lastSeven.every((c, i) => c === CHEATER_CODES[i])) {
+        setCheatSheetOpen(v => !v)
+        keyBufRef.current = []
       }
     }
 
@@ -341,6 +357,7 @@ export default function EasyGame() {
     setToast(null)
     setTabBtnFound(false)
     setSecretWordValue('')
+    setCheatSheetOpen(false)
     scrollRef.current?.scrollTo({ top: 0 })
   }
 
@@ -444,6 +461,29 @@ export default function EasyGame() {
             <div className={styles.btnRow}>
               <button className={styles.bigBtn} onClick={resetEverything}>↻ Play again</button>
               <Link to="/" className={styles.secondaryBtn}>← Back to GameHub</Link>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {cheatSheetOpen && (
+        <div className={styles.cheatOverlay} onClick={() => setCheatSheetOpen(false)}>
+          <div className={styles.cheatBox} onClick={(e) => e.stopPropagation()}>
+            <h2 className={styles.cheatTitle}>🗒️ Cheat Sheet</h2>
+            <p className={styles.cheatSub}>You typed "cheater." No judgment. Here's everything.</p>
+            <div className={styles.cheatList}>
+              {WINS.map(win => {
+                const got = found.includes(win.id)
+                return (
+                  <div key={win.id} className={`${styles.cheatRow} ${got ? styles.cheatRowDone : ''}`}>
+                    <span className={styles.cheatName}>{got ? '✅' : '▫️'} {win.name}</span>
+                    <span className={styles.cheatHow}>{win.cheat}</span>
+                  </div>
+                )
+              })}
+            </div>
+            <div className={styles.btnRow}>
+              <button className={styles.secondaryBtn} onClick={() => setCheatSheetOpen(false)}>Close</button>
             </div>
           </div>
         </div>
