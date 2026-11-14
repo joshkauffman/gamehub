@@ -200,7 +200,7 @@ const CATEGORIES = [
       {
         id: 'easy-game',
         title: 'Easy Game',
-        description: "Click the trophy to win. That's the whole game — except the trophy refuses, and tells you to find other ways. Twelve secret wins are hidden in how you can poke at the page itself.",
+        description: "Click the trophy to win. That's the whole game — except the trophy refuses, and tells you to find other ways. A long list of secret wins is hidden in how you can poke at the page itself. No hints, and no way to tell how many there are.",
         emoji: '🏆',
         path: '/easy-game',
       },

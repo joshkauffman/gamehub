@@ -1,9 +1,12 @@
 // ── Easy Game — the secret wins ─────────────────────────────────────────
 // The premise: a trophy sits right there, begging to be clicked. Clicking
 // it never wins — it just tells you to find other ways. The real game is
-// discovering the twelve secret wins hidden in the ways you can interact
-// with the page itself: the mouse's other button, the keyboard, the
-// window, the scrollbar, the passage of time.
+// discovering the secret wins hidden in the ways you can interact with
+// the page itself: mouse buttons and modifiers, timing windows, the
+// keyboard, the window, the scrollbar, even leaving and coming back.
+// Deliberately no hint system and no visible total — EasyGame.jsx never
+// renders a placeholder for an unfound win or a "x / N" count, so the
+// only way to know how many there are is to find all of them.
 //
 // Pure data + localStorage helpers, no React and no DOM-event logic —
 // EasyGame.jsx owns the detectors, this file owns what they're detecting
@@ -15,74 +18,137 @@ export const WINS = [
   {
     id: 'persist',
     name: 'Sheer Persistence',
-    hint: 'No means no. Ask ten times anyway.',
-    blurb: 'You were told, repeatedly, that the trophy was not the answer. You clicked it ten times. Respect.',
+    blurb: 'You were told, repeatedly, that the trophy was not the answer. You clicked it ten times anyway. Respect.',
   },
   {
     id: 'rightclick',
     name: 'The Other Button',
-    hint: 'Your mouse has more than one button.',
     blurb: 'Right-clicking: the oldest secret passage in software.',
+  },
+  {
+    id: 'middleclick',
+    name: 'The Button Nobody Uses',
+    blurb: "Your mouse has a third button and you found a use for it. We're as surprised as you are.",
+  },
+  {
+    id: 'altclick',
+    name: 'Alt Ending',
+    blurb: 'Alt plus a click. A whole different outcome, for the price of one extra finger.',
+  },
+  {
+    id: 'ctrlclick',
+    name: 'Admin Override',
+    blurb: 'Ctrl (or Cmd, we see you, Mac users) plus a click. You went around the front door entirely.',
+  },
+  {
+    id: 'shiftclick',
+    name: 'Shift Work',
+    blurb: 'Shift plus a click. Somewhere, a manager is impressed.',
+  },
+  {
+    id: 'tripleclick',
+    name: 'Triple Threat',
+    blurb: 'Three clicks, fast, no gap. Not angry — just thorough.',
   },
   {
     id: 'hold',
     name: 'The Long Press',
-    hint: 'Some things open only if you press and wait.',
     blurb: 'You held on. The trophy got uncomfortable. You win.',
+  },
+  {
+    id: 'goldilocks',
+    name: 'Just Right',
+    blurb: "Not a quick click. Not a long hold. You found the one duration in between that actually does something.",
   },
   {
     id: 'drag',
     name: 'Trophy Thief',
-    hint: "It's not actually nailed down, you know.",
-    blurb: 'You simply dragged the trophy off its pedestal and took it. Nobody stopped you.',
+    blurb: "You simply dragged the trophy off its pedestal and took it. Nobody stopped you.",
   },
   {
     id: 'shake',
     name: 'Shake It Loose',
-    hint: 'Try moving the mouse like you mean it.',
     blurb: 'You shook the cursor so hard something fell out of the page.',
+  },
+  {
+    id: 'hover',
+    name: 'Window Shopping',
+    blurb: "You hovered over the trophy for a long time without ever clicking it. The trophy noticed. It's flattered.",
   },
   {
     id: 'spell',
     name: 'Spell It Out',
-    hint: 'Say what you want. Letter by letter.',
     blurb: 'You just typed what you wanted and the game obliged. Direct communication works.',
   },
   {
     id: 'konami',
     name: 'The Old Code',
-    hint: 'Up, up, and away — you know the rest.',
     blurb: 'Up Up Down Down Left Right Left Right B A. It still works. It will always work.',
+  },
+  {
+    id: 'escape3',
+    name: 'Tactical Retreat',
+    blurb: 'You hit Escape three times, fast, like something was actually chasing you. Nothing was. You still won.',
+  },
+  {
+    id: 'ctrlS',
+    name: 'Nothing To Save',
+    blurb: "You tried to save the page. There was nothing to save. The gesture alone counted.",
   },
   {
     id: 'title',
     name: 'Read It Twice',
-    hint: 'The name of the game. Twice, quickly.',
     blurb: 'You double-clicked the title. The title double-clicked back.',
   },
   {
     id: 'tab',
     name: 'The Invisible Button',
-    hint: 'Keyboard users can reach things the mouse never sees.',
     blurb: 'There was a button there the whole time. Tab found it. It just needed pressing.',
+  },
+  {
+    id: 'secretword',
+    name: 'The Magic Word',
+    blurb: 'Tab found a second invisible thing. You typed the word it wanted. Manners, it turns out, matter.',
   },
   {
     id: 'basement',
     name: 'The Basement',
-    hint: 'There is more page below than there appears to be.',
     blurb: 'You scrolled past the end of the game and found where it keeps its junk.',
+  },
+  {
+    id: 'roundtrip',
+    name: 'There and Back Again',
+    blurb: 'All the way down, all the way back up, before you could change your mind. A round trip, timed.',
   },
   {
     id: 'resize',
     name: 'Reshape Reality',
-    hint: 'The window is not a fixed and permanent thing.',
     blurb: 'You resized the window. The game, technically, had no defense against this.',
+  },
+  {
+    id: 'blank',
+    name: 'Nihilist',
+    blurb: "You clicked on nothing. Repeatedly. On purpose. There was never anything there. That was the point.",
+  },
+  {
+    id: 'rage',
+    name: 'Rage Quit',
+    blurb: "You clicked fast and a lot, like the game owed you money. It noticed. It respects the energy.",
+  },
+  {
+    id: 'away',
+    name: 'The Return',
+    blurb: 'You left. Properly left — another tab, another app. Then you came back. The game waited.',
+  },
+  {
+    id: 'devtools',
+    name: 'We See You',
+    blurb: "You opened the inspector to peek behind the curtain. We know. We've always known.",
   },
   {
     id: 'idle',
     name: 'Patience',
-    hint: 'Do nothing at all. Really nothing. For a while.',
-    blurb: 'You stopped touching anything for twenty seconds and the game blinked first.',
+    blurb: 'You stopped touching anything at all and the game blinked first.',
   },
 ]
 
@@ -94,7 +160,8 @@ export function loadWins() {
   try {
     const raw = localStorage.getItem(SAVE_KEY)
     const ids = raw ? JSON.parse(raw) : []
-    // Drop ids from older builds so a renamed win can't inflate the count.
+    // Drop ids from older builds so a renamed/removed win can't inflate
+    // the count or crash getWin() lookups on an id that no longer exists.
     return Array.isArray(ids) ? ids.filter(id => WINS.some(w => w.id === id)) : []
   } catch { return [] }
 }

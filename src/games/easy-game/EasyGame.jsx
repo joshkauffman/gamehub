@@ -1,62 +1,82 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import styles from './EasyGame.module.css'
-import {
-  WINS, TOTAL_WINS, DENIALS, getWin, loadWins, saveWins, clearWins,
-} from './wins.js'
+import { WINS, TOTAL_WINS, DENIALS, getWin, loadWins, saveWins, clearWins } from './wins.js'
 
 // ── Easy Game ────────────────────────────────────────────────────────────
 // A trophy sits on a pedestal. Clicking it is the obvious move, and it
 // never works — it just tells you to find other ways to win. The actual
-// game is the twelve secret wins hidden in how you can interact with the
-// page: the right mouse button, a long press, dragging the trophy off its
-// stand, the Konami code, typing what you want, tabbing to a button the
-// mouse can't see, scrolling past the end of the page, resizing the
-// window, and simply doing nothing for a while.
+// game is a long list of secret wins hidden in how you can interact with
+// the page: mouse buttons and modifier keys on the trophy itself, timing
+// windows (too fast / too slow / just right), the keyboard, the window,
+// the scrollbar, the browser chrome, and simply walking away.
+//
+// Deliberately no hint system, and nothing on screen ever shows how many
+// wins exist in total — found wins are listed as they're discovered with
+// no placeholders for the rest, so the count stays a secret until the
+// victory screen reveals it as the final payoff.
 //
 // Plain DOM/CSS rather than canvas or Three.js — every win here IS a
 // browser interaction, so the browser's own event model is the game
-// engine. wins.js holds the win data and save helpers; this file owns the
-// detectors.
+// engine. wins.js holds the win data and save helpers; this file owns
+// the detectors.
 
 const IDLE_WIN_MS = 20000
-const HOLD_WIN_MS = 2500
+const HOLD_WIN_MS = 2600
+const GOLDILOCKS_MIN_MS = 900
+const GOLDILOCKS_MAX_MS = 1250
 const DRAG_WIN_PX = 110
 const CLICK_SLOP_PX = 8
 const SHAKE_WINDOW_MS = 800
 const SHAKE_WIN_PX = 2600
 const RESIZE_WIN_PX = 60
 const BASEMENT_SCROLL_PX = 260
+const ROUND_TRIP_MS = 4000
+const TRIPLE_CLICK_WINDOW_MS = 650
+const HOVER_WIN_MS = 6000
+const RAGE_CLICK_GOAL = 6
+const RAGE_WINDOW_MS = 1200
+const BLANK_CLICK_GOAL = 7
+const ESCAPE_WINDOW_MS = 2000
+const AWAY_WIN_MS = 4000
+const DEVTOOLS_GAP_PX = 160
+const DEVTOOLS_MIN_WIDTH = 600
 
 const KONAMI = [
   'ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown',
   'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'KeyB', 'KeyA',
 ]
+const SPELL_CODES = ['KeyI', 'KeyW', 'KeyI', 'KeyN']
 
 export default function EasyGame() {
   const [found, setFound] = useState(() => loadWins())
   const [started, setStarted] = useState(false)
   const [denial, setDenial] = useState(null)
   const [toast, setToast] = useState(null)
-  const [showHints, setShowHints] = useState(false)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
   const [dragging, setDragging] = useState(false)
   const [tabBtnFound, setTabBtnFound] = useState(false)
+  const [secretWordValue, setSecretWordValue] = useState('')
 
   // Long-lived listeners below are attached once per `started` flip, so
   // they can't close over fresh state — refs carry the live values.
   const foundRef = useRef(new Set(found))
-  const startedRef = useRef(started)
   const scrollRef = useRef(null)
   const trophyClicksRef = useRef(0)
   const lastActivityRef = useRef(Date.now())
   const toastTimerRef = useRef(null)
-  const pressRef = useRef(null) // { id, startX, startY, moved, holdTimer }
+  const pressRef = useRef(null) // { id, startX, startY, moved, holdTimer, downAt, alt, ctrl, shift, consumed }
   const shakeRef = useRef({ dist: 0, since: 0, lastX: null, lastY: null })
   const keyBufRef = useRef([])
+  const escapeTimesRef = useRef([])
+  const tripleClickRef = useRef([])
+  const rageRef = useRef([])
+  const blankClickRef = useRef(0)
+  const hoverTimerRef = useRef(null)
+  const basementAtRef = useRef(null)
+  const hiddenAtRef = useRef(null)
   const startSizeRef = useRef(null)
 
-  startedRef.current = started
   const allFound = found.length === TOTAL_WINS
 
   const addWin = useCallback((id) => {
@@ -86,6 +106,22 @@ export default function EasyGame() {
 
     function onKeyDown(e) {
       markActivity()
+
+      if ((e.ctrlKey || e.metaKey) && e.code === 'KeyS') {
+        e.preventDefault()
+        addWin('ctrlS')
+        return
+      }
+
+      if (e.code === 'Escape') {
+        const arr = escapeTimesRef.current
+        const now = performance.now()
+        arr.push(now)
+        while (arr.length && now - arr[0] > ESCAPE_WINDOW_MS) arr.shift()
+        if (arr.length >= 3) { addWin('escape3'); arr.length = 0 }
+        return
+      }
+
       const buf = keyBufRef.current
       buf.push(e.code)
       if (buf.length > 24) buf.shift()
@@ -95,8 +131,20 @@ export default function EasyGame() {
         keyBufRef.current = []
         return
       }
-      const typed = buf.slice(-3).join(',')
-      if (typed === 'KeyW,KeyI,KeyN') addWin('spell')
+      const lastFour = buf.slice(-SPELL_CODES.length)
+      if (lastFour.length === SPELL_CODES.length && lastFour.every((c, i) => c === SPELL_CODES[i])) {
+        addWin('spell')
+      }
+    }
+
+    function onAnyPointerDown(e) {
+      markActivity()
+      if (e.button !== 0) return
+      const arr = rageRef.current
+      const now = performance.now()
+      arr.push(now)
+      while (arr.length && now - arr[0] > RAGE_WINDOW_MS) arr.shift()
+      if (arr.length >= RAGE_CLICK_GOAL) { addWin('rage'); arr.length = 0 }
     }
 
     function onPointerMove(e) {
@@ -118,37 +166,69 @@ export default function EasyGame() {
       }
     }
 
-    const idleTimer = setInterval(() => {
+    function onVisibility() {
+      if (document.hidden) {
+        hiddenAtRef.current = Date.now()
+      } else if (hiddenAtRef.current) {
+        const elapsed = Date.now() - hiddenAtRef.current
+        hiddenAtRef.current = null
+        if (elapsed >= AWAY_WIN_MS) addWin('away')
+        markActivity()
+      }
+    }
+
+    const pollTimer = setInterval(() => {
       if (Date.now() - lastActivityRef.current > IDLE_WIN_MS) addWin('idle')
+      if (
+        window.innerWidth > DEVTOOLS_MIN_WIDTH &&
+        (window.outerWidth - window.innerWidth > DEVTOOLS_GAP_PX || window.outerHeight - window.innerHeight > DEVTOOLS_GAP_PX)
+      ) {
+        addWin('devtools')
+      }
     }, 1000)
 
     window.addEventListener('keydown', onKeyDown)
     window.addEventListener('pointermove', onPointerMove)
-    window.addEventListener('pointerdown', markActivity)
+    window.addEventListener('pointerdown', onAnyPointerDown)
     window.addEventListener('wheel', markActivity, { passive: true })
     window.addEventListener('resize', onResize)
+    document.addEventListener('visibilitychange', onVisibility)
     return () => {
-      clearInterval(idleTimer)
+      clearInterval(pollTimer)
       window.removeEventListener('keydown', onKeyDown)
       window.removeEventListener('pointermove', onPointerMove)
-      window.removeEventListener('pointerdown', markActivity)
+      window.removeEventListener('pointerdown', onAnyPointerDown)
       window.removeEventListener('wheel', markActivity)
       window.removeEventListener('resize', onResize)
+      document.removeEventListener('visibilitychange', onVisibility)
     }
   }, [started, addWin, markActivity])
 
-  // ── Trophy: one element serving three different wins (click-to-ten,
-  // long press, drag off the pedestal), so pointer events are handled by
-  // hand rather than with onClick — a drag or a hold must NOT also count
-  // as a click.
+  // ── Trophy: one element serving many wins (ten-click persistence,
+  // right/middle click, Alt/Ctrl/Shift+click, triple-click, a long hold,
+  // a goldilocks-duration hold, dragging it off the pedestal, and simply
+  // hovering) — pointer events are handled by hand rather than onClick,
+  // since a drag or a hold must NOT also count as a click, and a
+  // modified click must NOT also advance the plain-click denial counter.
   function onTrophyPointerDown(e) {
-    if (e.button !== 0) return // right/middle press is its own win, not a click or a hold
+    if (e.button !== 0 && e.button !== 1) return
     e.preventDefault()
+    clearTimeout(hoverTimerRef.current)
     e.currentTarget.setPointerCapture?.(e.pointerId)
+
+    if (e.button === 1) {
+      if (started) addWin('middleclick')
+      pressRef.current = null
+      return
+    }
+
     const holdTimer = started
       ? setTimeout(() => { addWin('hold'); if (pressRef.current) pressRef.current.consumed = true }, HOLD_WIN_MS)
       : null
-    pressRef.current = { id: e.pointerId, startX: e.clientX, startY: e.clientY, moved: 0, holdTimer, consumed: false }
+    pressRef.current = {
+      id: e.pointerId, startX: e.clientX, startY: e.clientY, moved: 0, holdTimer, consumed: false,
+      downAt: performance.now(), alt: e.altKey, ctrl: e.ctrlKey || e.metaKey, shift: e.shiftKey,
+    }
   }
 
   function onTrophyPointerMove(e) {
@@ -175,6 +255,19 @@ export default function EasyGame() {
     if (p.moved > CLICK_SLOP_PX || p.consumed) return // a drag or a hold, not a click
 
     if (!started) { setStarted(true); setDenial(DENIALS[0]); trophyClicksRef.current = 1; return }
+
+    if (p.alt) { addWin('altclick'); return }
+    if (p.ctrl) { addWin('ctrlclick'); return }
+    if (p.shift) { addWin('shiftclick'); return }
+
+    const heldMs = performance.now() - p.downAt
+    const arr = tripleClickRef.current
+    const now = performance.now()
+    arr.push(now)
+    while (arr.length && now - arr[0] > TRIPLE_CLICK_WINDOW_MS) arr.shift()
+    if (arr.length >= 3) { addWin('tripleclick'); arr.length = 0 }
+    if (heldMs >= GOLDILOCKS_MIN_MS && heldMs <= GOLDILOCKS_MAX_MS) addWin('goldilocks')
+
     trophyClicksRef.current += 1
     const n = trophyClicksRef.current
     setDenial(DENIALS[Math.min(n - 1, DENIALS.length - 1)])
@@ -186,9 +279,35 @@ export default function EasyGame() {
     if (started) addWin('rightclick')
   }
 
+  function onTrophyPointerEnter() {
+    if (!started) return
+    clearTimeout(hoverTimerRef.current)
+    hoverTimerRef.current = setTimeout(() => addWin('hover'), HOVER_WIN_MS)
+  }
+
+  function onTrophyPointerLeave() {
+    clearTimeout(hoverTimerRef.current)
+  }
+
   function onScroll(e) {
     markActivity()
-    if (started && e.currentTarget.scrollTop > BASEMENT_SCROLL_PX) addWin('basement')
+    if (!started) return
+    const top = e.currentTarget.scrollTop
+    if (top > BASEMENT_SCROLL_PX) {
+      if (!basementAtRef.current) basementAtRef.current = Date.now()
+      addWin('basement')
+    } else if (top < 20 && basementAtRef.current) {
+      if (Date.now() - basementAtRef.current <= ROUND_TRIP_MS) addWin('roundtrip')
+      basementAtRef.current = null
+    }
+  }
+
+  // A click landing directly on the stage's own background (not any
+  // child — text, buttons, the trophy) counts toward clicking on nothing.
+  function onStageClick(e) {
+    if (!started || e.target !== e.currentTarget) return
+    blankClickRef.current += 1
+    if (blankClickRef.current >= BLANK_CLICK_GOAL) addWin('blank')
   }
 
   function onTitleDoubleClick() { if (started) addWin('title') }
@@ -198,16 +317,30 @@ export default function EasyGame() {
     if (started) addWin('tab')
   }
 
+  function onSecretWordChange(e) {
+    const v = e.target.value
+    setSecretWordValue(v)
+    if (started && v.trim().toLowerCase() === 'please') addWin('secretword')
+  }
+
   function resetEverything() {
     clearWins()
     foundRef.current = new Set()
     trophyClicksRef.current = 0
     keyBufRef.current = []
+    escapeTimesRef.current = []
+    tripleClickRef.current = []
+    rageRef.current = []
+    blankClickRef.current = 0
+    basementAtRef.current = null
+    hiddenAtRef.current = null
+    clearTimeout(hoverTimerRef.current)
     setFound([])
     setStarted(false)
     setDenial(null)
     setToast(null)
     setTabBtnFound(false)
+    setSecretWordValue('')
     scrollRef.current?.scrollTo({ top: 0 })
   }
 
@@ -215,10 +348,10 @@ export default function EasyGame() {
     <div className={styles.page} ref={scrollRef} onScroll={onScroll}>
       <Link to="/" className={styles.backLink}>← GameHub</Link>
 
-      <main className={styles.stage}>
+      <main className={styles.stage} onClick={onStageClick}>
         <h1 className={styles.title} onDoubleClick={onTitleDoubleClick}>EASY GAME</h1>
         <p className={styles.tagline}>
-          {started ? 'Twelve secret wins are hidden in this page.' : "Click the trophy. That's the whole game."}
+          {started ? 'There are secret wins hidden all over this page. Good luck.' : "Click the trophy. That's the whole game."}
         </p>
 
         <div className={styles.pedestalWrap}>
@@ -229,6 +362,8 @@ export default function EasyGame() {
             onPointerMove={onTrophyPointerMove}
             onPointerUp={onTrophyPointerUp}
             onPointerCancel={onTrophyPointerUp}
+            onPointerEnter={onTrophyPointerEnter}
+            onPointerLeave={onTrophyPointerLeave}
             onContextMenu={onTrophyContextMenu}
             aria-label="The trophy"
           >
@@ -242,32 +377,24 @@ export default function EasyGame() {
 
         {started && (
           <>
-            <div className={styles.progressRow}>
-              <span className={styles.progressLabel}>Secret wins</span>
-              <div className={styles.progressTrack}>
-                <div className={styles.progressFill} style={{ width: `${(found.length / TOTAL_WINS) * 100}%` }} />
-              </div>
-              <span className={styles.progressCount}>{found.length} / {TOTAL_WINS}</span>
-            </div>
+            <p className={styles.foundCount}>🏆 Secret wins found: {found.length}</p>
 
-            <div className={styles.winGrid}>
-              {WINS.map(win => {
-                const got = foundRef.current.has(win.id)
-                return (
-                  <div key={win.id} className={`${styles.winCard} ${got ? styles.winCardFound : ''}`}>
-                    <span className={styles.winName}>{got ? `✅ ${win.name}` : '🔒 ? ? ?'}</span>
-                    <span className={styles.winText}>
-                      {got ? win.blurb : (showHints ? win.hint : 'Undiscovered.')}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
+            {found.length > 0 && (
+              <div className={styles.winGrid}>
+                {[...found].reverse().map(id => {
+                  const win = getWin(id)
+                  if (!win) return null
+                  return (
+                    <div key={id} className={styles.winCard}>
+                      <span className={styles.winName}>✅ {win.name}</span>
+                      <span className={styles.winText}>{win.blurb}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
 
             <div className={styles.btnRow}>
-              <button className={styles.secondaryBtn} onClick={() => setShowHints(h => !h)}>
-                {showHints ? 'Hide hints' : 'Show hints'}
-              </button>
               <button className={styles.secondaryBtn} onClick={resetEverything}>Start over</button>
             </div>
           </>
@@ -278,6 +405,15 @@ export default function EasyGame() {
       <button className={styles.hiddenBtn} onClick={onHiddenButton}>
         {tabBtnFound ? 'You already found me!' : 'A button the mouse cannot see. Press it.'}
       </button>
+
+      {/* A second thing Tab can reach, further along — it wants a word. */}
+      <input
+        className={styles.hiddenInput}
+        value={secretWordValue}
+        onChange={onSecretWordChange}
+        placeholder="..."
+        aria-label="A second thing the mouse cannot see — it wants a word"
+      />
 
       <div className={styles.gap} aria-hidden="true" />
 
@@ -292,7 +428,7 @@ export default function EasyGame() {
 
       {toast && (
         <div className={styles.toast} key={toast.id}>
-          <span className={styles.toastTitle}>🎉 Secret win {toast.n}/{TOTAL_WINS}: {toast.name}</span>
+          <span className={styles.toastTitle}>🎉 Secret win: {toast.name}</span>
           <span className={styles.toastBlurb}>{toast.blurb}</span>
         </div>
       )}

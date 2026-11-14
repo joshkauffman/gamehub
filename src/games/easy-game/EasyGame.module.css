@@ -88,28 +88,14 @@
   to { transform: scale(1); opacity: 1; }
 }
 
-.progressRow {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: min(92vw, 460px);
-  margin-top: 10px;
+/* Never shows a denominator or a placeholder for the rest — just how
+   many have been found so far. The total stays a secret on purpose. */
+.foundCount {
+  margin: 10px 0 0;
+  font-size: 13px;
+  font-weight: bold;
+  color: #ffd76b;
 }
-.progressLabel { font-size: 11px; color: #c9c2e8; white-space: nowrap; }
-.progressTrack {
-  flex: 1;
-  height: 10px;
-  border-radius: 5px;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  overflow: hidden;
-}
-.progressFill {
-  height: 100%;
-  background: linear-gradient(90deg, #ffd76b, #ff9ad4);
-  transition: width 0.3s ease;
-}
-.progressCount { font-size: 12px; font-weight: bold; color: #ffd76b; white-space: nowrap; }
 
 .winGrid {
   display: grid;
@@ -125,12 +111,10 @@
   text-align: left;
   padding: 10px 12px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 215, 107, 0.1);
+  border: 1px solid rgba(255, 215, 107, 0.6);
 }
-.winCardFound { border-color: rgba(255, 215, 107, 0.6); background: rgba(255, 215, 107, 0.1); }
 .winName { font-size: 12px; font-weight: bold; color: #ffd76b; }
-.winCard:not(.winCardFound) .winName { color: rgba(255, 255, 255, 0.45); letter-spacing: 2px; }
 .winText { font-size: 11px; line-height: 1.45; color: #c9c2e8; }
 
 .btnRow { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 12px; }
@@ -186,6 +170,31 @@
   transform: translateX(-50%);
   outline: none;
   box-shadow: 0 0 30px rgba(123, 255, 212, 0.5);
+}
+
+/* A second off-screen secret, reachable a Tab-stop further along — it
+   only wants one specific word typed into it. */
+.hiddenInput {
+  position: fixed;
+  left: -9999px;
+  top: 50%;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 2px dashed #ff9ad4;
+  background: #1f1030;
+  color: #ff9ad4;
+  width: 220px;
+  z-index: 40;
+}
+.hiddenInput::placeholder { color: rgba(255, 154, 212, 0.45); }
+.hiddenInput:focus {
+  left: 50%;
+  top: 86%;
+  transform: translateX(-50%);
+  outline: none;
+  box-shadow: 0 0 30px rgba(255, 154, 212, 0.5);
 }
 
 .gap { height: 150vh; }
