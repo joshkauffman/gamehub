@@ -34,6 +34,7 @@ import WingsOfFire from './games/wings-of-fire/WingsOfFire.jsx'
 import Avatar from './games/avatar/Avatar.jsx'
 import DinoSuitUp from './games/dino-suit-up/DinoSuitUp.jsx'
 import EasyGame from './games/easy-game/EasyGame.jsx'
+import TotallyScaryHorrorGame from './games/totally-scary-horror-game/TotallyScaryHorrorGame.jsx'
 import OrbitMaze from './games/orbit-maze/OrbitMaze.jsx'
 import IntergalacticPoker from './games/intergalactic-poker/IntergalacticPoker.jsx'
 import GeometryRush from './games/geometry-rush/GeometryRush.jsx'
@@ -87,6 +88,7 @@ export default function App() {
         <Route path="/avatar" element={<Avatar />} />
         <Route path="/dino-suit-up" element={<DinoSuitUp />} />
         <Route path="/easy-game" element={<EasyGame />} />
+        <Route path="/totally-scary-horror-game" element={<TotallyScaryHorrorGame />} />
         <Route path="/orbit-maze" element={<OrbitMaze />} />
         <Route path="/intergalactic-poker" element={<IntergalacticPoker />} />
         <Route path="/geometry-rush" element={<GeometryRush />} />

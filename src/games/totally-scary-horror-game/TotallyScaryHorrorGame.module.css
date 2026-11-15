@@ -1,0 +1,149 @@
+.page {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #0a0510;
+  color: #fff;
+  font-family: 'Courier New', monospace;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.playWrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.canvas {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  image-rendering: pixelated;
+  box-shadow: 0 0 60px rgba(0, 0, 0, 0.6);
+}
+
+.backLink {
+  color: rgba(255, 255, 255, 0.6);
+  text-decoration: none;
+  font-size: 13px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: 'Courier New', monospace;
+}
+.backLink:hover { color: #fff; }
+.backLinkFloating {
+  position: absolute;
+  top: 12px;
+  left: 16px;
+  color: rgba(255, 255, 255, 0.75);
+  text-decoration: none;
+  font-size: 13px;
+  z-index: 20;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+.backLinkFloating:hover { color: #fff; }
+
+.overlayScreen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  text-align: center;
+  padding: 24px;
+  background: radial-gradient(circle at 50% 20%, #2a1020 0%, #0a0510 70%);
+  z-index: 30;
+  overflow-y: auto;
+}
+
+.title {
+  font-size: clamp(24px, 5vw, 40px);
+  font-weight: bold;
+  color: #ff9ad4;
+  margin: 0;
+  letter-spacing: 1px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.subtitle { font-size: clamp(13px, 2.2vw, 18px); color: #ffd76b; letter-spacing: 3px; }
+.title2 { font-size: clamp(20px, 4vw, 30px); color: #ffd76b; margin: 0; }
+
+.blurb { color: #cdbede; font-size: 14px; max-width: 580px; line-height: 1.55; margin: 0; }
+
+.bigBtn {
+  font-family: 'Courier New', monospace;
+  font-size: 16px;
+  font-weight: bold;
+  padding: 14px 28px;
+  background: #ff9ad4;
+  border: none;
+  color: #2a0a1a;
+  cursor: pointer;
+  letter-spacing: 1px;
+  border-radius: 8px;
+}
+.bigBtn:hover { background: #ffb3e0; }
+
+.secondaryBtn {
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  font-weight: bold;
+  padding: 9px 18px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px solid rgba(255, 215, 107, 0.5);
+  color: #ffd76b;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  border-radius: 8px;
+  text-decoration: none;
+}
+.secondaryBtn:hover { background: rgba(255, 215, 107, 0.15); }
+
+.btnRow { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+
+.dialogueWrap {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  width: min(92vw, 760px);
+  z-index: 25;
+}
+.dialogueBox {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 18px;
+  border-radius: 12px;
+  background: rgba(12, 8, 18, 0.96);
+  border: 2px solid rgba(255, 154, 212, 0.6);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+}
+.dialogueHead { display: flex; align-items: center; gap: 8px; }
+.dialogueIcon { font-size: 20px; }
+.dialogueName { font-size: 13px; font-weight: bold; color: #ffd76b; }
+.dialogueText { margin: 0; font-size: 14px; line-height: 1.55; color: #fff; }
+.dialogueBtn {
+  align-self: flex-end;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  font-weight: bold;
+  padding: 7px 14px;
+  background: #ff9ad4;
+  color: #2a0a1a;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.dialogueBtn:hover { background: #ffb3e0; }

@@ -192,6 +192,13 @@ const CATEGORIES = [
         emoji: '🦖',
         path: '/dino-suit-up',
       },
+      {
+        id: 'totally-scary-horror-game',
+        title: 'The Totally Scary Horror Game',
+        description: "Sneak through a haunted hotel to find the exit. Six monsters roam the halls, and none of them are actually scary — get caught and they just sit down and explain, at length, why they really need this job.",
+        emoji: '🏨',
+        path: '/totally-scary-horror-game',
+      },
     ],
   },
   {
