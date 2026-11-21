@@ -1614,3 +1614,50 @@ export function disposeMonsters(ms) {
     }
   }))
 }
+
+// ── Overgrowth: what the Gardener does to everyone. Shared by door 199 and the lobby. ──
+// Tints a model a sickly, faintly glowing green (mutates its own materials).
+export function tintOvergrown(group) {
+  const grey = new THREE.Color(0x3a6a3a), green = new THREE.Color(0x6aff7a)
+  group.traverse(o => {
+    for (const mm of o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : []) {
+      if (mm.userData.vined) continue
+      mm.userData.vined = true
+      if (mm.color) mm.color.lerp(grey, 0.45)
+      if (mm.emissive) { mm.emissive.setHex(0x1f7a2a); mm.emissiveIntensity = 0.35 }
+      else if (mm.color) mm.color.lerp(green, 0.25)
+    }
+  })
+}
+
+// Vines spiralling up around a seated figure, with leaves, an optional
+// mossy mound to sit on, and a couple of runners creeping across the floor.
+export function buildVineCage({ mound = true, runnerDir = 0 } = {}) {
+  const vineMat = new THREE.MeshStandardMaterial({ color: 0x142a0e, roughness: 0.95, emissive: 0x2aff4a, emissiveIntensity: 0.05 })
+  const leafMat = new THREE.MeshStandardMaterial({ color: 0x1e4a18, roughness: 0.85, emissive: 0x2aff4a, emissiveIntensity: 0.12, side: THREE.DoubleSide })
+  const moundMat = new THREE.MeshStandardMaterial({ color: 0x2a3a1a, roughness: 1 })
+  const cage = new THREE.Group()
+  if (mound) cage.add(new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.42, 0.42, 10), moundMat).translateY(0.21))
+  for (let v = 0; v < 3; v++) {
+    const pts = []
+    for (let j = 0; j <= 30; j++) {
+      const a = j * 0.55 + v * 2.1, y = j * 0.06, r = 0.42 - j * 0.004 + Math.sin(j * 0.7 + v) * 0.05
+      pts.push(new THREE.Vector3(Math.cos(a) * r, y, Math.sin(a) * r))
+    }
+    cage.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 60, 0.028, 5), vineMat))
+    for (let j = 2; j < 30; j += 3) {
+      const leaf = new THREE.Mesh(new THREE.CircleGeometry(0.07, 5), leafMat)
+      leaf.position.copy(pts[j]).multiplyScalar(1.08)
+      leaf.rotation.set(Math.random() * 3, Math.random() * 3, 0)
+      cage.add(leaf)
+    }
+  }
+  for (let r = 0; r < 2; r++) {
+    const len = 0.8 + Math.random() * 1.2
+    const runner = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.02, len, 5), moundMat)
+    runner.rotation.z = Math.PI / 2; runner.rotation.y = runnerDir + (Math.random() - 0.5) * 0.8
+    runner.position.set(Math.cos(runner.rotation.y) * len / 2, 0.02, -Math.sin(runner.rotation.y) * len / 2)
+    cage.add(runner)
+  }
+  return cage
+}

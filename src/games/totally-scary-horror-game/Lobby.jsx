@@ -4,7 +4,7 @@ import * as THREE from 'three'
 import styles from './TotallyScaryHorrorGame.module.css'
 import { MONSTER_DEFS, MONSTER_ORDER, MOUSE_SENSITIVITY, KEY_TURN_SPEED, WALK_SPEED, FLOOR3_PRICE, LOCAL_START_COINS } from './constants.js'
 import { createAssets, worldBox, box, paletteFor } from './scene.js'
-import { buildMonsters, buildStool, poseMonster, disposeMonsters } from './models.js'
+import { buildMonsters, buildStool, poseMonster, disposeMonsters, tintOvergrown, buildVineCage } from './models.js'
 import { loadJournal, markFaced } from './journal.js'
 import { loadProgress, updateProgress, savePhoto, isLocalhost } from './progress.js'
 import { newlyEarned, ACHIEVEMENTS } from './achievements.js'
@@ -68,6 +68,8 @@ export default function Lobby({ onStart, showTitle, onDismissTitle }) {
   const [dialogue, setDialogue] = useState(null)
   const [toasts, setToasts] = useState([])
   const [flash, setFlash] = useState(0)
+  const [greenGlow, setGreenGlow] = useState(0)
+  const [greenFlash, setGreenFlash] = useState(0)
   const [progress, setProgress] = useState(() => {
     // on localhost the tip jar is always topped back up to 50 when you come into the lobby
     if (isLocalhost()) return updateProgress(p => { if (p.wallet < LOCAL_START_COINS) p.wallet = LOCAL_START_COINS })
@@ -93,15 +95,21 @@ export default function Lobby({ onStart, showTitle, onDismissTitle }) {
     scene.fog = new THREE.Fog(0x0a0608, 14, 40)
     const camera = new THREE.PerspectiveCamera(72, mount.clientWidth / mount.clientHeight, 0.05, 80)
     camera.rotation.order = 'YXZ'
-    scene.add(new THREE.HemisphereLight(0xffe8d0, 0x3a2418, 0.9))
+    const hemi = new THREE.HemisphereLight(0xffe8d0, 0x3a2418, 0.9)
+    scene.add(hemi)
     const chandelier = new THREE.PointLight(0xffd6a0, 30, 22, 1.4)
     chandelier.position.set(0, H - 0.8, 0)
     scene.add(chandelier)
+    const lamps = []
     for (const [x, z] of [[-5, -5], [5, -5], [-5, 5], [5, 5]]) {
       const l = new THREE.PointLight(0xffd6a0, 8, 12, 1.6)
       l.position.set(x, H - 0.5, z)
       scene.add(l)
+      lamps.push(l)
     }
+    // colours to fade between when someone types his name
+    const warm = { light: new THREE.Color(0xffd6a0), sky: new THREE.Color(0xffe8d0), bg: new THREE.Color(0x0a0608) }
+    const sick = { light: new THREE.Color(0x4aff5a), sky: new THREE.Color(0x6aff7a), bg: new THREE.Color(0x041a06) }
     const fireLight = new THREE.PointLight(0xff7a30, 8, 9, 1.5)
     fireLight.position.set(0, 1, HZ - 1.4)
     scene.add(fireLight)
@@ -158,7 +166,7 @@ export default function Lobby({ onStart, showTitle, onDismissTitle }) {
     // ── Stations ──
     // Elevator: steel doors set into the north wall.
     const steel = mat(new THREE.MeshStandardMaterial({ color: 0xc8ccd4, roughness: 0.3, metalness: 0.5 }))
-    for (const sx of [-1, 1]) world.add(box(0.85, 2.5, 0.08, steel, sx * 0.43, 1.25, -HZ + 0.05))
+    const elevDoors = [-1, 1].map(sx => { const d = box(0.85, 2.5, 0.08, steel, sx * 0.43, 1.25, -HZ + 0.05); d.userData.sx = sx; world.add(d); return d })
     world.add(box(2.1, 0.15, 0.12, A.brass, 0, 2.6, -HZ + 0.06))
     for (const sx of [-1, 1]) world.add(box(0.12, 2.6, 0.12, A.brass, sx * 0.98, 1.3, -HZ + 0.06))
     const arrow = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.3), mat(new THREE.MeshBasicMaterial({ map: signTex([{ text: '▲ ▼', y: 128, size: 120, color: '#ffb040' }], '#1a1008', '#ffb040', 256, 256) })))
@@ -251,7 +259,7 @@ export default function Lobby({ onStart, showTitle, onDismissTitle }) {
       stools.length = 0
       // spread whoever you've met evenly around the circle, facing the middle
       const freed = (j.entries.harvester?.dodged || 0) > 0
-      const metIds = seats.filter(seat => !!j.entries[seat.id]?.faced && (seat.id !== 'gardener' || freed)).map(seat => seat.id)
+      const metIds = seats.filter(seat => !!j.entries[seat.id]?.faced && (seat.id !== 'gardener' || (freed && !cut))).map(seat => seat.id)
       for (const seat of seats) {
         const m = monsters[seat.id]
         const k = metIds.indexOf(seat.id)
@@ -271,6 +279,34 @@ export default function Lobby({ onStart, showTitle, onDismissTitle }) {
     // ── State ──
     const p = { x: 0, z: HZ - 2.2, yaw: 0, pitch: -0.05 }
     let secretOpen = false, fireDrop = 0, typed = ''
+    // the Gardener cutscene: null → glow → walk → flash → after
+    let cut = null
+    const vines = new THREE.Group()
+    scene.add(vines)
+    // the light that falls on him once he's in the middle
+    const beamMat = new THREE.MeshBasicMaterial({ color: 0x9aff9a, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide })
+    const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 1.2, H, 24, 1, true), beamMat)
+    beam.position.set(RING.x, H / 2, RING.z)
+    scene.add(beam)
+    // a knot of vines that grows up out of the floor and lifts him above everyone
+    const RISE = 0.6
+    const stump = new THREE.Group()
+    stump.position.set(RING.x, 0, RING.z)
+    {
+      const vm = new THREE.MeshStandardMaterial({ color: 0x142a0e, roughness: 0.95, emissive: 0x2aff4a, emissiveIntensity: 0.08 })
+      stump.add(new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.75, RISE, 14), vm).translateY(RISE / 2))
+      for (let k = 0; k < 8; k++) {
+        const pts = []
+        for (let j = 0; j <= 12; j++) { const a = k * 0.8 + j * 0.5; const r = 0.78 - j * 0.02 + (j === 0 ? 0.5 : 0); pts.push(new THREE.Vector3(Math.cos(a) * r, j * RISE / 12, Math.sin(a) * r)) }
+        stump.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 24, 0.05, 5), vm))
+      }
+    }
+    stump.scale.y = 0.001
+    stump.visible = false
+    scene.add(stump)
+    const spot = new THREE.PointLight(0x8aff8a, 0, 6, 1.4)
+    spot.position.set(RING.x, 2.6, RING.z + 0.6)
+    scene.add(spot)
     let talking = null // { lines, i }
     let photoPending = 0
     let prog = loadProgress(), jour = loadJournal()
@@ -305,6 +341,7 @@ export default function Lobby({ onStart, showTitle, onDismissTitle }) {
       { minX: HX - 1.5, maxX: HX - 0.5, minZ: -5.2, maxZ: -3.8 }, // album table
     ]
     function blocked(x, z) {
+      if (cut && cut.phase !== 'glow' && Math.hypot(x - cut.gx, z - cut.gz) < 0.45 + R) return true
       const inMain = x > -HX + R && x < HX - R && z > -HZ + R && z < HZ - R
       const inGap = secretOpen && fireDrop > 0.9 && Math.abs(x) < 0.9 - R && z >= HZ - R - 0.01 && z <= NZ0 + R
       const inNook = secretOpen && fireDrop > 0.9 && x > -NX + R && x < NX - R && z > NZ0 - R && z < NZ1 - R
@@ -323,6 +360,15 @@ export default function Lobby({ onStart, showTitle, onDismissTitle }) {
       if (titleRef.current) return
       if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault()
       sfx.unlockAudio()
+      // secret words are typed anywhere — even if a stray E just opened a panel
+      if (e.key && e.key.length === 1 && !e.repeat) {
+        typed = (typed + e.key.toLowerCase()).slice(-12)
+        if (typed.endsWith('gardener') && !cut && !talking) {
+          if (panelRef.current) { setPanel(null); refresh() }
+          startGardenerCut()
+          return
+        }
+      }
       if (panelRef.current) { if (e.code === 'KeyE' || e.code === 'Escape' || (e.code === 'KeyJ' && panelRef.current === 'journal')) api.current.close(); return }
       if (talking) { if (e.code === 'Space' || e.code === 'Enter' || e.code === 'KeyE') advanceTalk(); return }
       if (e.repeat) return
@@ -330,8 +376,7 @@ export default function Lobby({ onStart, showTitle, onDismissTitle }) {
       if (e.code === 'KeyJ') openPanel('journal')
       // the founder's secret: say BOO
       if (e.key && e.key.length === 1) {
-        typed = (typed + e.key.toLowerCase()).slice(-3)
-        if (typed === 'boo' && !secretOpen) {
+        if (typed.endsWith('boo') && !secretOpen) {
           secretOpen = true
           sfx.creak(true)
           setCaption('🔥 The fire sputters out… and the whole fireplace sinks into the floor!')
@@ -414,6 +459,104 @@ export default function Lobby({ onStart, showTitle, onDismissTitle }) {
       checkAchievements()
     }
 
+    // ── Type GARDENER in the lobby… ──
+    function startGardenerCut() {
+      cut = { phase: 'glow', t: 0, gx: 0, gz: -HZ + 0.6, glow: 0, doors: 0 }
+      placeMonsters(jour) // if he's been sitting in the circle, he gets up
+      sfx.rumble(3)
+      setCaption('…the lights are turning green.')
+    }
+    function stepGardenerCut(dt, t) {
+      if (!cut) return
+      const g = monsters.gardener
+      cut.t += dt
+      // everything glows green
+      const target = cut.phase === 'glow' ? Math.min(1, cut.t / 2.5) : 1
+      cut.glow += (target - cut.glow) * Math.min(1, dt * 3)
+      const k = cut.glow
+      chandelier.color.copy(warm.light).lerp(sick.light, k)
+      lamps.forEach(l => l.color.copy(warm.light).lerp(sick.light, k))
+      hemi.color.copy(warm.sky).lerp(sick.sky, k)
+      scene.background.copy(warm.bg).lerp(sick.bg, k)
+      scene.fog.color.copy(scene.background)
+      const flicker = cut.phase === 'after' ? 1 : 0.85 + Math.random() * 0.15
+      chandelier.intensity = 30 * flicker
+      setGreenGlow(Math.round(k * 10) / 10)
+
+      const lookAtG = () => {
+        const want = Math.atan2(-(cut.gx - p.x), -(cut.gz - p.z))
+        let d = want - p.yaw; d = Math.atan2(Math.sin(d), Math.cos(d))
+        p.yaw += d * Math.min(1, dt * 3)
+        p.pitch += (-0.05 - p.pitch) * Math.min(1, dt * 3)
+      }
+      if (cut.phase === 'glow') {
+        if (cut.t > 2.5) { cut.phase = 'walk'; cut.t = 0; sfx.snip(); setCaption('*ding*… the elevator opens. Someone in a straw hat steps out.') }
+        return
+      }
+      g.group.visible = true
+      if (cut.phase === 'walk') {
+        lookAtG()
+        cut.doors = Math.min(1, cut.doors + dt * 1.2)
+        elevDoors.forEach(d => { d.position.x = d.userData.sx * (0.43 + cut.doors * 0.8) })
+        const tx = RING.x, tz = RING.z
+        const dx = tx - cut.gx, dz = tz - cut.gz, d = Math.hypot(dx, dz)
+        if (cut.t > 0.8) {
+          const st = Math.min(d, 1.6 * dt)
+          cut.gx += dx / d * st; cut.gz += dz / d * st
+        }
+        g.group.position.set(cut.gx, 0, cut.gz)
+        g.group.rotation.y = Math.atan2(dx, dz)
+        poseMonster(g, t, { pose: 'walk', moving: cut.t > 0.8 && d > 0.05 })
+        if (d < 0.05) { cut.phase = 'flash'; cut.t = 0; setCaption(null) }
+        return
+      }
+      if (cut.phase === 'flash' || cut.phase === 'after') {
+        // the vines rise and lift him up
+        if (cut.flashed) {
+          cut.rise = Math.min(1, (cut.rise || 0) + dt * 1.3)
+          stump.visible = true
+          stump.scale.y = Math.max(0.001, cut.rise)
+        }
+        g.group.position.y = (cut.rise || 0) * RISE
+      }
+      if (cut.phase === 'flash') {
+        lookAtG()
+        g.group.rotation.y = Math.atan2(p.x - cut.gx, p.z - cut.gz)
+        poseMonster(g, t, { pose: 'stare' })
+        if (cut.t > 0.9 && !cut.flashed) {
+          cut.flashed = true
+          beamMat.opacity = 0.5; spot.intensity = 20
+          setGreenFlash(f => f + 1)
+          sfx.whoosh(); sfx.creak(true)
+          // everyone in the circle: vines, and that green tint
+          for (const seat of seats) {
+            if (!seat.met) continue
+            const m = monsters[seat.id]
+            tintOvergrown(m.group)
+            const cage = buildVineCage({ mound: false, runnerDir: Math.atan2(-(RING.z - seat.z), RING.x - seat.x) })
+            cage.position.set(seat.x, 0, seat.z)
+            vines.add(cage)
+          }
+          prog = updateProgress(pp => { pp.stats.summoned = true })
+          setProgress(prog)
+          checkAchievements()
+        }
+        if (cut.t > 2.2) {
+          cut.phase = 'after'
+          setCaption('Everyone is very, very still. The Gardener stands in the middle of the circle, smiling at you.')
+          setTimeout(() => setCaption(null), 6000)
+        }
+        return
+      }
+      // after: he stays in the middle, always turned toward you, lit from above
+      elevDoors.forEach(d => { d.position.x += (d.userData.sx * 0.43 - d.position.x) * Math.min(1, dt * 2) })
+      g.group.position.x = cut.gx; g.group.position.z = cut.gz
+      g.group.rotation.y = Math.atan2(p.x - cut.gx, p.z - cut.gz)
+      poseMonster(g, t, { pose: 'stare' })
+      beamMat.opacity += (0.09 + Math.sin(t * 1.5) * 0.02 - beamMat.opacity) * Math.min(1, dt * 2)
+      spot.intensity += (4 - spot.intensity) * Math.min(1, dt * 2)
+    }
+
     // ── Loop ──
     let raf = 0, last = performance.now(), lastPrompt = null, labelT = 0
     const tmp = new THREE.Vector3()
@@ -427,7 +570,8 @@ export default function Lobby({ onStart, showTitle, onDismissTitle }) {
       p.yaw += input.yaw + ((keys.has('ArrowLeft') ? 1 : 0) - (keys.has('ArrowRight') ? 1 : 0)) * KEY_TURN_SPEED * dt
       p.pitch = Math.max(-1.3, Math.min(1.3, p.pitch + input.pitch))
       input.yaw = 0; input.pitch = 0
-      if (!panelRef.current && !talking && !titleRef.current) {
+      const frozen = cut && cut.phase !== 'after'
+      if (!panelRef.current && !talking && !titleRef.current && !frozen) {
         const f = (keys.has('KeyW') || keys.has('ArrowUp') ? 1 : 0) - (keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0)
         const s = (keys.has('KeyD') ? 1 : 0) - (keys.has('KeyA') ? 1 : 0)
         if (f || s) {
@@ -456,6 +600,7 @@ export default function Lobby({ onStart, showTitle, onDismissTitle }) {
       if (pr !== lastPrompt) { lastPrompt = pr; setPrompt(pr) }
       if (input.use) {
         input.use = false
+        if (frozen) focus = null
         if (focus?.id === 'bea') startTalk()
         else if (focus) openPanel(focus.id)
       }
@@ -467,8 +612,9 @@ export default function Lobby({ onStart, showTitle, onDismissTitle }) {
       fireLight.intensity = secretOpen ? 0 : 7 + Math.sin(t * 13) * 1.5
       nookLight.intensity = secretOpen ? 6 * fireDrop : 0
 
-      // monsters idling in the circle; Bea rocking
-      for (const seat of seats) if (seat.met) poseMonster(monsters[seat.id], t + seat.x, { sitting: true })
+      // monsters idling in the circle (frozen once the vines have them); Bea rocking
+      for (const seat of seats) if (seat.met) poseMonster(monsters[seat.id], cut?.phase === 'after' ? seat.x * 3.7 + Math.sin(t * 0.3) * 0.05 : t + seat.x, { sitting: true })
+      stepGardenerCut(dt, t)
       poseMonster(monsters.bea, t, { sitting: true })
 
       camera.position.set(p.x, 1.6, p.z)
@@ -499,11 +645,14 @@ export default function Lobby({ onStart, showTitle, onDismissTitle }) {
     }
     raf = requestAnimationFrame(tick)
     checkAchievements()
-    if (import.meta.env.DEV) window.__lobby = { p, get secretOpen() { return secretOpen }, get fireDrop() { return fireDrop }, use: () => { input.use = true } }
+    if (import.meta.env.DEV) window.__lobby = { p, get secretOpen() { return secretOpen }, get fireDrop() { return fireDrop }, get cut() { return cut }, use: () => { input.use = true } }
 
     return () => {
       cancelAnimationFrame(raf)
       if (import.meta.env.DEV) delete window.__lobby
+      vines.traverse(o => { o.geometry?.dispose(); o.material?.dispose?.() })
+      beam.geometry.dispose(); beamMat.dispose()
+      stump.traverse(o => { o.geometry?.dispose(); o.material?.dispose?.() })
       window.removeEventListener('keydown', onKeyDown)
       window.removeEventListener('keyup', onKeyUp)
       window.removeEventListener('mousemove', onMouseMove)
@@ -551,6 +700,8 @@ export default function Lobby({ onStart, showTitle, onDismissTitle }) {
         </div>
       )}
       {flash > 0 && <div key={flash} className={styles.flash} />}
+      {greenGlow > 0 && <div className={styles.greenGlow} style={{ opacity: greenGlow * 0.55 }} />}
+      {greenFlash > 0 && <div key={'g' + greenFlash} className={styles.greenFlash} />}
       <div className={styles.toastWrap}>
         {toasts.map(a => (
           <div key={a.key} className={styles.toast}><span className={styles.toastIcon}>{a.icon}</span><span><b>Achievement unlocked!</b><br />{a.name}</span></div>

@@ -8,7 +8,7 @@ import {
 } from './constants.js'
 import { createGame, stepGame, advanceDialogue, promptFor, triggerCatch, buyItem, closeShop, startGardener } from './engine.js'
 import { createAssets, buildRoom, disposeRoom, lightSpots } from './scene.js'
-import { buildMonsters, buildStool, poseMonster, disposeMonsters, buildGloombat, buildMinecart, buildScarecrow, buildMower } from './models.js'
+import { buildMonsters, buildStool, poseMonster, disposeMonsters, buildGloombat, buildMinecart, buildScarecrow, buildMower, tintOvergrown, buildVineCage } from './models.js'
 import * as sfx from './sfx.js'
 import Journal from './Journal.jsx'
 import Lobby from './Lobby.jsx'
@@ -162,51 +162,13 @@ function GameView({ onWin, onLeave, startFloor, difficulty, startCoins, baseCoin
     const overRoom = startFloor === 4 ? state.rooms[BOSS_ROOM - 1] : null
     const spores = []
     if (overRoom?.statues) {
-      const green = new THREE.Color(0x6aff7a)
       // tint every one of them a sickly, faintly glowing green (this run only)
-      for (const st of overRoom.statues) {
-        monsters[st.id].group.traverse(o => {
-          for (const mm of o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : []) {
-            if (mm.userData.vined) continue
-            mm.userData.vined = true
-            if (mm.color) mm.color.lerp(new THREE.Color(0x3a6a3a), 0.45)
-            if (mm.emissive) { mm.emissive.setHex(0x1f7a2a); mm.emissiveIntensity = 0.35 }
-            else if (mm.color) mm.color.lerp(green, 0.25)
-          }
-        })
-      }
-      const vineMat = new THREE.MeshStandardMaterial({ color: 0x142a0e, roughness: 0.95, emissive: 0x2aff4a, emissiveIntensity: 0.05 })
-      const leafMat = new THREE.MeshStandardMaterial({ color: 0x1e4a18, roughness: 0.85, emissive: 0x2aff4a, emissiveIntensity: 0.12, side: THREE.DoubleSide })
-      const moundMat = new THREE.MeshStandardMaterial({ color: 0x2a3a1a, roughness: 1 })
+      for (const st of overRoom.statues) tintOvergrown(monsters[st.id].group)
       const sporeMat = new THREE.MeshBasicMaterial({ color: 0x9aff9a, transparent: true, opacity: 0.8 })
       overRoom.statues.forEach((st, k) => {
         const m = monsters[st.id]
-        const cage = new THREE.Group()
+        const cage = buildVineCage({ mound: !m.noStool, runnerDir: st.x < 0 ? 0 : Math.PI })
         cage.position.set(st.x, 0, st.z)
-        if (!m.noStool) cage.add(new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.42, 0.42, 10), moundMat).translateY(0.21))
-        // vines spiralling up around them, with leaves
-        for (let v = 0; v < 3; v++) {
-          const pts = []
-          for (let j = 0; j <= 30; j++) {
-            const a = j * 0.55 + v * 2.1, y = j * 0.06, r = 0.42 - j * 0.004 + Math.sin(j * 0.7 + v) * 0.05
-            pts.push(new THREE.Vector3(Math.cos(a) * r, y, Math.sin(a) * r))
-          }
-          cage.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 60, 0.028, 5), vineMat))
-          for (let j = 2; j < 30; j += 3) {
-            const leaf = new THREE.Mesh(new THREE.CircleGeometry(0.07, 5), leafMat)
-            leaf.position.copy(pts[j]).multiplyScalar(1.08)
-            leaf.rotation.set(Math.random() * 3, Math.random() * 3, 0)
-            cage.add(leaf)
-          }
-        }
-        // a few creeping runners across the ground toward the walkway
-        for (let r = 0; r < 2; r++) {
-          const len = 0.8 + Math.random() * 1.2
-          const runner = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.02, len, 5), moundMat)
-          runner.rotation.z = Math.PI / 2; runner.rotation.y = (st.x < 0 ? 0 : Math.PI) + (Math.random() - 0.5) * 0.8
-          runner.position.set(Math.cos(runner.rotation.y) * len / 2, 0.02, -Math.sin(runner.rotation.y) * len / 2)
-          cage.add(runner)
-        }
         overgrowth.add(cage)
         for (let q = 0; q < 2; q++) {
           const sp = new THREE.Mesh(new THREE.SphereGeometry(0.025, 5, 4), sporeMat)

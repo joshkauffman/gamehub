@@ -38,6 +38,7 @@ export const ACHIEVEMENTS = [
   { id: 'flawless', icon: '🔥', name: 'Not a Scratch', desc: 'Defeat the Harvester without losing a single heart.', check: ({ run }) => run?.bossDefeated && run.bossFlawless },
   { id: 'moods', icon: '🧑‍🌾', name: 'Many Moods', desc: 'Get past the Gardener 5 times in one trip.', check: ({ run }) => (run?.dodgesById?.gardener || 0) >= 5 },
   { id: 'shortcut', icon: '🚪', name: 'Shortcut', desc: 'Fall through the back of a closet into a room further on.', check: ({ run }) => (run?.shortcuts || 0) > 0 },
+  { id: 'summon', icon: '🌿', name: 'Say His Name', desc: 'Call the Gardener into the lobby. (Why would you do that?)', check: ({ progress }) => !!progress.stats.summoned },
   { id: 'photos', icon: '📷', name: 'Shutterbug', desc: 'Collect 10 monster photos.', check: ({ progress }) => Object.keys(progress.photos).length >= 10 },
   { id: 'album', icon: '🖼️', name: 'Full Album', desc: 'Collect a photo of every monster.', check: ({ progress }) => MONSTER_ORDER.every(id => progress.photos[id]) },
 ]
