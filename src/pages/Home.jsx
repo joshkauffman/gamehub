@@ -195,7 +195,7 @@ const CATEGORIES = [
       {
         id: 'totally-scary-horror-game',
         title: 'The Totally Scary Horror Game',
-        description: "Sneak through a haunted hotel to find the exit. Six monsters roam the halls, and none of them are actually scary — get caught and they just sit down and explain, at length, why they really need this job.",
+        description: "A 3D crawl through a haunted hotel: 50 numbered doors of Floor 1, then an elevator down to Floor 2's basement and mine tunnels for 50 more. Hide, sneak, look (or don't), pick the right door, and spend your tips at Gloria's gift shops. None of the 20 monsters are actually scary, a Monster Journal keeps track of every one you face, the gift shops might be hiding something, the attic (Floor 3) unlocks for 30 tips, and a walkable lobby has achievements, a photo album, costumes, difficulty levels and a speedrun scoreboard — get caught and they just pull up a stool and explain why they really need this job.",
         emoji: '🏨',
         path: '/totally-scary-horror-game',
       },
