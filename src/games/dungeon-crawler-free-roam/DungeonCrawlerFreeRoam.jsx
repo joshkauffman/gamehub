@@ -34,6 +34,30 @@ import {
 const MAX_PARTICLES = 300
 const MAX_PROJECTILES = 24
 
+// Character sprites get a "sticker" finish: a dark ink edge traced around
+// the drawn silhouette, and sRGB colour so the canvas colours come out as
+// bright on screen as they were drawn (untagged canvas textures look washed out).
+function stickerTexture(src, ink = '#140d1c', width = 4) {
+  const out = document.createElement('canvas')
+  out.width = src.width; out.height = src.height
+  const sil = document.createElement('canvas')
+  sil.width = src.width; sil.height = src.height
+  const sctx = sil.getContext('2d')
+  sctx.drawImage(src, 0, 0)
+  sctx.globalCompositeOperation = 'source-in'
+  sctx.fillStyle = ink
+  sctx.fillRect(0, 0, sil.width, sil.height)
+  const octx = out.getContext('2d')
+  for (let k = 0; k < 16; k++) {
+    const a = (k / 16) * Math.PI * 2
+    octx.drawImage(sil, Math.cos(a) * width, Math.sin(a) * width)
+  }
+  octx.drawImage(src, 0, 0)
+  const tex = new THREE.CanvasTexture(out)
+  tex.colorSpace = THREE.SRGBColorSpace
+  return tex
+}
+
 // ── Emoji sprite factory (texture cached by emoji, material per-instance
 // so effects like the player's invuln flicker never leak across movers) ─
 const emojiTextureCache = new Map()
@@ -48,6 +72,7 @@ function getEmojiTexture(emoji) {
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
   ctx.fillText(emoji, size / 2, size / 2 + size * 0.05)
   tex = new THREE.CanvasTexture(canvas)
+  tex.colorSpace = THREE.SRGBColorSpace
   emojiTextureCache.set(emoji, tex)
   return tex
 }
@@ -172,7 +197,7 @@ function creatureCrown(ctx, cy, w) {
 }
 
 const creatureTextureCache = new Map()
-function getCreatureTexture(m) {
+export function getCreatureTexture(m) {
   const key = [m.kind, m.variant || '', m.color, m.accent, m.crown ? 1 : 0, m.bulky ? 1 : 0, m.chimera ? 1 : 0, m.heads || 1, m.demon ? 1 : 0, m.scythe ? 1 : 0].join('|')
   let tex = creatureTextureCache.get(key)
   if (tex) return tex
@@ -489,7 +514,7 @@ function getCreatureTexture(m) {
     }
   }
 
-  tex = new THREE.CanvasTexture(canvas)
+  tex = stickerTexture(canvas)
   creatureTextureCache.set(key, tex)
   return tex
 }
@@ -498,7 +523,7 @@ function makeCreatureMover(m, worldScale) {
 }
 
 const playerTextureCache = new Map()
-function getPlayerTexture(classId, raceId, weaponName, armorName) {
+export function getPlayerTexture(classId, raceId, weaponName, armorName) {
   const key = `${classId || 'none'}|${raceId || 'none'}|${weaponName || 'none'}|${armorName || 'none'}`
   let tex = playerTextureCache.get(key)
   if (tex) return tex
@@ -590,7 +615,7 @@ function getPlayerTexture(classId, raceId, weaponName, armorName) {
     ctx.fillText(armor.emoji, 0, r * 0.28)
   }
 
-  tex = new THREE.CanvasTexture(canvas)
+  tex = stickerTexture(canvas)
   playerTextureCache.set(key, tex)
   return tex
 }
@@ -1378,6 +1403,12 @@ export default function DungeonCrawlerFreeRoam() {
         }
         grp.position.set(m.x, 0, m.z)
         grp.visible = !m.dead
+        // idle "breathing": a slight squash and stretch, staying planted on the ground
+        const sp = grp.userData.sprite
+        sp.userData.base ??= sp.scale.x
+        const breathe = Math.sin(performance.now() / 1000 * 4 + m.x * 0.9 + m.z * 0.6) * 0.035
+        sp.scale.set(sp.userData.base * (1 - breathe), sp.userData.base * (1 + breathe), 1)
+        sp.position.y = sp.scale.y / 2 + 0.05
         if (m.hp < m.maxHp && !m.isBoss) {
           grp.userData.sprite.material.color.setRGB(1, 0.7, 0.7)
         } else {
@@ -1731,6 +1762,7 @@ export default function DungeonCrawlerFreeRoam() {
       renderer.domElement.removeEventListener('click', onClick)
       teardownAll()
       renderer.dispose()
+      renderer.forceContextLoss() // dispose() alone leaves the browser's WebGL context alive
       if (mount.contains(renderer.domElement)) mount.removeChild(renderer.domElement)
     }
   }, [])

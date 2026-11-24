@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import * as THREE from 'three'
+import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
+import { cartoonEye, makeBlinker, addInkOutline } from '../shared/charKit.js'
 import styles from './DinoSuitUp.module.css'
 import {
   WORLD_HALF, SUIT_TIERS, BOSSES, RESOURCE_KINDS, MATERIAL_EMOJI,
@@ -50,69 +52,90 @@ function buildDinoBody() {
   const skinMat = toonMat(0x4f9a4a)
   const bellyMat = toonMat(0x9fd89a)
   const hornMat = toonMat(0xe8d9a0)
+  const ink = toonMat(0x14200f)
 
-  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.75, 1.5, 4, 10), skinMat)
+  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.75, 1.5, 8, 20), skinMat)
   body.rotation.z = Math.PI / 2
   body.position.set(0, 1.1, 0.1)
   g.add(body)
-  addOutline(g, body)
 
-  const belly = new THREE.Mesh(new THREE.CapsuleGeometry(0.55, 1.3, 4, 8), bellyMat)
+  const belly = new THREE.Mesh(new THREE.CapsuleGeometry(0.55, 1.3, 8, 16), bellyMat)
   belly.rotation.z = Math.PI / 2
   belly.position.set(0, 0.85, 0.1)
   g.add(belly)
 
   // Neck + head, extending toward -z (forward).
-  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.42, 0.7, 8), skinMat)
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.46, 0.8, 18), skinMat)
   neck.rotation.x = -0.55
   neck.position.set(0, 1.55, -1.0)
   g.add(neck)
 
-  const head = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.55, 0.9), skinMat)
-  head.position.set(0, 1.95, -1.65)
+  // A big rounded head with a friendly snout (it's a dinosaur in a homemade suit, not a monster).
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.46, 24, 18), skinMat)
+  head.scale.set(1, 0.92, 1.05)
+  head.position.set(0, 2.0, -1.6)
   g.add(head)
-  addOutline(g, head)
-
-  const snout = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.5, 6), skinMat)
-  snout.rotation.x = Math.PI / 2
-  snout.position.set(0, 1.85, -2.15)
+  const snout = new THREE.Mesh(new THREE.SphereGeometry(0.34, 20, 14), skinMat)
+  snout.scale.set(1, 0.78, 1.15)
+  snout.position.set(0, 1.86, -2.0)
   g.add(snout)
+  const chin = new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 12), bellyMat)
+  chin.scale.set(1, 0.55, 1.1)
+  chin.position.set(0, 1.72, -1.98)
+  g.add(chin)
+  const smile = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.022, 6, 16, Math.PI * 0.8), ink)
+  smile.position.set(0, 1.82, -2.27)
+  smile.rotation.set(0.25, Math.PI, Math.PI * 1.1)
+  smile.userData.noOutline = true
+  g.add(smile)
 
-  ;[-1, 1].forEach(side => {
-    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 6), new THREE.MeshBasicMaterial({ color: 0x1a1a1a }))
-    eye.position.set(side * 0.26, 2.08, -1.95)
+  const eyes = [-1, 1].map(side => {
+    const eye = cartoonEye(0.15, 0x6b3a12)
+    eye.position.set(side * 0.24, 2.16, -1.92)
+    eye.rotation.y = Math.PI + side * 0.42
     g.add(eye)
-    const horn = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.3, 6), hornMat)
-    horn.position.set(side * 0.22, 2.3, -1.5)
+    const nostril = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 6), ink)
+    nostril.position.set(side * 0.1, 1.98, -2.33)
+    nostril.userData.noOutline = true
+    g.add(nostril)
+    const horn = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.3, 10), hornMat)
+    horn.position.set(side * 0.22, 2.4, -1.5)
     horn.rotation.x = 0.4
     g.add(horn)
+    return eye
   })
 
-  // Tail: 3 tapering segments curving back and slightly up.
+  // Tail: tapering segments curving back and slightly up.
   const tailSegs = [
     { r: 0.38, len: 0.9, y: 1.15, z: 1.4 },
     { r: 0.26, len: 0.8, y: 1.3, z: 2.15 },
     { r: 0.14, len: 0.7, y: 1.45, z: 2.85 },
   ]
   tailSegs.forEach(s => {
-    const seg = new THREE.Mesh(new THREE.CapsuleGeometry(s.r, s.len, 4, 8), skinMat)
+    const seg = new THREE.Mesh(new THREE.CapsuleGeometry(s.r, s.len, 6, 14), skinMat)
     seg.rotation.x = Math.PI / 2 - 0.3
     seg.position.set(0, s.y, s.z)
     g.add(seg)
   })
 
-  // Legs: 4 short stout cylinders.
-  const legGeo = new THREE.CylinderGeometry(0.22, 0.26, 0.95, 8)
+  // Legs: stout and rounded, three toes each.
+  const legGeo = new THREE.CapsuleGeometry(0.25, 0.55, 6, 14)
+  const toeGeo = new THREE.SphereGeometry(0.09, 10, 8)
   ;[[-0.5, -0.7], [0.5, -0.7], [-0.5, 0.75], [0.5, 0.75]].forEach(([x, z]) => {
-    const leg = new THREE.Mesh(legGeo, bellyMat)
-    leg.position.set(x, 0.48, z)
+    const leg = new THREE.Mesh(legGeo, skinMat)
+    leg.position.set(x, 0.5, z)
     g.add(leg)
-    const foot = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.14, 0.42), hornMat)
-    foot.position.set(x, 0.07, z - 0.05)
-    g.add(foot)
+    for (const t of [-1, 0, 1]) {
+      const toe = new THREE.Mesh(toeGeo, hornMat)
+      toe.position.set(x + t * 0.13, 0.07, z - 0.24 + Math.abs(t) * 0.04)
+      toe.scale.set(1, 0.75, 1.2)
+      g.add(toe)
+    }
   })
 
+  addInkOutline(g, { color: 0x0a1008, width: 0.005 })
   g.userData.bodyMeshes = [body, head]
+  g.userData.blink = makeBlinker(eyes)
   return g
 }
 
@@ -186,7 +209,7 @@ function buildSuitOverlay(tierIdx) {
   return g
 }
 
-function makeDinoModel(tierIdx) {
+export function makeDinoModel(tierIdx) {
   const g = new THREE.Group()
   const body = buildDinoBody()
   g.add(body)
@@ -196,18 +219,27 @@ function makeDinoModel(tierIdx) {
   g.userData.tierIdx = tierIdx
   g.userData.overlay = overlay
   g.userData.bodyGroup = body
+  g.userData.blink = body.userData.blink
+  addInkOutline(overlay, { color: 0x0a1008, width: 0.005 })
   return g
 }
 
 // ── Boss models — five distinct silhouettes ─────────────────────────────
-function makeBossModel(defIdx) {
+export function makeBossModel(defIdx) {
   const def = BOSSES[defIdx]
   const g = new THREE.Group()
-  const mainMat = new THREE.MeshStandardMaterial({ color: def.color, roughness: 0.75 })
-  const accentMat = new THREE.MeshStandardMaterial({ color: def.accent, roughness: 0.6 })
+  const mainMat = toonMat(def.color)
+  const accentMat = toonMat(def.accent)
+  const angryEyes = (r, xs, y, z, spread = 0.3) => xs.map(side => {
+    const e = cartoonEye(r, 0xc22a1a, { lid: def.accent })
+    e.position.set(side, y, z)
+    e.rotation.y = Math.PI + Math.sign(side) * spread
+    g.add(e)
+    return e
+  })
 
   if (def.shape === 'quad') {
-    const body = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.2, 2.6), mainMat)
+    const body = new THREE.Mesh(new RoundedBoxGeometry(1.8, 1.2, 2.6, 4, 0.42), mainMat)
     body.position.y = 1.0
     g.add(body)
     for (let i = -2; i <= 2; i++) {
@@ -215,12 +247,24 @@ function makeBossModel(defIdx) {
       spike.position.set(0, 1.7, i * 0.5)
       g.add(spike)
     }
-    const head = new THREE.Mesh(new THREE.ConeGeometry(0.55, 1.1, 6), mainMat)
-    head.rotation.x = Math.PI / 2
-    head.position.set(0, 1.0, -1.7)
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.6, 20, 14), mainMat)
+    head.scale.set(1, 0.85, 1.25)
+    head.position.set(0, 1.05, -1.7)
     g.add(head)
+    const beak = new THREE.Mesh(new THREE.ConeGeometry(0.32, 0.5, 14), accentMat)
+    beak.rotation.x = -Math.PI / 2
+    beak.position.set(0, 0.95, -2.4)
+    g.add(beak)
+    angryEyes(0.16, [-0.32, 0.32], 1.25, -2.05)
+    const club = new THREE.Mesh(new THREE.SphereGeometry(0.4, 16, 12), accentMat)
+    club.position.set(0, 1.0, 2.2)
+    g.add(club)
+    const tail = new THREE.Mesh(new THREE.CapsuleGeometry(0.2, 0.7, 6, 12), mainMat)
+    tail.rotation.x = Math.PI / 2
+    tail.position.set(0, 1.0, 1.65)
+    g.add(tail)
     ;[[-0.6, -0.9], [0.6, -0.9], [-0.6, 0.9], [0.6, 0.9]].forEach(([x, z]) => {
-      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.26, 1.0, 8), accentMat)
+      const leg = new THREE.Mesh(new THREE.CapsuleGeometry(0.26, 0.5, 6, 12), accentMat)
       leg.position.set(x, 0.5, z)
       g.add(leg)
     })
@@ -228,36 +272,39 @@ function makeBossModel(defIdx) {
     const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.55, 1.6, 4, 8), mainMat)
     torso.position.y = 1.9
     g.add(torso)
-    const skull = new THREE.Mesh(new THREE.SphereGeometry(0.45, 10, 8), accentMat)
+    const skull = new THREE.Mesh(new THREE.SphereGeometry(0.45, 20, 16), accentMat)
     skull.position.y = 3.0
     g.add(skull)
+    const jaw = new THREE.Mesh(new RoundedBoxGeometry(0.5, 0.22, 0.4, 3, 0.08), accentMat)
+    jaw.position.set(0, 2.72, -0.18)
+    g.add(jaw)
     ;[-1, 1].forEach(side => {
       const eye = new THREE.Mesh(new THREE.SphereGeometry(0.08, 6, 6), new THREE.MeshBasicMaterial({ color: 0xff3a3a }))
       eye.position.set(side * 0.18, 3.05, -0.38)
       g.add(eye)
-      const arm = new THREE.Mesh(new THREE.CapsuleGeometry(0.14, 1.1, 4, 6), accentMat)
+      const arm = new THREE.Mesh(new THREE.CapsuleGeometry(0.14, 1.1, 6, 12), accentMat)
       arm.position.set(side * 0.7, 1.9, 0)
       arm.rotation.z = side * 0.3
       g.add(arm)
-      const leg = new THREE.Mesh(new THREE.CapsuleGeometry(0.18, 1.4, 4, 6), accentMat)
+      const leg = new THREE.Mesh(new THREE.CapsuleGeometry(0.18, 1.4, 6, 12), accentMat)
       leg.position.set(side * 0.3, 0.7, 0)
       g.add(leg)
     })
   } else if (def.shape === 'golem') {
-    const legs = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.4, 1.0), mainMat)
+    const legs = new THREE.Mesh(new RoundedBoxGeometry(1.4, 1.4, 1.0, 3, 0.25), mainMat)
     legs.position.y = 0.9
     g.add(legs)
-    const torso = new THREE.Mesh(new THREE.BoxGeometry(1.9, 1.8, 1.2), mainMat)
+    const torso = new THREE.Mesh(new RoundedBoxGeometry(1.9, 1.8, 1.2, 3, 0.3), mainMat)
     torso.position.y = 2.5
     g.add(torso)
-    const head = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.7, 0.8), accentMat)
+    const head = new THREE.Mesh(new RoundedBoxGeometry(0.8, 0.7, 0.8, 3, 0.16), accentMat)
     head.position.y = 3.8
     g.add(head)
     ;[-1, 1].forEach(side => {
-      const shoulder = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 0.6), accentMat)
+      const shoulder = new THREE.Mesh(new RoundedBoxGeometry(0.6, 0.6, 0.6, 3, 0.15), accentMat)
       shoulder.position.set(side * 1.3, 3.0, 0)
       g.add(shoulder)
-      const arm = new THREE.Mesh(new THREE.BoxGeometry(0.5, 1.6, 0.5), mainMat)
+      const arm = new THREE.Mesh(new RoundedBoxGeometry(0.5, 1.6, 0.5, 3, 0.14), mainMat)
       arm.position.set(side * 1.3, 1.9, 0)
       g.add(arm)
     })
@@ -279,10 +326,10 @@ function makeBossModel(defIdx) {
     g.add(glow)
     g.userData.floaty = true
   } else if (def.shape === 'overseer') {
-    const orb = new THREE.Mesh(new THREE.SphereGeometry(1.3, 16, 12), mainMat)
+    const orb = new THREE.Mesh(new THREE.SphereGeometry(1.3, 28, 20), mainMat)
     orb.position.y = 3.0
     g.add(orb)
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(1.7, 0.12, 8, 24), accentMat)
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(1.7, 0.12, 10, 40), accentMat)
     ring.rotation.x = Math.PI / 2
     ring.position.y = 3.0
     g.add(ring)
@@ -301,6 +348,7 @@ function makeBossModel(defIdx) {
     g.userData.floaty = true
   }
 
+  addInkOutline(g, { color: 0x0a1008, width: 0.005 })
   g.userData.mainMat = mainMat
   return g
 }
@@ -535,6 +583,7 @@ function GameCanvas({ onHud, apiRef }) {
       dinoMesh.rotation.y = state.player.yaw
       const flash = state.player.hitFlash > 0
       dinoMesh.userData.bodyMeshes.forEach(m => m.material.color.setHex(flash ? 0xffffff : 0x4f9a4a))
+      dinoMesh.userData.blink?.(t)
 
       state.world.resources.forEach(node => {
         const mesh = resourceMeshes[node.id]

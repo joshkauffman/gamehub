@@ -60,22 +60,98 @@ function miningTimeFor(blockId, pickaxeTier) {
   return base / speed
 }
 
-function makeMobMesh() {
+// ── The shambler ── a blocky zombie in the voxel world's own style: every
+// box face gets a tiny hand-drawn pixel texture (8 px wide, nearest-filtered
+// so the pixels stay crisp), arms held out in front, legs that swing.
+const MOB_PALETTE = {
+  g: '#5e8c3a', d: '#466b2a', D: '#34521f', k: '#141414', r: '#ff3a2a', m: '#2a3a18',
+  t: '#2b8a8a', T: '#1f6464', b: '#3a3f8f', B: '#2b2f6e', s: '#3a3a3a', '.': null,
+}
+const mobTexCache = new Map()
+function pixelTex(rows) {
+  const key = rows.join('|')
+  let tex = mobTexCache.get(key)
+  if (tex) return tex
+  const c = document.createElement('canvas')
+  c.width = rows[0].length; c.height = rows.length
+  const ctx = c.getContext('2d')
+  rows.forEach((row, y) => [...row].forEach((ch, x) => {
+    const col = MOB_PALETTE[ch]
+    if (!col) return
+    ctx.fillStyle = col
+    ctx.fillRect(x, y, 1, 1)
+  }))
+  tex = new THREE.CanvasTexture(c)
+  tex.magFilter = THREE.NearestFilter
+  tex.minFilter = THREE.NearestFilter
+  tex.colorSpace = THREE.SRGBColorSpace
+  mobTexCache.set(key, tex)
+  return tex
+}
+const fill = (ch, w, h) => Array.from({ length: h }, () => ch.repeat(w))
+const MOB_TEX = {
+  face: ['DDDDDDDD', 'dgggggdg', 'gggggggg', 'gkkggkkg', 'gkrggrkg', 'gggddggg', 'ggmmmmgg', 'gdgggggg'],
+  headSide: ['DDDDDDDD', 'dggggdgg', 'gggggggg', 'ggdggggg', 'gggggdgg', 'gggggggg', 'gdgggggg', 'gggggggg'],
+  headBack: ['DDDDDDDD', 'DDDDDDDD', 'dddddddd', 'gddddddg', 'gggddggg', 'gggggggg', 'gggggggg', 'gggggggg'],
+  headTop: fill('D', 8, 8),
+  headBottom: fill('g', 8, 8),
+  shirtFront: ['tttttttt', 'tTttttTt', 'tttttttt', 'ttttTttt', 'tttttttt', 'tTtttttt', 'tttttTtt', 'tttttttt', 'ttTttttt', 'tttttttt', 'tgttTgtt', 'ggtgggtg'],
+  shirtBack: ['tttttttt', 'tttttttt', 'tTtttttt', 'tttttttt', 'ttttTttt', 'tttttttt', 'tttttttt', 'tTtttttt', 'tttttttt', 'tttTtttt', 'tttttttt', 'tgtttgtt'],
+  shirtSide: ['tttt', 'tTtt', 'tttt', 'tttt', 'ttTt', 'tttt', 'tttt', 'tttt', 'tTtt', 'tttt', 'tttt', 'tgtt'],
+  shirtTop: fill('t', 8, 4),
+  arm: ['tttt', 'tTtt', 'tttt', 'gttT', 'gggg', 'gdgg', 'gggg', 'gggd', 'gggg', 'gdgg', 'gggg', 'dddd'],
+  armEnd: fill('g', 4, 4),
+  leg: ['bbbb', 'bBbb', 'bbbb', 'bbbb', 'bbBb', 'bbbb', 'bbbb', 'bBbb', 'bbbb', 'bbbb', 'ssss', 'ssss'],
+  legEnd: fill('s', 4, 4),
+}
+const pixMat = (rows) => new THREE.MeshStandardMaterial({ map: pixelTex(rows), roughness: 0.95 })
+// BoxGeometry face order: +x, -x, +y, -y, +z (front, toward the player), -z
+const boxMats = (side, top, bottom, front, back) => [pixMat(side), pixMat(side), pixMat(top), pixMat(bottom), pixMat(front), pixMat(back ?? side)]
+
+export function makeMobMesh() {
   const g = new THREE.Group()
-  const bodyMat = new THREE.MeshStandardMaterial({ color: 0x4a6b3a, roughness: 0.9 })
-  const body = new THREE.Mesh(new THREE.BoxGeometry(0.5, 1.1, 0.3), bodyMat)
-  body.position.y = 0.95
-  body.castShadow = true
-  g.add(body)
-  const headMat = new THREE.MeshStandardMaterial({ color: 0x3a5a2a, roughness: 0.9 })
-  const head = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.42, 0.42), headMat)
-  head.position.y = 1.72
-  head.castShadow = true
-  g.add(head)
-  const eyeMat = new THREE.MeshStandardMaterial({ color: 0xff2020, emissive: 0xff2020, emissiveIntensity: 0.9 })
-  const eyeGeo = new THREE.BoxGeometry(0.08, 0.08, 0.04)
-  const eyeL = new THREE.Mesh(eyeGeo, eyeMat); eyeL.position.set(-0.11, 1.74, 0.22); g.add(eyeL)
-  const eyeR = new THREE.Mesh(eyeGeo, eyeMat); eyeR.position.set(0.11, 1.74, 0.22); g.add(eyeR)
+  const add = (parent, geo, mats, x, y, z) => {
+    const m = new THREE.Mesh(geo, mats)
+    m.position.set(x, y, z)
+    m.castShadow = true
+    parent.add(m)
+    return m
+  }
+  // legs (pivot at the hip)
+  const legs = [-1, 1].map(s => {
+    const p = new THREE.Group()
+    p.position.set(s * 0.125, 0.75, 0)
+    g.add(p)
+    add(p, new THREE.BoxGeometry(0.25, 0.75, 0.25), boxMats(MOB_TEX.leg, MOB_TEX.legEnd, MOB_TEX.legEnd, MOB_TEX.leg), 0, -0.375, 0)
+    return p
+  })
+  add(g, new THREE.BoxGeometry(0.5, 0.75, 0.25), boxMats(MOB_TEX.shirtSide, MOB_TEX.shirtTop, MOB_TEX.shirtTop, MOB_TEX.shirtFront, MOB_TEX.shirtBack), 0, 1.125, 0)
+  // arms (pivot at the shoulder), reaching forward the way zombies do
+  const arms = [-1, 1].map(s => {
+    const p = new THREE.Group()
+    p.position.set(s * 0.375, 1.4, 0)
+    p.rotation.x = -Math.PI / 2 + 0.15
+    g.add(p)
+    add(p, new THREE.BoxGeometry(0.25, 0.75, 0.25), boxMats(MOB_TEX.arm, MOB_TEX.armEnd, MOB_TEX.armEnd, MOB_TEX.arm), 0, -0.3, 0)
+    return p
+  })
+  const head = add(g, new THREE.BoxGeometry(0.5, 0.5, 0.5), boxMats(MOB_TEX.headSide, MOB_TEX.headTop, MOB_TEX.headBottom, MOB_TEX.face, MOB_TEX.headBack), 0, 1.75, 0)
+  // glowing red pupils, so a shambler in the dark is still easy to spot
+  const glow = new THREE.MeshBasicMaterial({ color: 0xff3a2a })
+  // over the face texture's red pixels: column 2/5, row 4 of the 8×8 face
+  for (const x of [-0.09375, 0.09375]) add(head, new THREE.PlaneGeometry(0.0625, 0.0625), glow, x, -0.03125, 0.252)
+
+  let lastX = null, lastZ = null, stride = 0
+  g.userData.animate = (t) => {
+    // swing the legs by how far it actually moved this frame
+    if (lastX !== null) stride += Math.hypot(g.position.x - lastX, g.position.z - lastZ) * 5.5
+    lastX = g.position.x; lastZ = g.position.z
+    const swing = Math.sin(stride) * 0.6
+    legs[0].rotation.x = swing
+    legs[1].rotation.x = -swing
+    arms.forEach((a, i) => { a.rotation.x = -Math.PI / 2 + 0.15 + Math.sin(t * 2.2 + i * 1.3) * 0.08 })
+    head.rotation.z = Math.sin(t * 1.3) * 0.06
+  }
   return g
 }
 
@@ -579,6 +655,7 @@ export default function ObviousMinecraftKnockoff() {
         }
         entity.mesh.position.set(entity.mob.x, entity.mob.y, entity.mob.z)
         entity.mesh.rotation.y = Math.atan2(player.x - entity.mob.x, player.z - entity.mob.z)
+        entity.mesh.userData.animate?.(performance.now() / 1000)
       }
 
       renderer.render(scene, camera)
@@ -617,6 +694,7 @@ export default function ObviousMinecraftKnockoff() {
       renderer.domElement.removeEventListener('contextmenu', onContextMenu)
       if (document.pointerLockElement === renderer.domElement) document.exitPointerLock()
       renderer.dispose()
+      renderer.forceContextLoss() // dispose() alone leaves the browser's WebGL context alive
       mount.removeChild(renderer.domElement)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

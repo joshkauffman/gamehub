@@ -575,6 +575,7 @@ function GameCanvas({ level, onHud, onWin, muted, tiltEnabled, recenterSignal })
       renderer.domElement.removeEventListener('pointercancel', onPointerUp)
       pmrem.dispose()
       renderer.dispose()
+      renderer.forceContextLoss() // dispose() alone leaves the browser's WebGL context alive
       if (mount.contains(renderer.domElement)) mount.removeChild(renderer.domElement)
     }
   }, [level])

@@ -313,18 +313,18 @@ function makePlatformIsland(p) {
 // An elder spirit: a tall hooded, cloaked figure with a fanned cape and a
 // halo of light — echoing the elder statues of Sky: Children of the Light,
 // scaled well above the player rather than a small robed sprite.
-function makeSpiritFigure(color) {
+export function makeSpiritFigure(color) {
   const g = new THREE.Group()
   const mat = (emissiveIntensity = 0.4, roughness = 0.55) => new THREE.MeshStandardMaterial({
     color, emissive: color, emissiveIntensity, roughness, metalness: 0.05,
   })
 
-  const cloak = new THREE.Mesh(new THREE.ConeGeometry(1.05, 2.6, 16, 1, true), mat(0.3, 0.6))
+  const cloak = new THREE.Mesh(new THREE.ConeGeometry(1.05, 2.6, 40, 1, true), mat(0.3, 0.6))
   cloak.position.y = 1.3
   cloak.castShadow = true
   g.add(cloak)
 
-  const hem = new THREE.Mesh(new THREE.TorusGeometry(1.05, 0.16, 10, 24), mat(0.25, 0.7))
+  const hem = new THREE.Mesh(new THREE.TorusGeometry(1.05, 0.16, 12, 48), mat(0.25, 0.7))
   hem.position.y = 0.05
   hem.rotation.x = Math.PI / 2
   hem.castShadow = true
@@ -339,16 +339,33 @@ function makeSpiritFigure(color) {
   cape.castShadow = true
   g.add(cape)
 
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.42, 16, 14), mat(0.55, 0.45))
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.42, 32, 24), mat(0.55, 0.45))
   head.position.y = 2.75
   g.add(head)
 
-  const hood = new THREE.Mesh(new THREE.ConeGeometry(0.5, 0.7, 16), mat(0.3, 0.55))
+  // A calm, sleepy-kind face: two soft dark eyes with a glint, a small smile.
+  const eyeMat = new THREE.MeshBasicMaterial({ color: 0x1a1430 })
+  const glint = new THREE.MeshBasicMaterial({ color: 0xffffff })
+  for (const side of [-1, 1]) {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.075, 16, 12), eyeMat)
+    eye.scale.set(0.8, 1.15, 0.45)
+    eye.position.set(side * 0.15, 2.8, 0.37)
+    g.add(eye)
+    const sparkle = new THREE.Mesh(new THREE.SphereGeometry(0.022, 8, 6), glint)
+    sparkle.position.set(side * 0.15 + 0.025, 2.84, 0.405)
+    g.add(sparkle)
+  }
+  const smile = new THREE.Mesh(new THREE.TorusGeometry(0.07, 0.014, 6, 16, Math.PI), eyeMat)
+  smile.position.set(0, 2.66, 0.39)
+  smile.rotation.z = Math.PI
+  g.add(smile)
+
+  const hood = new THREE.Mesh(new THREE.ConeGeometry(0.5, 0.7, 32), mat(0.3, 0.55))
   hood.position.y = 3.15
   g.add(hood)
 
   const halo = new THREE.Mesh(
-    new THREE.TorusGeometry(0.62, 0.05, 10, 28),
+    new THREE.TorusGeometry(0.62, 0.05, 12, 48),
     new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 1.1, roughness: 0.3 })
   )
   halo.position.y = 3.55
@@ -459,24 +476,61 @@ function makeFenceSegment(x, z, ry) {
 // A tiny low-poly bird: a cone body (nose along local +Z) with two flat
 // wing planes that flap via rotation, reused for both flying and perched
 // birds.
-function makeBird(color) {
+export function makeBird(color) {
+  // A round little songbird facing +Z: body, lighter belly, head, beak,
+  // bright eyes, a fanned tail and two wings on shoulder pivots (the
+  // village loop flaps wingL/wingR by their rotation.z).
   const g = new THREE.Group()
-  const bodyMat = new THREE.MeshStandardMaterial({ color, roughness: 0.55 })
-  const body = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.36, 6), bodyMat)
-  body.rotation.x = Math.PI / 2
+  const bodyMat = new THREE.MeshStandardMaterial({ color, roughness: 0.6 })
+  const bellyMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(color).lerp(new THREE.Color(0xffffff), 0.55), roughness: 0.65 })
+  const wingMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(color).multiplyScalar(0.78), roughness: 0.6 })
+
+  const body = new THREE.Mesh(new THREE.SphereGeometry(0.11, 18, 14), bodyMat)
+  body.scale.set(1, 0.95, 1.35)
   body.castShadow = true
   g.add(body)
+  const belly = new THREE.Mesh(new THREE.SphereGeometry(0.09, 16, 12), bellyMat)
+  belly.scale.set(0.95, 0.85, 1.2)
+  belly.position.set(0, -0.025, 0.03)
+  g.add(belly)
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.08, 18, 14), bodyMat)
+  head.position.set(0, 0.08, 0.12)
+  head.castShadow = true
+  g.add(head)
+  const beak = new THREE.Mesh(new THREE.ConeGeometry(0.026, 0.07, 10), new THREE.MeshStandardMaterial({ color: 0xf2a33a, roughness: 0.5 }))
+  beak.rotation.x = Math.PI / 2
+  beak.position.set(0, 0.07, 0.22)
+  g.add(beak)
+  const eyeMat = new THREE.MeshBasicMaterial({ color: 0x15121c })
+  const glint = new THREE.MeshBasicMaterial({ color: 0xffffff })
+  for (const side of [-1, 1]) {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.018, 10, 8), eyeMat)
+    eye.position.set(side * 0.055, 0.1, 0.17)
+    g.add(eye)
+    const sparkle = new THREE.Mesh(new THREE.SphereGeometry(0.006, 6, 4), glint)
+    sparkle.position.set(side * 0.055 + 0.006, 0.108, 0.186)
+    g.add(sparkle)
+  }
+  const tail = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.16, 4), wingMat)
+  tail.rotation.x = -Math.PI / 2 + 0.35
+  tail.scale.set(1.3, 1, 0.25)
+  tail.position.set(0, 0.03, -0.19)
+  g.add(tail)
 
-  const wingGeo = new THREE.BoxGeometry(0.32, 0.02, 0.13)
-  const wingL = new THREE.Mesh(wingGeo, bodyMat)
-  wingL.position.set(-0.16, 0, 0)
-  g.add(wingL)
-  const wingR = new THREE.Mesh(wingGeo, bodyMat)
-  wingR.position.set(0.16, 0, 0)
-  g.add(wingR)
-
-  g.userData.wingL = wingL
-  g.userData.wingR = wingR
+  const wingGeo = new THREE.SphereGeometry(0.12, 14, 10)
+  const makeWing = (side) => {
+    const pivot = new THREE.Group()
+    pivot.position.set(side * 0.08, 0.03, 0)
+    const wing = new THREE.Mesh(wingGeo, wingMat)
+    wing.scale.set(1, 0.16, 0.6)
+    wing.position.set(side * 0.1, 0, -0.02)
+    wing.castShadow = true
+    pivot.add(wing)
+    g.add(pivot)
+    return pivot
+  }
+  g.userData.wingL = makeWing(-1)
+  g.userData.wingR = makeWing(1)
   return g
 }
 
@@ -943,7 +997,8 @@ export default function World3D() {
     document.addEventListener('mousemove', onMouseMove)
 
     function onClick() {
-      renderer.domElement.requestPointerLock()
+      // Newer browsers return a promise that rejects if the lock is refused (e.g. clicked too soon after Esc).
+      renderer.domElement.requestPointerLock()?.catch?.(() => {})
       ensureAudio()
     }
     renderer.domElement.addEventListener('click', onClick)
@@ -1187,6 +1242,7 @@ export default function World3D() {
       if (document.pointerLockElement === renderer.domElement) document.exitPointerLock()
       if (audioCtx) audioCtx.close()
       renderer.dispose()
+      renderer.forceContextLoss() // dispose() alone leaves the browser's WebGL context alive
       mount.removeChild(renderer.domElement)
     }
   }, [])

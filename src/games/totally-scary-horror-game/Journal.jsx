@@ -25,9 +25,9 @@ export default function Journal({ journal, onClose }) {
 
         {!open && (
           <>
-            {[1, 2, 3, 4, 'secret'].map(floor => (
+            {[1, 2, 3, 4, -1, 'secret'].map(floor => (
               <div key={floor}>
-                <div className={styles.journalFloor}>{floor === 'secret' ? '🤫 Secret' : `Floor ${floor} — ${['', 'the hotel', 'the basement & mines', 'the attic', 'the garden'][floor]}`}</div>
+                <div className={styles.journalFloor}>{floor === 'secret' ? '🤫 Secret' : floor === -1 ? 'Floor -A0001 — the dark' : `Floor ${floor} — ${['', 'the hotel', 'the basement & mines', 'the attic', 'the garden'][floor]}`}</div>
                 <div className={styles.journalGrid}>
                   {MONSTER_ORDER.filter(id => JOURNAL[id].floor === floor).map(id => {
                     const e = entries[id]
@@ -54,7 +54,7 @@ export default function Journal({ journal, onClose }) {
               <span className={styles.journalBigIcon}>{open.icon}</span>
               <div>
                 <div className={styles.journalName}>{open.name}</div>
-                <div className={styles.dialogueTitle}>{open.title} · {JOURNAL[openId].floor === 'secret' ? 'Secret' : `Floor ${JOURNAL[openId].floor}`}</div>
+                <div className={styles.dialogueTitle}>{open.title} · {JOURNAL[openId].floor === 'secret' ? 'Secret' : JOURNAL[openId].floor === -1 ? 'Floor -A0001' : `Floor ${JOURNAL[openId].floor}`}</div>
               </div>
             </div>
             <div className={styles.journalTip}>💡 {JOURNAL[openId].tip}</div>

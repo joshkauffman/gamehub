@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import * as THREE from 'three'
+import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
+import { toonRamp, cartoonEye, makeBlinker, contactShadow, addInkOutline } from '../shared/charKit.js'
 import styles from './LootAndScoot.module.css'
 import { MAP_HALF, GEAR, gearCost, MINIONS, minionCost, loadSave, persistSave } from './constants.js'
 import {
@@ -15,8 +17,8 @@ import {
 // the loot without their suspicion meter maxing out, then spend the cash
 // at the Shop on gear that makes the next job easier. Nobody gets hurt —
 // getting caught just sends you back to the hideout to try again. Every
-// character is procedural low-poly geometry (boxes, spheres, cylinders) —
-// no sprites, no external art.
+// character is procedural geometry (cel-shaded, ink-outlined) — no
+// sprites, no external art.
 
 function makeLabel(text, color) {
   const canvas = document.createElement('canvas')
@@ -34,57 +36,155 @@ function makeLabel(text, color) {
   return sprite
 }
 
-function makeFigure({ shirt, pants = 0x22222e, skin = 0xd8a878, hat, mask, bag }) {
+// ── Characters ── chunky cartoon heist folk: big heads, rounded bodies,
+// cel shading and an ink outline (shared kit in games/shared/charKit.js).
+// Every figure gets its OWN materials so a guard turning red on alert
+// doesn't paint everyone else. Faces look down +Z.
+const tmat = (color) => new THREE.MeshToonMaterial({ color, gradientMap: toonRamp() })
+function part(geo, mat, x = 0, y = 0, z = 0) {
+  const m = new THREE.Mesh(geo, mat)
+  m.position.set(x, y, z)
+  m.castShadow = true
+  return m
+}
+function pivot(parent, x, y, z) {
+  const p = new THREE.Group()
+  p.position.set(x, y, z)
+  parent.add(p)
+  return p
+}
+
+export function makeFigure({ shirt, pants = 0x22222e, skin = 0xd8a878, hat, mask, bag, hatStyle, hair = 0x3a2618 }) {
   const g = new THREE.Group()
-  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.8, 0.4), new THREE.MeshStandardMaterial({ color: shirt }))
-  torso.position.y = 1.1
+  const shirtMat = tmat(shirt)
+  const pantsMat = tmat(pants)
+  const skinMat = tmat(skin)
+  const dark = tmat(0x1b1a22)
+  const style = hatStyle || (mask ? 'beanie' : hat ? 'police' : null)
+  const gloves = mask || style === 'police'
+
+  // torso + belt
+  const torso = part(new RoundedBoxGeometry(0.64, 0.66, 0.42, 3, 0.16), shirtMat, 0, 1.12, 0)
   g.add(torso)
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.32, 12, 10), new THREE.MeshStandardMaterial({ color: skin }))
-  head.position.y = 1.75
-  g.add(head)
+  g.add(part(new RoundedBoxGeometry(0.66, 0.1, 0.44, 2, 0.05), dark, 0, 0.82, 0))
+  g.add(part(new RoundedBoxGeometry(0.6, 0.18, 0.4, 2, 0.08), pantsMat, 0, 0.74, 0))
+  if (style === 'police') {
+    g.add(part(new THREE.CylinderGeometry(0.06, 0.06, 0.02, 14).rotateX(Math.PI / 2), tmat(0xf2c230), -0.15, 1.28, 0.215)) // badge
+    g.add(part(new THREE.ConeGeometry(0.05, 0.26, 4).rotateX(Math.PI), dark, 0, 1.24, 0.215)) // tie
+  }
+
+  // head
+  const head = pivot(g, 0, 1.58, 0)
+  head.add(part(new THREE.CylinderGeometry(0.1, 0.12, 0.12, 10), skinMat, 0, -0.04, 0)) // neck
+  head.add(part(new THREE.SphereGeometry(0.36, 24, 18), skinMat, 0, 0.24, 0))
+  const nose = part(new THREE.SphereGeometry(0.06, 10, 8), tmat(new THREE.Color(skin).multiplyScalar(0.85).getHex()), 0, 0.2, 0.36)
+  nose.userData.noOutline = true
+  head.add(nose)
+  for (const s of [-1, 1]) head.add(part(new THREE.SphereGeometry(0.075, 10, 8), skinMat, s * 0.35, 0.22, 0)) // ears
+  const eyes = [-1, 1].map(s => {
+    const e = cartoonEye(0.075, 0x3a2a1a)
+    e.position.set(s * 0.13, 0.3, mask ? 0.33 : 0.31)
+    head.add(e)
+    return e
+  })
+  for (const s of [-1, 1]) {
+    const brow = part(new RoundedBoxGeometry(0.13, 0.03, 0.04, 1, 0.012), mask ? tmat(0xf1e3c8) : dark, s * 0.13, 0.42, 0.33)
+    brow.rotation.z = s * (mask ? -0.18 : 0.12) // sneaky thieves look shifty; everyone else looks concerned
+    brow.userData.noOutline = true
+    head.add(brow)
+  }
+  const mouth = part(new THREE.TorusGeometry(0.055, 0.012, 6, 12, Math.PI), dark, 0, 0.13, 0.345)
+  mouth.rotation.z = Math.PI // a small smile
+  mouth.userData.noOutline = true
+  head.add(mouth)
   if (mask) {
-    const maskMesh = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.13, 0.06), new THREE.MeshStandardMaterial({ color: 0x1a1a1a }))
-    maskMesh.position.set(0, 1.78, 0.3)
-    g.add(maskMesh)
+    const band = part(new THREE.CylinderGeometry(0.372, 0.372, 0.15, 24, 1, true), dark, 0, 0.3, 0)
+    band.material = tmat(0x15141b)
+    band.material.side = THREE.DoubleSide
+    head.add(band)
   }
-  if (hat) {
-    const hatMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.37, 0.2, 12), new THREE.MeshStandardMaterial({ color: hat }))
-    hatMesh.position.y = 2.05
-    g.add(hatMesh)
+  if (style === 'beanie') {
+    const beanie = part(new THREE.SphereGeometry(0.375, 22, 12, 0, Math.PI * 2, 0, Math.PI * 0.5), tmat(hat ?? 0x24233a), 0, 0.3, 0)
+    head.add(beanie)
+    head.add(part(new THREE.TorusGeometry(0.36, 0.06, 8, 24).rotateX(Math.PI / 2), tmat(hat ?? 0x24233a), 0, 0.34, 0))
+    head.add(part(new THREE.SphereGeometry(0.08, 10, 8), tmat(0xd8d2c4), 0, 0.68, 0))
+  } else if (style === 'police') {
+    head.add(part(new THREE.CylinderGeometry(0.39, 0.34, 0.2, 20), tmat(hat), 0, 0.56, 0))
+    const visor = part(new THREE.CylinderGeometry(0.22, 0.22, 0.03, 16, 1, false, -Math.PI / 2, Math.PI), dark, 0, 0.47, 0.2)
+    head.add(visor)
+    head.add(part(new THREE.CylinderGeometry(0.05, 0.05, 0.02, 10).rotateX(Math.PI / 2), tmat(0xf2c230), 0, 0.58, 0.36))
+  } else if (style === 'fedora') {
+    head.add(part(new THREE.CylinderGeometry(0.6, 0.6, 0.03, 24), tmat(hat), 0, 0.5, 0))
+    head.add(part(new THREE.CylinderGeometry(0.3, 0.34, 0.28, 20), tmat(hat), 0, 0.64, 0))
+    head.add(part(new THREE.CylinderGeometry(0.345, 0.345, 0.06, 20), dark, 0, 0.55, 0))
+  } else if (style === 'cap') {
+    head.add(part(new THREE.SphereGeometry(0.375, 22, 12, 0, Math.PI * 2, 0, Math.PI * 0.5), tmat(hat), 0, 0.3, 0))
+    const bill = part(new THREE.CylinderGeometry(0.24, 0.24, 0.03, 16, 1, false, -Math.PI / 2, Math.PI), tmat(hat), 0, 0.34, 0.26)
+    head.add(bill)
+  } else {
+    head.add(part(new THREE.SphereGeometry(0.375, 22, 12, 0, Math.PI * 2, 0, Math.PI * 0.42), tmat(hair), 0, 0.27, -0.02))
   }
-  const legGeo = new THREE.BoxGeometry(0.26, 0.7, 0.3)
-  const legMat = new THREE.MeshStandardMaterial({ color: pants })
-  const legs = [-0.18, 0.18].map(x => {
-    const leg = new THREE.Mesh(legGeo, legMat)
-    leg.position.set(x, 0.35, 0)
-    g.add(leg)
-    return leg
+
+  // arms (pivot at the shoulder) with gloves/hands
+  const arms = [-1, 1].map(s => {
+    const p = pivot(g, s * 0.42, 1.36, 0)
+    p.rotation.z = s * 0.08
+    p.add(part(new THREE.CapsuleGeometry(0.1, 0.36, 4, 10), shirtMat, 0, -0.26, 0))
+    p.add(part(new THREE.SphereGeometry(0.11, 12, 10), gloves ? dark : skinMat, 0, -0.52, 0.02))
+    return p
   })
-  const armGeo = new THREE.BoxGeometry(0.22, 0.62, 0.22)
-  const armMat = new THREE.MeshStandardMaterial({ color: shirt })
-  const arms = [-0.5, 0.5].map(x => {
-    const arm = new THREE.Mesh(armGeo, armMat)
-    arm.position.set(x, 1.1, 0)
-    g.add(arm)
-    return arm
+  // legs (pivot at the hip) with chunky shoes
+  const legs = [-1, 1].map(s => {
+    const p = pivot(g, s * 0.16, 0.7, 0)
+    p.add(part(new THREE.CapsuleGeometry(0.12, 0.34, 4, 10), pantsMat, 0, -0.26, 0))
+    p.add(part(new RoundedBoxGeometry(0.22, 0.14, 0.34, 2, 0.06), dark, 0, -0.62, 0.05))
+    return p
   })
+
   if (bag) {
-    const bagMesh = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.32, 0.22), new THREE.MeshStandardMaterial({ color: 0x6b4a2a }))
-    bagMesh.position.set(0, 1.1, -0.3)
-    g.add(bagMesh)
+    // a lumpy loot sack slung over the back, tied at the top
+    const sack = tmat(0x9a7444)
+    const sackMesh = part(new THREE.SphereGeometry(0.3, 16, 12), sack, 0.05, 1.12, -0.38)
+    sackMesh.scale.set(1, 1.1, 0.8)
+    g.add(sackMesh)
+    g.add(part(new THREE.ConeGeometry(0.1, 0.2, 10), sack, 0.05, 1.47, -0.38))
+    g.add(part(new THREE.TorusGeometry(0.07, 0.025, 6, 12).rotateX(Math.PI / 2), tmat(0x5a3a1a), 0.05, 1.4, -0.38))
+    const strap = part(new THREE.TorusGeometry(0.4, 0.03, 6, 24), tmat(0x5a3a1a), 0, 1.12, 0)
+    strap.rotation.set(0, Math.PI / 2, 0.7)
+    strap.scale.set(1, 1, 0.7)
+    g.add(strap)
   }
+
+  const shadow = contactShadow(0.55, 0.32)
+  g.add(shadow)
+  addInkOutline(g, { width: 0.0045 })
+
+  const blink = makeBlinker(eyes)
+  const baseShirt = shirtMat.color.getHex()
   g.userData.legs = legs
   g.userData.arms = arms
+  g.userData.head = head
+  g.userData.torso = torso
+  g.userData.blink = blink
+  // Alert flash for guards/boss: tints the shirt only (materials are per figure).
+  g.userData.alert = (on, color = 0xff5d3d) => { shirtMat.color.setHex(on ? color : baseShirt) }
   return g
 }
 
-function animateWalk(figure, moving, t) {
-  const { legs, arms } = figure.userData
-  const swing = moving ? Math.sin(t * 9) * 0.55 : 0
+export function animateWalk(figure, moving, t) {
+  const { legs, arms, head, torso, blink } = figure.userData
+  const swing = moving ? Math.sin(t * 9) * 0.6 : 0
   legs[0].rotation.x = swing
   legs[1].rotation.x = -swing
-  arms[0].rotation.x = -swing
-  arms[1].rotation.x = swing
+  arms[0].rotation.x = -swing * 0.8
+  arms[1].rotation.x = swing * 0.8
+  // a little bounce in the step, and slow breathing when standing still
+  if (torso) torso.scale.y = moving ? 1 : 1 + Math.sin(t * 2.2) * 0.015
+  if (head) {
+    head.position.y = 1.58 + (moving ? Math.abs(Math.sin(t * 9)) * 0.04 : Math.sin(t * 2.2) * 0.01)
+    head.rotation.z = moving ? Math.sin(t * 4.5) * 0.04 : 0
+  }
+  blink?.(t)
 }
 
 function faceToward(obj, dx, dz) {
@@ -92,59 +192,113 @@ function faceToward(obj, dx, dz) {
   obj.rotation.y = Math.atan2(dx, dz)
 }
 
-// Small companion critters — same procedural-primitives style as the
-// figures, just tiny and quadruped-ish (or, for the raven, a little flier).
+// Companion critters — same chibi style as the people: big head, short legs.
 const CRITTER_COLORS = {
-  cat: { body: 0x4a4a55, accent: 0x2a2a30 },
-  raven: { body: 0x1c1c22, accent: 0x2a2a30 },
-  raccoon: { body: 0x6b5a45, accent: 0x2a2622 },
-  pup: { body: 0xc99a5c, accent: 0x8a6a3a },
+  cat: { body: 0x4a4a58, accent: 0x2a2a32, belly: 0xcfcfd8, eye: 0x9ad64a },
+  raven: { body: 0x23232c, accent: 0x15151b, belly: 0x3a3a48, eye: 0x2a2a2a },
+  raccoon: { body: 0x7d7163, accent: 0x2a2622, belly: 0xd8d0c2, eye: 0x3a2a1a },
+  pup: { body: 0xc99a5c, accent: 0x8a5e34, belly: 0xf0dcbc, eye: 0x3a2a1a },
 }
 
-function makeCritter(key) {
-  const { body, accent } = CRITTER_COLORS[key]
+export function makeCritter(key) {
+  const { body, accent, belly, eye: irisColor } = CRITTER_COLORS[key]
   const g = new THREE.Group()
-  const bodyMat = new THREE.MeshStandardMaterial({ color: body })
-  const accentMat = new THREE.MeshStandardMaterial({ color: accent })
+  const bodyMat = tmat(body)
+  const accentMat = tmat(accent)
+  const bellyMat = tmat(belly)
+  const rig = new THREE.Group()
+  g.add(rig)
 
   if (key === 'raven') {
-    const torso = new THREE.Mesh(new THREE.SphereGeometry(0.18, 8, 8), bodyMat)
-    g.add(torso)
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), bodyMat)
-    head.position.set(0, 0.1, 0.16)
-    g.add(head)
-    const wingGeo = new THREE.BoxGeometry(0.32, 0.03, 0.16)
-    const wings = [-1, 1].map(side => {
-      const wing = new THREE.Mesh(wingGeo, accentMat)
-      wing.position.set(side * 0.2, 0.02, 0)
-      g.add(wing)
-      return wing
+    const torso = part(new THREE.SphereGeometry(0.17, 16, 12), bodyMat, 0, 0, 0)
+    torso.scale.set(0.9, 0.9, 1.25)
+    rig.add(torso)
+    const head = part(new THREE.SphereGeometry(0.12, 16, 12), bodyMat, 0, 0.1, 0.17)
+    rig.add(head)
+    rig.add(part(new THREE.ConeGeometry(0.04, 0.14, 8).rotateX(Math.PI / 2), tmat(0x8d8a7c), 0, 0.08, 0.32))
+    const eyes = [-1, 1].map(s => {
+      const e = cartoonEye(0.04, irisColor)
+      e.position.set(s * 0.07, 0.14, 0.26)
+      e.rotation.y = s * 0.5
+      rig.add(e)
+      return e
+    })
+    const tail = part(new THREE.ConeGeometry(0.1, 0.22, 4), accentMat, 0, 0.02, -0.25)
+    tail.rotation.x = -Math.PI / 2 - 0.2
+    tail.scale.set(1.4, 1, 0.3)
+    rig.add(tail)
+    const wings = [-1, 1].map(s => {
+      const p = pivot(rig, s * 0.13, 0.04, 0)
+      const w = part(new THREE.SphereGeometry(0.2, 14, 8), accentMat, s * 0.17, 0, -0.03)
+      w.scale.set(1, 0.18, 0.62)
+      p.add(w)
+      return p
     })
     g.userData.wings = wings
+    g.userData.blink = makeBlinker(eyes)
     g.userData.baseY = 1.6
   } else {
-    const body_ = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.2, 0.5), bodyMat)
-    body_.position.y = 0.18
-    g.add(body_)
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.15, 10, 8), bodyMat)
-    head.position.set(0, 0.24, 0.3)
-    g.add(head)
-    const earGeo = new THREE.ConeGeometry(0.06, 0.1, 6)
-    ;[-1, 1].forEach(side => {
-      const ear = new THREE.Mesh(earGeo, accentMat)
-      ear.position.set(side * 0.08, 0.36, 0.32)
-      g.add(ear)
+    // body, belly, head, snout
+    const torso = part(new THREE.CapsuleGeometry(0.13, 0.22, 6, 14).rotateX(Math.PI / 2), bodyMat, 0, 0.2, -0.02)
+    rig.add(torso)
+    const bellyMesh = part(new THREE.CapsuleGeometry(0.1, 0.16, 6, 12).rotateX(Math.PI / 2), bellyMat, 0, 0.15, 0)
+    rig.add(bellyMesh)
+    const head = pivot(rig, 0, 0.33, 0.2)
+    head.add(part(new THREE.SphereGeometry(0.16, 18, 14), bodyMat))
+    const snout = part(new THREE.SphereGeometry(0.075, 12, 10), bellyMat, 0, -0.05, 0.13)
+    snout.scale.set(1.2, 0.8, 1)
+    head.add(snout)
+    head.add(part(new THREE.SphereGeometry(0.025, 8, 6), tmat(0x1a1a1a), 0, -0.02, 0.2))
+    if (key === 'raccoon') {
+      const mask = part(new THREE.SphereGeometry(0.161, 18, 8, -Math.PI * 0.35, Math.PI * 0.7, Math.PI * 0.35, Math.PI * 0.18), accentMat)
+      mask.rotation.y = 0
+      head.add(mask)
+    }
+    const eyes = [-1, 1].map(s => {
+      const e = cartoonEye(0.05, irisColor)
+      e.position.set(s * 0.065, 0.03, 0.13)
+      e.rotation.y = s * 0.25
+      head.add(e)
+      return e
     })
-    const legGeo = new THREE.BoxGeometry(0.07, 0.16, 0.07)
-    const legs = [[-0.12, 0.18], [0.12, 0.18], [-0.12, -0.18], [0.12, -0.18]].map(([x, z]) => {
-      const leg = new THREE.Mesh(legGeo, accentMat)
-      leg.position.set(x, 0.08, z)
-      g.add(leg)
-      return leg
+    // ears
+    for (const s of [-1, 1]) {
+      if (key === 'pup') {
+        const ear = part(new THREE.SphereGeometry(0.07, 10, 8), accentMat, s * 0.14, 0.02, -0.01)
+        ear.scale.set(0.5, 1.3, 0.9)
+        ear.rotation.z = s * 0.35
+        head.add(ear)
+      } else {
+        const ear = part(new THREE.ConeGeometry(0.06, 0.12, 8), key === 'raccoon' ? accentMat : bodyMat, s * 0.09, 0.15, -0.01)
+        ear.rotation.z = -s * 0.25
+        head.add(ear)
+      }
+    }
+    if (key === 'pup') head.add(part(new THREE.CapsuleGeometry(0.025, 0.04, 4, 8), tmat(0xe8586a), 0.02, -0.1, 0.17))
+    // tail
+    const tailCurve = new THREE.CatmullRomCurve3([new THREE.Vector3(0, 0.22, -0.2), new THREE.Vector3(0, 0.3, -0.32), new THREE.Vector3(0, key === 'cat' ? 0.5 : 0.36, -0.36)])
+    const tailMesh = part(new THREE.TubeGeometry(tailCurve, 12, key === 'raccoon' ? 0.06 : key === 'pup' ? 0.035 : 0.03, 8), bodyMat)
+    rig.add(tailMesh)
+    if (key === 'raccoon') {
+      for (const k of [0.3, 0.6, 0.85]) {
+        const at = tailCurve.getPoint(k), dir = tailCurve.getTangent(k)
+        const ring = part(new THREE.TorusGeometry(0.058, 0.022, 6, 14), accentMat, 0, at.y, at.z)
+        ring.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir) // ring wraps around the tail
+        rig.add(ring)
+      }
+    }
+    // legs (short, so they patter)
+    const legs = [[-0.08, 0.08], [0.08, 0.08], [-0.08, -0.13], [0.08, -0.13]].map(([x, z]) => {
+      const p = pivot(rig, x, 0.12, z)
+      p.add(part(new THREE.CapsuleGeometry(0.04, 0.06, 4, 8), accentMat, 0, -0.06, 0))
+      return p
     })
     g.userData.legs = legs
+    g.userData.blink = makeBlinker(eyes)
     g.userData.baseY = 0
+    g.add(contactShadow(0.3, 0.3))
   }
+  addInkOutline(rig, { width: 0.004, minSize: 0.03 })
   return g
 }
 
@@ -370,14 +524,14 @@ function GameCanvas({ saveRef, onHud, onDirty, shopOpenRef }) {
     const player = makeFigure({ shirt: 0x2a2a44, mask: true, bag: true })
     scene.add(player)
 
-    const fenceFigure = makeFigure({ shirt: 0x4a2a5c, hat: 0x2a1a34 })
+    const fenceFigure = makeFigure({ shirt: 0x4a2a5c, hat: 0x2a1a34, hatStyle: 'fedora' })
     fenceFigure.position.set(FENCE_POS.x, 0, FENCE_POS.z)
     scene.add(fenceFigure)
     const fenceLabel = makeLabel('FENCE', '#ffb066')
     fenceLabel.position.set(FENCE_POS.x, 2.6, FENCE_POS.z)
     scene.add(fenceLabel)
 
-    const shopFigure = makeFigure({ shirt: 0xc9821f, hat: 0x5c3a10 })
+    const shopFigure = makeFigure({ shirt: 0xc9821f, hat: 0x5c3a10, hatStyle: 'cap', skin: 0xe8b890 })
     shopFigure.position.set(SHOP_POS.x, 0, SHOP_POS.z)
     scene.add(shopFigure)
     const shopLabel = makeLabel('SHOP', '#7bff8a')
@@ -467,6 +621,8 @@ function GameCanvas({ saveRef, onHud, onDirty, shopOpenRef }) {
       player.position.set(run.x, run.y, run.z)
       if (moving) faceToward(player, moveX, moveZ)
       animateWalk(player, moving, t)
+      animateWalk(fenceFigure, false, t + 1.3)
+      animateWalk(shopFigure, false, t + 2.7)
 
       run.guards.forEach((g, i) => {
         const mesh = guardPool[i]
@@ -475,7 +631,7 @@ function GameCanvas({ saveRef, onHud, onDirty, shopOpenRef }) {
         mesh.position.set(g.x, 0, g.z)
         faceToward(mesh, g.x - prevX, g.z - prevZ)
         animateWalk(mesh, true, t + i)
-        mesh.children.forEach(c => { if (c.isMesh) c.material.color.setHex(g.state === 'chase' ? 0xff5d3d : 0x2a3a6a) })
+        mesh.userData.alert(g.state === 'chase')
         const ring = suspicionRings[i]
         ring.position.set(g.x, 0.05, g.z)
         ring.material.opacity = g.state === 'chase' ? 0 : g.suspicion * 0.8
@@ -506,13 +662,16 @@ function GameCanvas({ saveRef, onHud, onDirty, shopOpenRef }) {
         const bob = m.key === 'raven' ? 1.5 + Math.sin(t * 2.5 + pos.slot) * 0.15 : 0.02 + Math.abs(Math.sin(t * 6 + pos.slot)) * 0.04
         mesh.position.set(pos.x, bob, pos.z)
         faceToward(mesh, dx, dz)
-        if (m.key === 'raven') mesh.userData.wings.forEach((w, wi) => { w.rotation.z = Math.sin(t * 12 + wi * Math.PI) * 0.5 })
+        if (m.key === 'raven') mesh.userData.wings.forEach((w, wi) => { w.rotation.z = (wi ? -1 : 1) * Math.sin(t * 12) * 0.6 })
+        else mesh.userData.legs.forEach((leg, li) => { leg.rotation.x = Math.sin(t * 14 + (li % 2 === li >> 1 ? 0 : Math.PI)) * Math.min(0.7, Math.hypot(dx, dz) * 3) })
+        mesh.userData.blink?.(t + pos.slot)
       })
 
       if (run.boss && !run.boss.defeated) {
         bossFigure.visible = true
         bossFigure.position.set(run.boss.x, run.boss.roofY, run.boss.z)
-        bossFigure.children.forEach(c => { if (c.isMesh) c.material.color.setHex(run.boss.mode === 'windup' ? 0xff3b3b : 0x6a1a1a) })
+        bossFigure.userData.alert(run.boss.mode === 'windup', 0xff3b3b)
+        animateWalk(bossFigure, false, t)
         bossWindupRing.visible = run.boss.mode === 'windup'
         bossWindupRing.position.set(run.boss.x, run.boss.roofY + 0.05, run.boss.z)
         bossWindupRing.material.opacity = run.boss.mode === 'windup' ? 0.5 + Math.sin(t * 20) * 0.3 : 0
@@ -609,6 +768,7 @@ function GameCanvas({ saveRef, onHud, onDirty, shopOpenRef }) {
       renderer.domElement.removeEventListener('click', onClick)
       if (document.pointerLockElement === renderer.domElement) document.exitPointerLock()
       renderer.dispose()
+      renderer.forceContextLoss() // dispose() alone leaves the browser's WebGL context alive
       if (mount.contains(renderer.domElement)) mount.removeChild(renderer.domElement)
     }
   }, [])

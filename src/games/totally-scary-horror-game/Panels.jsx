@@ -31,17 +31,20 @@ const FLOORS = {
   2: { icon: '⛏️', name: 'Floor 2', desc: 'Skip straight down to the basement & mines.' },
   3: { icon: '🏚️', name: 'Floor 3', desc: 'Up to the attic: 50 dusty doors, then the rooftop.' },
   4: { icon: '🌙', name: 'Floor 4', desc: 'Outside, into the garden. Only one person works out there.' },
+  [-1]: { icon: '⬛', name: 'Floor -A0001', desc: 'Below everything. Very, very dark. Only one person lives down there.' },
+  13: { icon: '🩸', name: 'Floor 13', desc: 'The Staff Wing. No closets. Three hearts. Everyone, all at once.' },
 }
 
-export function ElevatorPanel({ settings, perks, wallet, unlocked3, unlocked4, onUnlock, onGo, onClose }) {
-  const startable = (f) => (f === 3 ? unlocked3 : f === 4 ? unlocked4 : true)
+export function ElevatorPanel({ settings, perks, wallet, unlocked3, unlocked4, found13, onFind13, onUnlock, onGo, onClose }) {
+  const startable = (f) => (f === 3 ? unlocked3 : f === 4 ? unlocked4 : f === 13 ? found13 : true)
+  const [pokes, setPokes] = useState(0)
   const [floor, setFloor] = useState(startable(settings.startFloor || 1) ? settings.startFloor || 1 : 1)
   const [diff, setDiff] = useState(settings.difficulty || 'normal')
   return (
     <Panel title="🛗 The Elevator" onClose={onClose}>
       <div className={styles.journalFloor}>Where to?</div>
       <div className={styles.choiceRow}>
-        {[1, 2, 3, 4].map(f => {
+        {[1, 2, 3, 4, -1, ...(found13 ? [13] : [])].map(f => {
           const locked = !startable(f)
           return (
             <button key={f} className={`${styles.choice} ${floor === f ? styles.choiceOn : ''} ${locked ? styles.choiceLocked : ''}`} onClick={() => setFloor(f)}>
@@ -62,14 +65,24 @@ export function ElevatorPanel({ settings, perks, wallet, unlocked3, unlocked4, o
         ))}
       </div>
       {perks.allowance && <p className={styles.shopGreet}>👵 Grandma Bea left you a little allowance at the front desk for this stay.</p>}
-      {floor === 4 && !unlocked4 ? (
+      {!found13 && (
+        <button
+          className={styles.secret13}
+          aria-label="13"
+          onClick={() => { const n = pokes + 1; setPokes(n); if (n >= 3) { onFind13(); setFloor(13) } }}
+          style={{ opacity: 0.12 + pokes * 0.25 }}
+        >13</button>
+      )}
+      {floor === 13 ? (
+        <button className={styles.bigBtn} style={{ background: '#c02a2a', color: '#fff' }} onClick={() => onGo({ floor: 13, difficulty: 'scary' })}>▶ Staff only…</button>
+      ) : floor === 4 && !unlocked4 ? (
         <button className={styles.bigBtn} disabled>🔒 Escape the attic first</button>
       ) : floor === 3 && !unlocked3 ? (
         <button className={styles.bigBtn} disabled={wallet < FLOOR3_PRICE} onClick={onUnlock}>
           {wallet >= FLOOR3_PRICE ? `🔓 Unlock the attic (🪙 ${FLOOR3_PRICE})` : `Need 🪙 ${FLOOR3_PRICE - wallet} more tips`}
         </button>
       ) : (
-        <button className={styles.bigBtn} onClick={() => onGo({ floor, difficulty: diff })}>▶ {floor === 4 ? 'Out to the garden…' : `Going ${floor === 2 ? 'down' : 'up'}!`}</button>
+        <button className={styles.bigBtn} onClick={() => onGo({ floor, difficulty: diff })}>▶ {floor === 4 ? 'Out to the garden…' : floor === -1 ? 'Down. All the way down…' : `Going ${floor === 2 ? 'down' : 'up'}!`}</button>
       )}
     </Panel>
   )
@@ -97,7 +110,7 @@ export function AchievementsPanel({ progress, onClose }) {
   )
 }
 
-const RARITY = { 1: '⭐', 2: '⭐⭐', 3: '⭐⭐⭐', 4: '🎃🎃🎃🎃', secret: '🌟🌟🌟' }
+const RARITY = { [-1]: '🕯️🕯️🕯️🕯️', 1: '⭐', 2: '⭐⭐', 3: '⭐⭐⭐', 4: '🎃🎃🎃🎃', secret: '🌟🌟🌟' }
 
 export function AlbumPanel({ progress, onClose }) {
   const [big, setBig] = useState(null)
@@ -141,9 +154,9 @@ export function RecordsPanel({ progress, onClose }) {
   return (
     <Panel title="⏱️ Fastest Checkouts" right={`${progress.stats.escapes} escape${progress.stats.escapes === 1 ? '' : 's'}`} onClose={onClose} wide>
       <div className={styles.choiceRow}>
-        {[1, 2, 3, 4].map(f => (
+        {[1, 2, 3, 4, -1, 13].map(f => (
           <button key={f} className={`${styles.choice} ${styles.choiceSmall} ${floor === f ? styles.choiceOn : ''}`} onClick={() => setFloor(f)}>
-            <b>{f === 1 ? '🏨 Full run (Floor 1 start)' : f === 2 ? '⛏️ Floor 2 only' : f === 3 ? '🏚️ The attic' : '🌙 The garden'}</b>
+            <b>{f === 1 ? '🏨 Full run (Floor 1 start)' : f === 2 ? '⛏️ Floor 2 only' : f === 3 ? '🏚️ The attic' : f === 4 ? '🌙 The garden' : f === -1 ? '⬛ -A0001' : '🩸 Floor 13'}</b>
           </button>
         ))}
       </div>

@@ -18,7 +18,7 @@ import {
   SEEK_SPEED, SEEK_CATCH, FIGURE_PATROL_SPEED, FIGURE_HUNT_SPEED,
   FIGURE_HEAR_WALK, FIGURE_HEAR_SNEAK, FIGURE_CATCH, FIGURE_REST, PAGES_NEEDED,
   EYE_H, MONSTER_DEFS, SHOP_ROOM, FORCE_DUPE_ROOMS, FORCE_GUS_ROOM, FORCE_AMBUSH_ROOM,
-  FORCE_SPIDER_ROOM, QUIET_ROOMS, AMBUSH_WARNING, AMBUSH_SPEED, AMBUSH_PAUSE, GUS_SPEED,
+  FORCE_SPIDER_ROOM, QUIET_ROOMS, WES_POPS, WES_WINDOW, WES_LOOK_ANGLE, WES_CHANCE, AMBUSH_WARNING, AMBUSH_SPEED, AMBUSH_PAUSE, GUS_SPEED,
   GUS_WATCH_ANGLE, GUS_CATCH, HIDE_LIMIT, HIDE_LIMIT_OCCUPIED, HIDE_WARNING, BOOST_TIME,
   BOOST_MULT, SHOP_ITEMS, ELEVATOR_ROOM, FLOOR2_START, SHOP2_ROOM, CHASE2_ROOMS, BOILER_ROOM,
   FORCED_DARK_ROOMS_2, FORCE_HANK_ROOM, FORCE_DOUG_ROOM, FORCE_BATS_ROOM, VALVES_NEEDED,
@@ -29,7 +29,7 @@ import {
   SHELLY_SPEED, SHELLY_NAP, COCO_TIME, MIRROR_GRACE,
   FLOOR4_ELEVATOR, FLOOR4_START, BOSS_ROOM, TOTAL_ROOMS_F4, GARDENER_MOODS, GARD_HEAR_WALK, GARD_HEAR_SNEAK,
   GARD_CHASE_SPEED, GARD_WATCH_SPEED, GARD_HIDE_GIVEUP, GARD_MOWER_SPEED, GARD_WHISPER_TIME,
-  BOSS_HEARTS, BOSS_BRAZIERS, BOSS_SPEED, BOSS_WINDUP, BOSS_COOLDOWN, NIBBLES_TIME, NIBBLES_SPEED, NIBBLES_BONUS, BUBBLES_TIME,
+  BOSS_HEARTS, BOSS_BRAZIERS, BOSS_SPEED, BOSS_WINDUP, BOSS_COOLDOWN, STAFF_TOTAL, STAFF_HEARTS, STAMPEDE_INV, SUB_TOTAL, LAMP_MOODS, NIBBLES_TIME, NIBBLES_SPEED, NIBBLES_BONUS, BUBBLES_TIME,
   BUBBLES_POP_ANGLE, BUBBLES_POP_RANGE, COLD_TIME, COLD_FREEZE, SECRET_CLICKS, SECRET_REWARD, SECRET_NPC,
 } from './constants.js'
 
@@ -54,7 +54,9 @@ const S = (state, v) => v * state.diff.speed
 // ── World generation ────────────────────────────────────────────────────
 
 function roomTypeFor(i, total, mode) {
-  const attic = mode >= 3
+  if (mode === -1) return i === 0 ? 'elevator' : i === total - 1 ? 'exit' : i === total - 2 ? 'meeting' : 'normal'
+  if (mode === 13) return i === 0 ? 'elevator' : i === total - 1 ? 'exit' : i === total - 2 ? 'stampede' : 'normal'
+  const attic = mode >= 3 && mode !== 13
   if (i === 0) return 'lobby'
   if (i === total - 1) return 'exit'
   if (mode === 4 && i === FLOOR4_ELEVATOR) return 'elevator'
@@ -85,6 +87,8 @@ function dimsFor(type, rng) {
     case 'garden': return { hw: 4.2 + rng() * 1.8, len: 9 + rng() * 5 }
     case 'boss': return { hw: 11, len: 24 }
     case 'overgrown': return { hw: 6.5, len: 22 }
+    case 'stampede': return { hw: 10, len: 48 }
+    case 'meeting': return { hw: 4.5, len: 12 }
     default: return { hw: 4 + rng() * 1.6, len: 8 + rng() * 5 }
   }
 }
@@ -292,16 +296,30 @@ function addMounds(room, rng) {
   }
 }
 
+// The great hall at the end of the Staff Wing: a long room with pillars to
+// weave between. Everyone comes out of the walls at once.
+function buildStampedeHall(room, rng) {
+  const { hw, z0, z1 } = room
+  for (let z = z0 - 9; z > z1 + 5; z -= 6.5) {
+    for (const x of [-6, -2, 2, 6]) {
+      const jx = x + (rng() - 0.5) * 1.2
+      room.furniture.push({ kind: 'pillar', cx: jx, cz: z, len: 0.9, depth: 0.9, h: 3 })
+      addSolid(room, jx - 0.45, jx + 0.45, z - 0.45, z + 0.45)
+    }
+  }
+  void hw
+}
+
 // Door 199: everyone the Gardener has "kept" — every other monster in the
 // hotel — sitting in two rows along the hedges, overgrown with vines.
 // Their spots are plain data; the render loop puts the actual models there.
 export const OVERGROWN_CAST = ['barry', 'steve', 'drakko', 'wendell', 'gary', 'reginald', 'doris', 'mildred', 'tim', 'frank', 'gus',
-  'hank', 'bernadette', 'doug', 'puff', 'twirl', 'bumpus', 'nibbles', 'bubbles', 'yolanda', 'shelly', 'coco', 'marvin',
+  'hank', 'bernadette', 'doug', 'puff', 'twirl', 'bumpus', 'nibbles', 'bubbles', 'wes', 'yolanda', 'shelly', 'coco', 'marvin',
   'gloria', 'mabel', 'ollie', 'hoot', 'bea']
 function buildOvergrown(room) {
   const { hw, z0, z1 } = room
   const slots = []
-  const perRow = 7
+  const perRow = Math.ceil(OVERGROWN_CAST.length / 4)
   for (const side of [-1, 1]) {
     for (const row of [0, 1]) {
       for (let k = 0; k < perRow; k++) {
@@ -375,14 +393,14 @@ function buildChase(room, rng) {
 export function generateHotel(rng, mode = 1) {
   const rooms = []
   let z0 = 0
-  const total = mode === 4 ? TOTAL_ROOMS_F4 : mode === 3 ? TOTAL_ROOMS_F3 : TOTAL_ROOMS
+  const total = mode === -1 ? SUB_TOTAL : mode === 13 ? STAFF_TOTAL : mode === 4 ? TOTAL_ROOMS_F4 : mode === 3 ? TOTAL_ROOMS_F3 : TOTAL_ROOMS
   for (let i = 0; i < total; i++) {
     const type = roomTypeFor(i, total, mode)
     const { hw, len } = dimsFor(type, rng)
-    const floor = mode === 4 && i >= FLOOR4_ELEVATOR ? 4 : mode >= 3 && i >= FLOOR3_ELEVATOR ? 3 : i >= FLOOR2_START ? 2 : 1
+    const floor = mode === -1 ? -1 : mode === 13 ? 13 : mode === 4 && i >= FLOOR4_ELEVATOR ? 4 : mode >= 3 && i >= FLOOR3_ELEVATOR ? 3 : i >= FLOOR2_START ? 2 : 1
     rooms.push({
       index: i, type, hw, len, z0, z1: z0 - len, floor,
-      theme: floor === 4 ? 'garden' : floor === 3 ? 'attic' : floor === 1 ? 'hotel' : type === 'chase' ? 'mine' : type === 'boiler' ? 'boiler' : type === 'normal' ? (i === FORCE_DOUG_ROOM || rng() < 0.5 ? 'mine' : 'basement') : 'basement',
+      theme: floor === -1 ? 'sub' : floor === 13 ? 'staff' : floor === 4 ? 'garden' : floor === 3 ? 'attic' : floor === 1 ? 'hotel' : type === 'chase' ? 'mine' : type === 'boiler' ? 'boiler' : type === 'normal' ? (i === FORCE_DOUG_ROOM || rng() < 0.5 ? 'mine' : 'basement') : 'basement',
       solids: [], furniture: [], interactables: [],
       dark: false, locked: false, unlocked: false, lockKind: null, seekEyes: SEEK_EYES_ROOMS.includes(i),
     })
@@ -393,7 +411,7 @@ export function generateHotel(rng, mode = 1) {
   for (let i = 0; i < rooms.length - 1; i++) {
     const a = rooms[i], b = rooms[i + 1]
     let lim = Math.min(a.hw, b.hw) - 1.2
-    if (a.type === 'library' || b.type === 'library' || a.type === 'boiler' || b.type === 'boiler' || a.type === 'boss' || b.type === 'boss' || a.type === 'overgrown' || b.type === 'overgrown') lim = Math.min(lim, 2.5)
+    if (a.type === 'library' || b.type === 'library' || a.type === 'boiler' || b.type === 'boiler' || a.type === 'boss' || b.type === 'boss' || a.type === 'overgrown' || b.type === 'overgrown' || a.type === 'stampede' || b.type === 'stampede') lim = Math.min(lim, 2.5)
     if (a.type === 'chase' || b.type === 'chase') lim = Math.min(lim, 0.3)
     const x = (rng() * 2 - 1) * Math.max(0, lim)
     a.exitX = x
@@ -403,7 +421,28 @@ export function generateHotel(rng, mode = 1) {
 
   for (const room of rooms) {
     const i = room.index
-    if (room.type === 'normal') {
+    if (room.type === 'normal' && room.floor === -1) {
+      // the sub-basement: every room is pitch black
+      room.dark = true
+      room.locked = i > 2 && rng() < 0.15
+      furnishSides(room, rng, { needCloset: true, needDresser: room.locked, pool: ['closet', 'dresser', 'nightstand', 'bed', 'chair', 'plant'] })
+    } else if (room.type === 'meeting') {
+      const zc = (room.z0 + room.z1) / 2
+      room.dark = true
+      room.furniture.push({ kind: 'candletable', cx: 0, cz: zc, len: 1.6, depth: 1.0, h: 0.8 })
+      addSolid(room, -0.8, 0.8, zc - 0.5, zc + 0.5)
+      room.seat = { x: 0, z: zc - 1.0 }
+      addSolid(room, -0.35, 0.35, zc - 1.35, zc - 0.65)
+      room.locked = true
+      room.lockKind = 'meeting'
+    } else if (room.type === 'normal' && room.floor === 13) {
+      // the Staff Wing: no closets. Anywhere.
+      room.dark = i > 2 && rng() < 0.35
+      room.locked = i > 2 && rng() < 0.2
+      furnishSides(room, rng, { needDresser: room.locked, pool: ['dresser', 'dresser', 'nightstand', 'bed', 'plant', 'chair'] })
+    } else if (room.type === 'stampede') {
+      buildStampedeHall(room, rng)
+    } else if (room.type === 'normal') {
       const wantDupe = FORCE_DUPE_ROOMS.includes(i) || (i >= 7 && i !== FLOOR2_START && i !== FLOOR3_START && rng() < 0.1)
       const forcedDark = room.floor === 1 ? FORCED_DARK_ROOMS.includes(i) : FORCED_DARK_ROOMS_2.includes(i)
       room.dark = !wantDupe && i >= 4 && i !== FLOOR2_START && i !== FLOOR3_START && (forcedDark || rng() < (room.floor === 2 ? 0.28 : 0.22))
@@ -453,10 +492,10 @@ export function generateHotel(rng, mode = 1) {
     for (const it of room.interactables) {
       if (it.kind === 'drawer' && it.contents === null) {
         const r = rng()
-        it.contents = i >= 5 && r < 0.05 ? 'spider' : r < 0.5 ? { coins: 1 + Math.floor(rng() * 6) } : 'empty'
+        it.contents = i >= 5 && r < 0.05 && room.floor !== 13 && room.floor !== -1 ? 'spider' : r < 0.5 ? { coins: 1 + Math.floor(rng() * 6) } : 'empty'
       }
     }
-    if (i === FORCE_SPIDER_ROOM) {
+    if (i === FORCE_SPIDER_ROOM && room.floor !== 13 && room.floor !== -1) {
       const d = room.interactables.find(it => it.kind === 'drawer' && it.contents !== 'pass')
       if (d) d.contents = 'spider'
     }
@@ -487,7 +526,7 @@ export function generateHotel(rng, mode = 1) {
   }
 
   const lib = rooms[LIBRARY_ROOM]
-  lib.grid = buildNavGrid(lib)
+  if (lib) lib.grid = buildNavGrid(lib)
   return rooms
 }
 
@@ -623,8 +662,9 @@ function pointAlong(path, s) {
 
 export function createGame(seed = (Math.random() * 2 ** 32) >>> 0, { startFloor = 1, difficulty = 'normal', startCoins = 0, baseCoins = null } = {}) {
   const rng = mulberry32(seed)
-  const rooms = generateHotel(rng, startFloor >= 3 ? startFloor : 1)
-  const elevatorRoom = startFloor === 4 ? FLOOR4_ELEVATOR : startFloor === 3 ? FLOOR3_ELEVATOR : ELEVATOR_ROOM
+  const rooms = generateHotel(rng, startFloor >= 3 || startFloor === -1 ? startFloor : 1)
+  addWesWindows(rooms, seed)
+  const elevatorRoom = startFloor === 13 || startFloor === -1 ? 0 : startFloor === 4 ? FLOOR4_ELEVATOR : startFloor === 3 ? FLOOR3_ELEVATOR : ELEVATOR_ROOM
   const state = {
     elevatorRoom,
     seed, rng, rooms,
@@ -636,13 +676,14 @@ export function createGame(seed = (Math.random() * 2 ** 32) >>> 0, { startFloor 
     coins: 0, hasPass: false, pages: 0, valves: 0,
     inventory: Object.fromEntries(SHOP_ITEMS.map(it => [it.id, 0])),
     difficulty, diff: DIFFICULTIES[difficulty] || DIFFICULTIES.normal, startFloor,
+    lampBag: [], lastLampRoom: 0, lightOut: 0,
     gardBag: [], lastGardMood: null, lastGardRoom: 0, bossDefeated: false,
     hidCount: 0, bought: 0, costumeSaves: 0, maxCoins: 0, popped: 0,
     shopOpen: false,
     ev: {
       rush: null, eyes: null, screech: null, ambush: null, gus: null, mildred: null,
-      shelly: null, coco: null, mirror: null, gard: null, boss: null,
-      hank: null, bats: null, puff: null, twirl: null, bumpus: null, nibbles: null, bubbles: null, cold: null, elevator: { phase: 'idle', t: 0 },
+      shelly: null, coco: null, mirror: null, gard: null, boss: null, lamp: null, meet: null,
+      hank: null, bats: null, wes: null, puff: null, twirl: null, bumpus: null, nibbles: null, bubbles: null, cold: null, elevator: { phase: 'idle', t: 0 },
       seek2: { phase: 'idle', s: 0, path: null, x: 0, z: 0 },
       halt: { phase: 'idle', progress: 0, dir: -1, nextCue: HALT_CUE_EVERY, wendell: null },
       seek: { phase: 'idle', s: 0, path: null, x: 0, z: 0 },
@@ -669,7 +710,7 @@ export function createGame(seed = (Math.random() * 2 ** 32) >>> 0, { startFloor 
     elapsed: 0,
   }
   setCaption(state, 'Find your way out of the hotel. Search drawers with E, and duck into a closet if the lights start flickering.', 6)
-  if (startFloor >= 2) {
+  if (startFloor >= 2 || startFloor === -1) {
     // Skip straight to the elevator, with a few tips for the shop.
     const el = rooms[elevatorRoom]
     state.player.x = el.entryX
@@ -678,6 +719,12 @@ export function createGame(seed = (Math.random() * 2 ** 32) >>> 0, { startFloor 
     state.maxRoom = elevatorRoom
     state.coins = 20
     state.caption = null
+  }
+  if (startFloor === 13) {
+    // it's always Totally Scary in the Staff Wing, and you only get three hearts
+    state.hardcore = true
+    state.hearts = STAFF_HEARTS
+    state.diff = DIFFICULTIES.scary
   }
   if (baseCoins != null) state.coins = baseCoins
   if (startCoins) state.coins += startCoins
@@ -944,6 +991,7 @@ export function triggerCatch(state, id, mx, mz) {
   if (firstTime) state.metIds.add(id)
   state.catchCount += 1
   state.catchesById[id] = (state.catchesById[id] || 0) + 1
+  if (state.hardcore && id !== 'nibbles') loseHeart(state) // catching Nibbles is a good thing
   encounter(state, id)
   const lines = def.caughtLines ? [def.caughtLines[Math.floor(state.rng() * def.caughtLines.length)]] : firstTime ? def.lines : [def.repeatLine]
   state.dialogue = { monsterId: id, lines, lineIndex: 0 }
@@ -985,6 +1033,13 @@ function finishCatch(state, id) {
     p.x = room.entryX; p.z = room.z0 - 0.8; p.yaw = 0; p.pitch = 0
     setCaption(state, '…you wake up at the garden archway. Your head is full of the smell of roses.', 4, 'warn')
   }
+  else if (id === 'lamplighter') {
+    ev.lamp = null
+    const p = state.player, room = state.rooms[p.room]
+    p.x = room.entryX; p.z = room.z0 - 0.8; p.yaw = 0; p.pitch = 0
+    state.lightOut = 2.5
+    setCaption(state, '…you wake up at the doorway. Your light sputters. You hear a lantern creak, somewhere.', 4, 'warn')
+  }
   else if (id === 'harvester' && ev.boss) {
     const b = ev.boss, p = state.player, room = state.rooms[BOSS_ROOM]
     b.hearts = BOSS_HEARTS; b.attack = null; b.cd = 3; b.inv = 2
@@ -995,6 +1050,7 @@ function finishCatch(state, id) {
   else if (id === 'marvin') ev.mirror = null
   else if (id === 'nibbles') { if (ev.nibbles) { state.coins += ev.nibbles.stolen + NIBBLES_BONUS; setCaption(state, `🐀 Got your ${ev.nibbles.stolen} tips back, plus ${NIBBLES_BONUS} extra!`, 3, 'good') } ev.nibbles = null }
   else if (id === 'bubbles') ev.bubbles = null
+  else if (id === 'wes') ev.wes = null
   else if (id === 'yolanda') ev.cold = null
   else if (id === 'twirl') ev.twirl = null
   else if (id === 'bumpus') ev.bumpus = null
@@ -1013,11 +1069,27 @@ export function advanceDialogue(state) {
     state.dialogue = null
     state.sitting = null
     if (dlg.talk) {
+      if (dlg.onDone === 'meet') {
+        const room = state.rooms.find(r => r.type === 'meeting')
+        room.unlocked = true
+        state.ev.meet.phase = 'done'
+        dodged(state, 'lamplighter')
+        state.metLamplighter = true
+        setCaption(state, '🕯️ He nods toward the back of the room. A narrow staircase leads up, out of the dark.', 5, 'good')
+        return
+      }
       if (dlg.reward) { state.coins += dlg.reward; setCaption(state, `🤫 ${MONSTER_DEFS[dlg.monsterId].name} slips you ${dlg.reward} tips. Secret found!`, 4, 'good') }
       return
     }
     finishCatch(state, dlg.monsterId)
+    if (state.hardcore && state.hearts <= 0) state.lost = true
   }
+}
+
+function loseHeart(state) {
+  state.hearts -= 1
+  state.heartsLost = (state.heartsLost || 0) + 1
+  state.hurtT = 0.6
 }
 
 // ── Events ──────────────────────────────────────────────────────────────
@@ -1027,6 +1099,8 @@ function onEnterRoom(state, idx) {
   const ev = state.ev
   if (state.landedQuiet === idx) { state.landedQuiet = null; return } // you tumbled in through a closet; give it a second
   if (room.floor === 4) { gardenEnter(state, idx); return } // out here, there's only him
+  if (room.floor === 13) { staffEnter(state, idx); return }
+  if (room.floor === -1) { subEnter(state, idx); return }
   state.roomsSinceRush += 1
   const busy = ev.rush || ev.eyes || ev.ambush || ev.gus
   if (room.type === 'normal' && !busy && !QUIET_ROOMS.includes(idx)) {
@@ -1048,7 +1122,8 @@ function onEnterRoom(state, idx) {
   if (room.floor === 2 && room.type === 'normal' && !QUIET_ROOMS.includes(idx) && !ev.hank && !ev.rush && !ev.ambush) {
     if (idx === FORCE_HANK_ROOM || state.rng() < 0.15) startHank(state, idx)
   }
-  const anyBusy = ev.rush || ev.ambush || ev.eyes || ev.gus || ev.puff || ev.twirl || ev.bumpus || ev.nibbles || ev.bubbles || ev.cold
+  if (room.wesWindows && !ev.rush && !ev.ambush && !ev.eyes) startWes(state, idx)
+  const anyBusy = ev.rush || ev.ambush || ev.eyes || ev.gus || ev.puff || ev.twirl || ev.bumpus || ev.nibbles || ev.bubbles || ev.cold || ev.wes
   if (room.type === 'normal' && !QUIET_ROOMS.includes(idx) && !anyBusy && !room.dark && !room.lockKind) {
     const r = state.rng()
     if (idx >= 8 && state.coins >= 4 && (r < 0.1 || (idx >= 12 && !ev.nibblesSeen && state.coins >= 6))) startNibbles(state, idx)
@@ -1069,7 +1144,7 @@ function onEnterRoom(state, idx) {
     ev.screech = null
     ev.bats = { phase: 'waiting', room: idx, t: 1.5 + state.rng() * 2 }
   }
-  if (idx === FLOOR3_START) {
+  if (idx === FLOOR3_START && state.startFloor === 3) {
     setCaption(state, '🏚️ Floor 3: the attic. Something slow and patient is following you up here… keep moving!', 6, 'warn')
     startShelly(state)
   }
@@ -1124,7 +1199,7 @@ function stepRush(state, dt) {
   rush.x = pos.x; rush.z = pos.z; rush.dirX = pos.dirX; rush.dirZ = pos.dirZ
   const barryRoom = roomIndexAt(state.rooms, rush.z)
   if (barryRoom === p.room) {
-    if (p.hidden) rush.sawHidden = true
+    if (p.hidden || (state.hardcore && inDoorway(state, p))) rush.sawHidden = true
     else { triggerCatch(state, 'barry', rush.x, rush.z); return }
   }
   if (rush.s >= rush.len) {
@@ -1186,7 +1261,7 @@ function stepAmbush(state, dt) {
   a.x = pos.x; a.z = pos.z
   a.dirX = fwd ? pos.dirX : -pos.dirX; a.dirZ = fwd ? pos.dirZ : -pos.dirZ
   if (roomIndexAt(state.rooms, a.z) === p.room) {
-    if (p.hidden) a.sawHidden = true
+    if (p.hidden || (state.hardcore && inDoorway(state, p))) a.sawHidden = true
     else { triggerCatch(state, 'doris', a.x, a.z); return }
   }
   if (a.s >= a.len) {
@@ -1239,7 +1314,7 @@ function stepGus(state, dt) {
 // ── Mildred: stay in a closet too long (or pick hers) and she wants it back ──
 function stepMildred(state, dt) {
   const p = state.player
-  if (state.rooms[p.room].floor === 4) return // the garden sheds are just sheds
+  if (state.rooms[p.room].floor === 4 || state.rooms[p.room].floor === -1) return // nobody else lives in these closets
   if (!p.hidden) { state.ev.mildred = null; return }
   if (state.ev.rush || state.ev.ambush) return // she understands, something's coming
   const closet = state.rooms[p.room].interactables.find(x => x.id === p.hidden)
@@ -1302,7 +1377,7 @@ function stepScreech(state, dt) {
   if (lookAngle(p, sc.x, 1.5, sc.z) < SCREECH_LOOK_ANGLE) {
     dodged(state, 'steve')
     state.ev.screech = null
-    setCaption(state, 'Pale Steve: "Aw. You saw me. Okay. Good night."', 3, 'good')
+    setCaption(state, 'Pale Steve: "Ohh, your light. Thank you. Okay. Good night." *flutter*', 3, 'good')
     return
   }
   sc.t -= dt
@@ -1313,6 +1388,7 @@ function stepHalt(state, dt, prevZ) {
   const h = state.ev.halt
   const p = state.player
   const room = state.rooms[HALT_ROOM]
+  if (!room || room.type !== 'halt') return
   if (h.phase === 'idle') {
     if (p.room === HALT_ROOM && p.z < room.z0 - (HALT_WRAP_MARGIN + 0.5)) {
       h.phase = 'active'
@@ -1359,6 +1435,7 @@ function stepSeek(state, dt, sk, chaseRooms) {
   const rooms = state.rooms
   const first = rooms[chaseRooms[0]], last = rooms[chaseRooms[chaseRooms.length - 1]]
   const cart = chaseRooms === CHASE2_ROOMS
+  if (!first || first.type !== 'chase') return
   if (sk.phase === 'idle') {
     if (p.room === first.index && p.z < first.z0 - 1.5) {
       const before = rooms[first.index - 1]
@@ -1396,12 +1473,16 @@ function stepElevator(state, dt) {
   const room = state.rooms[state.elevatorRoom]
   const up = state.elevatorRoom === FLOOR3_ELEVATOR
   const garden = state.elevatorRoom === FLOOR4_ELEVATOR
+  const staff = state.startFloor === 13
+  const sub = state.startFloor === -1
   const p = state.player
   if (el.phase === 'idle') {
     if (p.room === state.elevatorRoom && p.z < room.z0 - 0.8) {
       el.phase = 'ride'
       el.t = ELEVATOR_RIDE
       room.backClosed = true
+      if (sub) { setCaption(state, '🛗 Going DOWN. Past the basement. Past the mines. Past where the buttons stop.', ELEVATOR_RIDE, 'danger'); return }
+      if (staff) { setCaption(state, "🛗 The doors close. There's no button lit. The elevator goes… sideways?", ELEVATOR_RIDE, 'danger'); return }
       setCaption(state, garden ? '🛗 The service lift creaks down to the grounds. It smells like cut grass… and something else.' : `🛗 *ding* The doors close behind you… going ${up ? 'UP' : 'DOWN'}.`, ELEVATOR_RIDE, 'warn')
     }
     return
@@ -1411,6 +1492,8 @@ function stepElevator(state, dt) {
     if (el.t <= 0) {
       el.phase = 'arrived'
       room.unlocked = true
+      if (sub) { setCaption(state, '🛗 …Floor -A0001. The elevator light goes out as the doors open.', 4, 'danger'); return }
+      if (staff) { setCaption(state, '🛗 Floor 13. The Staff Wing. STAFF ONLY. (There are no closets here. You have 3 hearts.)', 5, 'danger'); return }
       setCaption(state, garden ? '🛗 …the doors open onto the garden. It is very quiet out here.' : up ? '🛗 *ding* Floor 3: the attic.' : '🛗 *ding* Floor 2.', 3, garden ? 'warn' : 'good')
     }
   }
@@ -1591,6 +1674,71 @@ function stepNibbles(state, dt) {
 }
 
 // ── Bubbles: pop his balloon (look at it + click/E) before it goes BANG ──
+// ── Window Wes: the face in the window ────────────────────────────────
+// Some Floor 1 / attic rooms get four windows (decided once, from the seed,
+// with its own rng so the rest of the hotel is unchanged). Entering one, a
+// silhouette pops up in a window; look straight at it and it ducks, then
+// pops up in another. Spot it WES_POPS times. Miss one and he climbs in.
+function addWesWindows(rooms, seed) {
+  const rng = mulberry32((seed ^ 0x5eed5) >>> 0)
+  let n = 0
+  for (const room of rooms) {
+    if (n >= 4) break // a few per stay is plenty
+    if (room.type !== 'normal' || room.dark || room.lockKind || QUIET_ROOMS.includes(room.index)) continue
+    if ((room.floor !== 1 && room.floor !== 3) || room.index < 7 || room.len < 6) continue
+    if (rng() > WES_CHANCE) continue
+    room.wesWindows = []
+    n++
+    for (const side of [-1, 1]) for (const f of [0.38, 0.68]) room.wesWindows.push({ x: side * (room.hw - 0.03), z: room.z0 - room.len * f, side })
+  }
+}
+
+function startWes(state, idx) {
+  state.ev.wes = { room: idx, phase: 'waiting', t: 1.4, cur: -1, pops: 0 }
+  encounter(state, 'wes')
+  setCaption(state, '🪟 Windows… and someone is watching you through one. Look straight at the face each time it appears!', 4.5, 'warn')
+}
+
+function stepWes(state, dt) {
+  const w = state.ev.wes
+  if (!w) return
+  const p = state.player
+  const room = state.rooms[w.room]
+  if (p.room !== w.room) {
+    // walked out while he was watching? He saw you leave without noticing him.
+    if (w.phase === 'watching' && !p.hidden) { const s = room.wesWindows[w.cur]; triggerCatch(state, 'wes', s.x - s.side * 0.9, s.z); return }
+    state.ev.wes = null // otherwise he goes back to his squeegee
+    return
+  }
+  if (p.hidden || state.dialogue) return
+  w.t -= dt
+  if (w.phase === 'waiting') {
+    if (w.t > 0) return
+    // pop up in a different window — preferably one you're not already looking at
+    const opts = room.wesWindows.map((s, k) => k).filter(k => k !== w.cur)
+    opts.sort((a, b) => lookAngle(p, room.wesWindows[b].x, 1.75, room.wesWindows[b].z) - lookAngle(p, room.wesWindows[a].x, 1.75, room.wesWindows[a].z))
+    w.cur = opts[Math.floor(state.rng() * Math.min(2, opts.length))]
+    w.phase = 'watching'
+    w.t = W(state, WES_WINDOW)
+    return
+  }
+  const s = room.wesWindows[w.cur]
+  if (lookAngle(p, s.x, 1.75, s.z) < WES_LOOK_ANGLE) {
+    w.pops += 1
+    if (w.pops >= WES_POPS) {
+      dodged(state, 'wes')
+      state.ev.wes = null
+      setCaption(state, 'Window Wes: "You noticed! Every time! Nobody ever notices the windows." *squeak squeak*', 3.5, 'good')
+      return
+    }
+    w.phase = 'waiting'
+    w.t = 0.5 + state.rng() * 0.9
+    setCaption(state, w.pops === 1 ? 'It ducked! …where did it go?' : 'Once more…', 1.5, 'warn')
+    return
+  }
+  if (w.t <= 0) triggerCatch(state, 'wes', s.x - s.side * 0.9, s.z)
+}
+
 function startBubbles(state, idx) {
   const room = state.rooms[idx]
   encounter(state, 'bubbles')
@@ -1654,7 +1802,8 @@ function stepCold(state, dt) {
 function startShelly(state) {
   const rooms = state.rooms
   const path = []
-  for (let k = FLOOR3_ELEVATOR; k < rooms.length; k++) {
+  const staff = state.startFloor === 13
+  for (let k = staff ? 0 : FLOOR3_ELEVATOR; k < rooms.length - (staff ? 2 : 0); k++) {
     const r = rooms[k]
     path.push({ x: r.entryX, z: r.z0 - 0.3 }, { x: r.exitX, z: r.z1 - T / 2 })
   }
@@ -1933,6 +2082,286 @@ function stepGardener(state, dt) {
   }
 }
 
+// ── Floor -A0001: the Lamplighter ────────────────────────────────────────
+function subEnter(state, idx) {
+  const room = state.rooms[idx]
+  if (idx === 1) setCaption(state, '🕯️ Floor -A0001. It is very, very dark. Something down here is awake.', 6, 'warn')
+  if (room.type === 'meeting') {
+    state.ev.lamp = null
+    state.ev.meet = { phase: 'wait' }
+    setCaption(state, '🕯️ A single candle on a table. Someone tall is sitting there. Waiting.', 5, 'warn')
+    return
+  }
+  if (room.type !== 'normal' || state.ev.lamp) return
+  if (idx === 2 || (idx - state.lastLampRoom >= 2 && state.rng() < 0.6)) startLamp(state, idx)
+}
+
+function nextLampMood(state) {
+  if (!state.lampBag.length) {
+    const bag = LAMP_MOODS.slice()
+    for (let i = bag.length - 1; i > 0; i--) { const j = Math.floor(state.rng() * (i + 1)); [bag[i], bag[j]] = [bag[j], bag[i]] }
+    if (bag[0] === state.lastLampMood) bag.push(bag.shift())
+    state.lampBag = bag
+  }
+  state.lastLampMood = state.lampBag.shift()
+  return state.lastLampMood
+}
+
+export function startLamp(state, idx, mood = nextLampMood(state)) {
+  const room = state.rooms[idx]
+  const p = state.player
+  const mid = (room.z0 + room.z1) / 2
+  state.lastLampRoom = idx
+  encounter(state, 'lamplighter')
+  const g = { mood, room: idx, x: 0, z: mid, faceYaw: 0, t: 0, moving: false, seen: 0 }
+  if (mood === 'snuff') {
+    g.phase = 'pre'; g.t = 1.4
+    g.x = p.x + Math.sin(p.yaw) * 1.4; g.z = p.z + Math.cos(p.yaw) * 1.4
+    setCaption(state, '…a cold breath on the back of your neck.', 2, 'danger')
+  } else if (mood === 'lantern') {
+    g.x = -room.hw + 1; g.dir = 1; g.r = 2.3
+    setCaption(state, '🏮 A blue lantern is moving through the room. DON\'T step into its light.', 5, 'warn')
+  } else if (mood === 'stalk') {
+    g.x = room.entryX; g.z = room.z0 + 0.4; g.backed = false
+    setCaption(state, '…footsteps behind you. They stop when you stop. Turn around and SHINE your light on him.', 5, 'danger')
+  } else if (mood === 'doorway') {
+    g.x = room.exitX; g.z = room.z1 + 0.35; g.faceYaw = 0
+    setCaption(state, '🚪 He is standing in the doorway you need. He only sees LIGHT — turn yours OFF (F) and slip past.', 5.5, 'danger')
+  } else if (mood === 'chair') {
+    const side = state.rng() < 0.5 ? -1 : 1
+    g.x = side * (room.hw - 1.4); g.faceYaw = side * Math.PI / 2 // facing the wall
+    setCaption(state, '🪑 Someone is sitting in a chair, facing the wall. Don\'t shine your light on him.', 5, 'warn')
+  }
+  state.ev.lamp = g
+}
+
+function lampDone(state, msg, dodge = true) {
+  state.ev.lamp = null
+  if (dodge) dodged(state, 'lamplighter')
+  if (msg) setCaption(state, msg, 3.5, dodge ? 'good' : 'info')
+}
+
+function stepLamp(state, dt, input) {
+  const g = state.ev.lamp
+  if (!g) return
+  const p = state.player
+  const room = state.rooms[g.room]
+  const d = Math.hypot(p.x - g.x, p.z - g.z)
+  const left = p.room > g.room
+  const caught = () => { if (!p.hidden) { triggerCatch(state, 'lamplighter', g.x, g.z); return true } return false }
+  g.moving = false
+  const lit = p.lightOn && !(state.lightOut > 0) && !p.hidden
+  switch (g.mood) {
+    case 'snuff': {
+      if (g.phase === 'pre') {
+        g.t -= dt
+        if (g.t <= 0) { g.phase = 'dark'; g.t = W(state, 6.5); g.grace = 0.8; state.lightOut = g.t; setCaption(state, 'Your light goes OUT. Something is right next to you. Do. Not. Move.', 4, 'danger') }
+        return
+      }
+      g.grace -= dt; g.t -= dt
+      // he circles you in the dark
+      const a = state.elapsed * 0.9
+      g.x = p.x + Math.cos(a) * 1.5; g.z = p.z + Math.sin(a) * 1.5; g.faceYaw = Math.atan2(p.x - g.x, p.z - g.z); g.moving = true
+      if (g.grace <= 0 && p.moving && caught()) return
+      if (g.t <= 0) { state.lightOut = 0; lampDone(state, 'Your light flickers back on. Nobody is there.') }
+      return
+    }
+    case 'lantern': {
+      g.x += g.dir * S(state, 1.2) * dt
+      if (Math.abs(g.x) > room.hw - 1) g.dir *= -1
+      g.faceYaw = g.dir > 0 ? Math.PI / 2 : -Math.PI / 2
+      g.moving = true
+      if (p.room === g.room && d < g.r && caught()) return
+      if (left) lampDone(state, 'The blue light drifts on behind you, looking for someone else.')
+      return
+    }
+    case 'stalk': {
+      const facing = lit && d < 8 && lookAngle(p, g.x, 1.8, g.z) < 0.5
+      const dx = p.x - g.x, dz = p.z - g.z
+      if (facing) {
+        if (!g.backed) { g.backed = true; setCaption(state, 'He steps back into the dark. He is still there.', 2.5, 'warn') }
+        const nx = g.x - dx / (d || 1) * S(state, 2.4) * dt, nz = g.z - dz / (d || 1) * S(state, 2.4) * dt
+        if (!blocked(state, nx, g.z, 0.3)) g.x = nx
+        if (!blocked(state, g.x, nz, 0.3) && roomIndexAt(state.rooms, nz) === g.room) g.z = nz
+      } else if (d > 0.01) {
+        const st = S(state, 3.0) * dt
+        const nx = g.x + dx / d * st, nz = g.z + dz / d * st
+        if (!blocked(state, nx, g.z, 0.3)) g.x = nx
+        if (!blocked(state, g.x, nz, 0.3)) g.z = nz
+        g.moving = true
+      }
+      g.faceYaw = Math.atan2(dx, dz)
+      if (d < 0.95 && caught()) return
+      if (left) lampDone(state, 'The footsteps stop at the doorway behind you.')
+      return
+    }
+    case 'doorway': {
+      g.faceYaw = 0
+      if (p.room === g.room && lit && d < 7) g.seen += dt
+      else g.seen = Math.max(0, g.seen - dt)
+      if (g.seen > W(state, 1.2) && caught()) return
+      if (left) lampDone(state, 'You slip past him in the dark. You feel him turn his head to follow you.')
+      return
+    }
+    case 'chair': {
+      if (p.room === g.room && lit && d < 7 && lookAngle(p, g.x, 1.3, g.z) < 0.4) g.seen += dt
+      else g.seen = Math.max(0, g.seen - dt * 0.5)
+      if (g.seen > W(state, 2.5) && caught()) return
+      if (left) lampDone(state, '…when you glance back, the chair is empty.', false)
+      return
+    }
+  }
+}
+
+function stepMeet(state) {
+  const m = state.ev.meet
+  if (!m || m.phase !== 'wait') return
+  const p = state.player
+  const room = state.rooms[p.room]
+  if (room.type !== 'meeting' || p.z > room.z0 - 3) return
+  m.phase = 'talk'
+  const seat = room.seat
+  encounter(state, 'lamplighter')
+  state.metIds.add('lamplighter')
+  state.sitting = { id: 'lamplighter', x: seat.x, z: seat.z, faceYaw: Math.atan2(p.x - seat.x, p.z - seat.z) }
+  p.yaw = Math.atan2(-(seat.x - p.x), -(seat.z - p.z)); p.pitch = -0.05
+  state.dialogue = { monsterId: 'lamplighter', lines: MONSTER_DEFS.lamplighter.meetLines, lineIndex: 0, talk: true, reward: 0, onDone: 'meet' }
+}
+
+// ── Floor 13: the Staff Wing ─────────────────────────────────────────────
+// Everyone works here. No closets. Something in almost every room.
+const STAFF_POOL = ['rush', 'ambush', 'eyes', 'gus', 'nibbles', 'bubbles', 'cold', 'coco', 'mirror', 'puff', 'twirl', 'hank', 'gardener']
+const NO_CLOSET_LINE = "No closets here… squeeze into a DOORWAY (stand in one of the archways)!"
+
+function staffEnter(state, idx) {
+  const room = state.rooms[idx]
+  const ev = state.ev
+  if (idx === 1) { startShelly(state); return }
+  if (room.type === 'stampede') { startStampede(state, idx); return }
+  if (room.type !== 'normal') return
+  if (room.dark) {
+    if (state.rng() < 0.5) ev.bats = { phase: 'waiting', room: idx, t: 1.2 + state.rng() * 1.5 }
+    else ev.screech = { phase: 'waiting', room: idx, t: 1.5 + state.rng() * 2, x: 0, z: 0 }
+  }
+  const busy = ev.rush || ev.ambush || ev.eyes || ev.gus || ev.nibbles || ev.bubbles || ev.cold || ev.coco || ev.mirror || ev.puff || ev.twirl || ev.gard
+  if (busy || state.rng() > 0.72) return
+  const pool = STAFF_POOL.filter(k => !(k === 'nibbles' && state.coins < 4) && !(room.lockKind && (k === 'mirror' || k === 'coco')))
+  const pick = pool[Math.floor(state.rng() * pool.length)]
+  switch (pick) {
+    case 'rush': startRush(state, idx); setCaption(state, '💡 The lights flicker… ' + NO_CLOSET_LINE, RUSH_WARNING, 'danger'); break
+    case 'ambush': startAmbush(state, idx); setCaption(state, '🧹 Vacuum whine… ' + NO_CLOSET_LINE + ' She does laps!', AMBUSH_WARNING, 'danger'); break
+    case 'eyes': startEyes(state, idx); break
+    case 'gus': startGus(state, idx); break
+    case 'nibbles': startNibbles(state, idx); break
+    case 'bubbles': startBubbles(state, idx); break
+    case 'cold': startCold(state, idx); break
+    case 'coco': startCoco(state, idx); break
+    case 'mirror': startMirror(state, idx); break
+    case 'puff': startPuff(state, idx); break
+    case 'twirl': startTwirl(state, idx); break
+    case 'hank': startHank(state, idx); break
+    case 'gardener': {
+      const moods = ['prune', 'watch', 'scarecrows', 'mower', 'whisper']
+      startGardener(state, idx, moods[Math.floor(state.rng() * moods.length)])
+      break
+    }
+  }
+}
+
+// ── Everyone, All At Once ────────────────────────────────────────────────
+export const STAMPEDE_CAST = ['barry', 'steve', 'drakko', 'wendell', 'gary', 'reginald', 'doris', 'mildred', 'tim', 'frank', 'gus',
+  'hank', 'bernadette', 'doug', 'puff', 'twirl', 'bumpus', 'nibbles', 'bubbles', 'wes', 'yolanda', 'shelly', 'coco', 'marvin',
+  'gloria', 'mabel', 'ollie', 'hoot', 'bea', 'gardener', 'harvester', 'lamplighter']
+const DASHERS = ['barry', 'doris', 'bumpus']
+
+function startStampede(state, idx) {
+  const room = state.rooms[idx]
+  const rng = state.rng
+  state.hearts = STAFF_HEARTS // one last fresh start
+  for (const k of ['rush', 'ambush', 'eyes', 'gus', 'nibbles', 'bubbles', 'cold', 'coco', 'mirror', 'puff', 'twirl', 'hank', 'gard', 'bats', 'screech', 'shelly']) state.ev[k] = null
+  state.flicker = false
+  const ents = STAMPEDE_CAST.map((id, k) => {
+    encounter(state, id)
+    const dasher = DASHERS.includes(id)
+    // they burst out of the walls all down the hall, a few from behind
+    const side = k % 2 ? 1 : -1
+    const behind = k % 7 === 0
+    const z = behind ? room.z0 - 1 - rng() * 2 : room.z0 - 6 - rng() * (room.len - 10)
+    const x = behind ? (rng() - 0.5) * 6 : side * (room.hw - 0.6)
+    const speed = id === 'harvester' ? 1.6 : id === 'shelly' ? 1.3 : id === 'gus' ? 2.3 : 1.5 + rng() * 1.0
+    // the ones behind you crawl out of the entrance a few seconds after you've started running
+    return { id, x, z, faceYaw: 0, speed, dasher, wake: behind ? 3.2 + rng() * 1.5 : 0.6 + rng() * 2.2, moving: false, hitR: id === 'harvester' ? 1.6 : 0.8,
+      lane: null, cd: 1.5 + rng() * 4 }
+  })
+  state.ev.stampede = { room: idx, ents, t: 0, inv: 0, done: false }
+  setCaption(state, "😱 EVERYONE IS HERE. Every single one of them. They're ALL coming for you — RUN for the far door!", 5, 'danger')
+}
+
+function stampedeHit(state, e) {
+  const st = state.ev.stampede, p = state.player
+  if (st.inv > 0) return
+  st.inv = STAMPEDE_INV
+  loseHeart(state)
+  state.catchCount += 1
+  state.catchesById[e.id] = (state.catchesById[e.id] || 0) + 1
+  const dx = p.x - e.x, dz = p.z - e.z, d = Math.hypot(dx, dz) || 1
+  for (let k = 0; k < 8; k++) {
+    const nx = p.x + dx / d * 0.25, nz = p.z + dz / d * 0.25
+    if (!blocked(state, nx, nz, PLAYER_RADIUS)) { p.x = nx; p.z = nz }
+  }
+  if (state.hearts <= 0) { state.lost = true; return }
+  setCaption(state, `💥 ${MONSTER_DEFS[e.id]?.name ?? 'Gloria'} got you! ${'❤️'.repeat(state.hearts)} left — keep running!`, 2, 'danger')
+}
+
+function stepStampede(state, dt) {
+  const st = state.ev.stampede
+  if (!st || st.done) return
+  const p = state.player
+  const room = state.rooms[st.room]
+  st.t += dt
+  st.inv = Math.max(0, st.inv - dt)
+  if (p.room > st.room) {
+    st.done = true
+    dodged(state, 'stampede')
+    setCaption(state, "🚪 You SLAM the door behind you. On the other side, thirty voices say \"aww.\"", 4, 'good')
+    return
+  }
+  for (const e of st.ents) {
+    e.moving = false
+    if (st.t < e.wake) continue
+    if (e.dasher) {
+      // dash across the hall along a glowing lane, a few steps ahead of you
+      if (!e.lane) {
+        e.cd -= dt
+        if (e.cd <= 0) {
+          const lz = clamp(p.z - 3 - state.rng() * 4, room.z1 + 1, room.z0 - 1)
+          const from = state.rng() < 0.5 ? -1 : 1
+          e.lane = { z: lz, from, t: 1.6, x: from * (room.hw - 0.4) }
+          e.x = e.lane.x; e.z = lz
+        }
+        continue
+      }
+      const L = e.lane
+      if (L.t > 0) { L.t -= dt; continue }
+      e.x -= L.from * (e.id === 'doris' ? 16 : e.id === 'bumpus' ? 12 : 14) * dt
+      e.faceYaw = Math.atan2(-L.from, 0)
+      e.moving = true
+      if (Math.abs(p.z - L.z) < 0.8 && Math.abs(p.x - e.x) < 0.9) stampedeHit(state, e)
+      if (Math.abs(e.x) > room.hw + 1) { e.lane = null; e.cd = 1.2 + state.rng() * 2.5 }
+      continue
+    }
+    if (e.id === 'gus' && lookAngle(p, e.x, 1.0, e.z) < 0.6) continue // only when you're not looking
+    const dx = p.x - e.x, dz = p.z - e.z, d = Math.hypot(dx, dz)
+    if (d < e.hitR) { stampedeHit(state, e); continue }
+    const stp = e.speed * dt
+    const nx = e.x + dx / d * stp, nz = e.z + dz / d * stp
+    if (!blocked(state, nx, e.z, 0.35)) e.x = nx
+    if (!blocked(state, e.x, nz, 0.35)) e.z = nz
+    e.faceYaw = Math.atan2(dx, dz)
+    e.moving = true
+  }
+}
+
 // ── The Harvester: the boss fight in the courtyard ───────────────────────
 
 function startBoss(state, idx) {
@@ -2098,6 +2527,7 @@ function stepBats(state, dt) {
 function stepFigure(state, dt) {
   const p = state.player
   const lib = state.rooms[LIBRARY_ROOM]
+  if (!lib || lib.type !== 'library') return
   if (!state.ev.figure) {
     if (p.room !== LIBRARY_ROOM) return
     encounter(state, 'reginald')
@@ -2147,7 +2577,8 @@ function stepFigure(state, dt) {
 // ── Main step ───────────────────────────────────────────────────────────
 
 export function stepGame(state, input, dt) {
-  if (state.won || state.paused) return
+  if (state.won || state.paused || state.lost) return
+  if (state.hurtT > 0) state.hurtT -= dt
   if (state.coins > state.maxCoins) state.maxCoins = state.coins
   state.elapsed += dt
   if (state.caption) { state.caption.t -= dt; if (state.caption.t <= 0) state.caption = null }
@@ -2162,7 +2593,8 @@ export function stepGame(state, input, dt) {
   const p = state.player
   if (p.boostT > 0) p.boostT -= dt
   stepShortcut(state, dt)
-  if (input.toggleLight) p.lightOn = !p.lightOn
+  if (state.lightOut > 0) state.lightOut -= dt
+  if (input.toggleLight && !(state.lightOut > 0)) p.lightOn = !p.lightOn
   if (input.useItem && state.inventory.vitamins > 0 && p.boostT <= 0) {
     state.inventory.vitamins -= 1
     p.boostT = BOOST_TIME
@@ -2190,12 +2622,16 @@ export function stepGame(state, input, dt) {
     () => stepBumpus(state, dt),
     () => stepNibbles(state, dt),
     () => stepBubbles(state, dt, input),
+    () => stepWes(state, dt),
     () => stepCold(state, dt),
     () => stepShelly(state, dt),
     () => stepCoco(state, dt),
     () => stepMirror(state, dt, input),
     () => stepGardener(state, dt),
     () => stepBoss(state, dt),
+    () => stepStampede(state, dt),
+    () => stepLamp(state, dt, input),
+    () => stepMeet(state),
     () => stepFigure(state, dt),
     () => stepAmbush(state, dt),
     () => stepGus(state, dt),

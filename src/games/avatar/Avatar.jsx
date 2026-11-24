@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import * as THREE from 'three'
+import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
+import { cartoonEye, makeBlinker, addInkOutline } from '../shared/charKit.js'
 import styles from './Avatar.module.css'
 import { BENDERS, getBender, WAVES, WORLD_HALF } from './constants.js'
 import { createSoloState, createDuelState, stepGame } from './gameEngine.js'
@@ -174,82 +176,119 @@ const NECK_CENTER_Y = HIP_Y + TORSO_H + NECK_H / 2
 const HEAD_R = 0.28
 const HEAD_CENTER_Y = HIP_Y + TORSO_H + NECK_H + HEAD_R
 
-function makeBenderModel(elementKey) {
+// Skin tones, picked per element so the roster isn't one face in ten colours.
+const SKIN_TONES = [0xf1c9a0, 0xd9a070, 0xa8724a, 0x7a4e30, 0xe8b890, 0xc68a5a]
+
+export function makeBenderModel(elementKey) {
   const bender = getBender(elementKey)
   const g = new THREE.Group()
-  const bodyMat = new THREE.MeshToonMaterial({ color: bender.color, gradientMap: toonGradient })
-  const accentMat = new THREE.MeshToonMaterial({ color: bender.accent, gradientMap: toonGradient })
-  const pantsColor = new THREE.Color(bender.color).multiplyScalar(0.55)
-  const pantsMat = new THREE.MeshToonMaterial({ color: pantsColor, gradientMap: toonGradient })
+  const toon = (color) => new THREE.MeshToonMaterial({ color, gradientMap: toonGradient })
+  const bodyMat = toon(bender.color)
+  const accentMat = toon(bender.accent)
+  const pantsMat = toon(new THREE.Color(bender.color).multiplyScalar(0.55))
+  let h = 0
+  for (const ch of elementKey) h = (h * 31 + ch.charCodeAt(0)) % 997
+  const skin = SKIN_TONES[h % SKIN_TONES.length]
+  const skinMat = toon(skin)
+  const hairMat = toon(new THREE.Color(bender.color).multiplyScalar(0.35).getHex())
+  const ink = toon(0x1b1620)
 
-  const legGeo = new THREE.CapsuleGeometry(LEG_RADIUS, LEG_LEN, 4, 8)
-  const footGeo = new THREE.BoxGeometry(0.17, 0.09, 0.28)
+  const legGeo = new THREE.CapsuleGeometry(LEG_RADIUS, LEG_LEN, 4, 12)
+  const footGeo = new RoundedBoxGeometry(0.19, 0.1, 0.3, 2, 0.045)
   ;[-1, 1].forEach(side => {
     const leg = new THREE.Mesh(legGeo, pantsMat)
     leg.position.set(side * 0.15, HIP_Y - LEG_H / 2, 0)
     g.add(leg)
     const foot = new THREE.Mesh(footGeo, accentMat)
-    foot.position.set(side * 0.15, FOOT_Y + 0.045, -0.05)
+    foot.position.set(side * 0.15, FOOT_Y + 0.05, -0.05)
     g.add(foot)
   })
 
-  const torso = new THREE.Mesh(new THREE.CylinderGeometry(TORSO_TOP_R, TORSO_BOTTOM_R, TORSO_H, 10), bodyMat)
+  const torso = new THREE.Mesh(new THREE.CylinderGeometry(TORSO_TOP_R, TORSO_BOTTOM_R, TORSO_H, 24), bodyMat)
   torso.position.set(0, TORSO_CENTER_Y, 0)
   g.add(torso)
-  addOutline(g, torso)
+  // rounded shoulders and a collar, so the tunic reads as clothing
+  ;[-1, 1].forEach(side => {
+    const sh = new THREE.Mesh(new THREE.SphereGeometry(0.15, 16, 12), bodyMat)
+    sh.position.set(side * (TORSO_TOP_R - 0.04), TORSO_CENTER_Y + TORSO_H * 0.38, 0)
+    g.add(sh)
+  })
+  const collar = new THREE.Mesh(new THREE.TorusGeometry(TORSO_TOP_R * 0.55, 0.05, 8, 20), accentMat)
+  collar.rotation.x = Math.PI / 2
+  collar.position.set(0, HIP_Y + TORSO_H - 0.02, 0)
+  g.add(collar)
 
-  const beltGeo = new THREE.TorusGeometry(TORSO_BOTTOM_R + 0.05, 0.05, 6, 12)
+  const beltGeo = new THREE.TorusGeometry(TORSO_BOTTOM_R + 0.05, 0.05, 8, 20)
   const belt = new THREE.Mesh(beltGeo, accentMat)
   belt.rotation.x = Math.PI / 2
   belt.position.set(0, HIP_Y + 0.04, 0)
   g.add(belt)
 
-  // Thin rod-like part — deliberately not outlined (same reasoning as
-  // Wings of Fire's horns/legs): the duel camera's steep top-down angle
-  // would look nearly straight down its axis and produce a giant wedge.
-  const neck = new THREE.Mesh(new THREE.CylinderGeometry(NECK_R, NECK_R * 1.1, NECK_H, 8), bodyMat)
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(NECK_R, NECK_R * 1.1, NECK_H, 12), skinMat)
   neck.position.set(0, NECK_CENTER_Y, 0)
+  neck.userData.noOutline = true // rod-like: an outline would show as a wedge from the top-down duel camera
   g.add(neck)
 
-  const head = new THREE.Mesh(new THREE.SphereGeometry(HEAD_R, 14, 12), bodyMat)
-  head.scale.set(0.92, 1.08, 0.96)
+  // Head + face. The model faces -Z.
+  const head = new THREE.Mesh(new THREE.SphereGeometry(HEAD_R, 24, 18), skinMat)
+  head.scale.set(0.95, 1.05, 0.96)
   head.position.set(0, HEAD_CENTER_Y, 0)
   g.add(head)
-  addOutline(g, head)
-
-  const eyeGeo = new THREE.SphereGeometry(0.045, 8, 6)
-  const eyeMat = new THREE.MeshBasicMaterial({ color: 0x1a1a1a })
-  ;[-1, 1].forEach(side => {
-    const eye = new THREE.Mesh(eyeGeo, eyeMat)
-    eye.position.set(side * 0.1, HEAD_CENTER_Y + 0.02, -HEAD_R * 0.92)
-    g.add(eye)
+  const hair = new THREE.Mesh(new THREE.SphereGeometry(HEAD_R * 1.04, 22, 12, 0, Math.PI * 2, 0, Math.PI * 0.5), hairMat)
+  hair.rotation.x = 0.35 // swept back, leaving the forehead clear
+  hair.position.set(0, HEAD_CENTER_Y + 0.02, 0.02)
+  g.add(hair)
+  const eyes = [-1, 1].map(side => {
+    const e = cartoonEye(0.062, new THREE.Color(bender.accent).multiplyScalar(0.7).getHex())
+    e.rotation.y = Math.PI + side * 0.22
+    e.position.set(side * 0.1, HEAD_CENTER_Y + 0.03, -HEAD_R * 0.8)
+    g.add(e)
+    const brow = new THREE.Mesh(new RoundedBoxGeometry(0.1, 0.024, 0.03, 1, 0.01), ink)
+    brow.position.set(side * 0.1, HEAD_CENTER_Y + 0.12, -HEAD_R * 0.9)
+    brow.rotation.z = -side * 0.18 // determined
+    brow.userData.noOutline = true
+    g.add(brow)
+    return e
   })
-  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.09, 6), bodyMat)
-  nose.rotation.x = -Math.PI / 2
-  nose.position.set(0, HEAD_CENTER_Y - 0.05, -HEAD_R * 0.98)
+  const nose = new THREE.Mesh(new THREE.SphereGeometry(0.035, 10, 8), toon(new THREE.Color(skin).multiplyScalar(0.88).getHex()))
+  nose.position.set(0, HEAD_CENTER_Y - 0.04, -HEAD_R * 0.98)
+  nose.userData.noOutline = true
   g.add(nose)
+  const mouth = new THREE.Mesh(new THREE.TorusGeometry(0.04, 0.01, 6, 10, Math.PI), ink)
+  mouth.position.set(0, HEAD_CENTER_Y - 0.11, -HEAD_R * 0.9)
+  mouth.rotation.set(0, Math.PI, Math.PI)
+  mouth.userData.noOutline = true
+  g.add(mouth)
 
   const headgear = makeHeadgear(elementKey, accentMat, bender.accent)
   headgear.scale.setScalar(0.8)
   headgear.position.set(0, HEAD_CENTER_Y, 0)
   g.add(headgear)
 
-  const armGeo = new THREE.CapsuleGeometry(0.09, 0.42, 4, 8)
+  const armGeo = new THREE.CapsuleGeometry(0.09, 0.42, 4, 12)
   const armLen = 0.42 + 0.09 * 2
-  const handGeo = new THREE.SphereGeometry(0.095, 8, 6)
+  const handGeo = new THREE.SphereGeometry(0.1, 12, 10)
   const shoulderY = TORSO_CENTER_Y + TORSO_H * 0.32
   ;[-1, 1].forEach(side => {
-    const arm = new THREE.Mesh(armGeo, accentMat)
+    const arm = new THREE.Mesh(armGeo, bodyMat)
     arm.position.set(side * (TORSO_TOP_R + 0.1), shoulderY - armLen / 2, 0)
     arm.rotation.z = side * 0.14
     g.add(arm)
-    const hand = new THREE.Mesh(handGeo, accentMat)
+    const wrap = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.12, 12), accentMat) // wrist wraps
+    wrap.position.set(side * (TORSO_TOP_R + 0.1 + side * 0.045), shoulderY - armLen + 0.12, 0)
+    wrap.rotation.z = side * 0.14
+    g.add(wrap)
+    const hand = new THREE.Mesh(handGeo, skinMat)
     hand.position.set(side * (TORSO_TOP_R + 0.1 + side * 0.05), shoulderY - armLen, 0)
     g.add(hand)
   })
 
-  g.userData.bodyMeshes = [torso, head]
+  addInkOutline(g, { color: 0x0a1018, width: 0.005 })
+
+  // The outfit flashes white when hit (the face and hands keep their colour).
+  g.userData.flashMats = [bodyMat]
   g.userData.baseColor = bender.color
+  g.userData.blink = makeBlinker(eyes)
   return g
 }
 
@@ -513,7 +552,8 @@ function GameCanvas({ mode, elementA, elementB, onHud, onResult }) {
         const bob = u.engaged && state.phase === 'battle' ? 0 : Math.sin(t * 6 + (u.id === 'p1' ? 0 : 2)) * 0.03
         mesh.position.y = bob
         const flashColor = u.hitFlash > 0 ? 0xffffff : mesh.userData.baseColor
-        mesh.userData.bodyMeshes.forEach(m => m.material.color.setHex(flashColor))
+        mesh.userData.flashMats.forEach(m => m.color.setHex(flashColor))
+        mesh.userData.blink(t + (u.id === 'p1' ? 0 : 1.7))
         mesh.visible = u.camoTimer > 0 ? (Math.sin(t * 20) > 0) : true
       })
       Object.keys(meshById).forEach(id => {

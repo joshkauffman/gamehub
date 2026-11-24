@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import * as THREE from 'three'
+import { cartoonEye } from '../shared/charKit.js'
 import styles from './WingsOfFire.module.css'
 import { TRIBES, getTribe, WAVES, MAP_HALF } from './constants.js'
 import { createSoloState, createDuelState, createTutorialState, stepGame } from './gameEngine.js'
@@ -361,17 +362,19 @@ function buildNeckAndHead(parent, tribeKey, bodyMat, accentMat, clawMat, eyeMat,
     headGroup.add(horn)
   })
 
-  const eyeGeo = new THREE.SphereGeometry(0.1, 8, 6)
+  // Big golden eyes set to the sides (the head faces -Z), with a pupil and glints.
+  void eyeMat
   ;[-1, 1].forEach(side => {
-    const eye = new THREE.Mesh(eyeGeo, eyeMat)
-    eye.position.set(side * 0.3, 0.1, -0.3)
+    const eye = cartoonEye(0.12, 0xd9a21a)
+    eye.position.set(side * 0.29, 0.1, -0.32)
+    eye.rotation.y = Math.PI + side * 0.75
     headGroup.add(eye)
   })
 
   return { bodyMeshes }
 }
 
-function makeDragonModel(tribeKey) {
+export function makeDragonModel(tribeKey) {
   const tribe = getTribe(tribeKey)
   const g = new THREE.Group()
   const bodyMat = new THREE.MeshToonMaterial({ color: tribe.color, gradientMap: toonGradient })

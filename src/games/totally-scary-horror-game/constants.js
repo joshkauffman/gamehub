@@ -53,6 +53,16 @@ export const FLOOR4_ELEVATOR = 150
 export const FLOOR4_START = 151
 export const BOSS_ROOM = 200
 export const TOTAL_ROOMS_F4 = 202
+// Floor 13 (the Staff Wing) is a secret: doors 01–40 of staff corridors
+// with no closets at all, then "Everyone, All At Once" in the great hall.
+export const STAFF_TOTAL = 42
+export const STAFF_HEARTS = 3
+export const STAMPEDE_INV = 2.0
+// Floor -A0001 (the sub-basement) is below everything: doors A-01..A-29,
+// then the candle room (A-30) and the stairs out. Pitch black. Only him.
+export const SUB_FLOOR = -1
+export const SUB_TOTAL = 32
+export const LAMP_MOODS = ['snuff', 'lantern', 'stalk', 'doorway', 'chair']
 export const LOCAL_START_COINS = 50 // on localhost, every run (and the lobby tip jar) starts with this many
 export const HALT_ROOM = 9
 export const SHOP_ROOM = 20
@@ -128,6 +138,11 @@ export const NIBBLES_TIME = 9
 export const NIBBLES_SPEED = 3.0 // slower than you — corner him!
 export const NIBBLES_BONUS = 3
 export const BUBBLES_TIME = 6.5
+// Window Wes: spot his face WES_POPS times, each within WES_WINDOW seconds
+export const WES_POPS = 3
+export const WES_WINDOW = 2.8
+export const WES_LOOK_ANGLE = 0.32
+export const WES_CHANCE = 0.13 // share of Floor 1 / attic rooms that have windows (and Wes outside them)
 export const BUBBLES_POP_ANGLE = 0.3
 export const BUBBLES_POP_RANGE = 12
 export const COLD_TIME = 9
@@ -163,7 +178,7 @@ export const SHOP_ITEMS = [
   { id: 'sneakers', icon: '👟', name: 'Quiet Sneakers', desc: 'Your footsteps are half as loud. Sir Reginald will hate these.', price: 18, max: 1 },
   { id: 'garlic', icon: '🧄', name: 'Garlic', desc: 'Drakko leaves the moment he smells it. Used up automatically.', price: 10, max: 3 },
   // Costumes: each one fools a particular monster exactly once, then it's ruined.
-  { id: 'bedsheet', icon: '🛏️', name: 'Bedsheet Costume', desc: 'Pale Steve thinks you\'re his cousin and leaves you be. (Once.)', price: 9, max: 1, costume: ['steve'] },
+  { id: 'lampshade', icon: '🏮', name: 'Lampshade Hat', desc: 'Pale Steve thinks you\'re a floor lamp, basks for a second, and leaves you be. (Once.)', price: 9, max: 1, costume: ['steve'] },
   { id: 'cape', icon: '🦇', name: 'Vampire Cape', desc: 'Drakko mistakes you for family. (Once.)', price: 11, max: 1, costume: ['drakko'] },
   { id: 'bellhop', icon: '🎩', name: 'Bellhop Hat', desc: 'Barry or Doris think you\'re on shift and wave hello. (Once.)', price: 12, max: 1, costume: ['barry', 'doris'] },
   { id: 'scarf', icon: '🧣', name: 'Striped Scarf', desc: 'Sir Reginald recognizes his own knitting and lets you go. (Once.)', price: 10, max: 1, costume: ['reginald'] },
@@ -171,7 +186,7 @@ export const SHOP_ITEMS = [
 ]
 
 export const COSTUME_LINES = {
-  bedsheet: 'Pale Steve squints at your bedsheet. "Cousin Phil?! Didn\'t see you there!" He waves and drifts off. (Your sheet tore.)',
+  lampshade: 'Pale Steve flutters up to your lampshade, sighs "ohh, what a lovely lamp", basks for a second and drifts off happy. (Your hat got dusty.)',
   cape: 'Drakko gasps. "A family member! Why didn\'t you say?" He floats away to make tea. (Your cape fell off.)',
   bellhop: 'A furry face peers at your hat. "Oh, you\'re on shift too? Carry on!" (Your hat got knocked off.)',
   scarf: 'Sir Reginald pats your scarf. "My pattern! A fellow knitter!" He bows and wanders off. (He kept the scarf.)',
@@ -202,13 +217,13 @@ export const MONSTER_DEFS = {
     repeatLine: "Oh — you again. Hi. I'm on lap forty. Still shedding. Still no vacuum.",
   },
   steve: {
-    id: 'steve', name: 'Pale Steve', icon: '👻', title: 'the ghost who whispers "psst"',
+    id: 'steve', name: 'Pale Steve', icon: '🦋', title: 'the night-porter moth who whispers "psst"',
     lines: [
-      "Psst— oh. Oh, you didn't turn around. That's… honestly that's never happened.",
-      "I'm just a guy under a sheet. The eye holes are cut too small, so I have to get REALLY close to see anybody.",
-      'The whispering is the only part of this job I\'m good at. My doctor says to stop. I told him I have a contract.',
+      "Psst— oh. Oh, you didn't turn around. Usually people spin round and shine their flashlight right at me. That's my favourite part.",
+      "I'm a moth. A big one. The hotel hired me as night porter because I'm up all night anyway. I just keep drifting toward everybody's lights.",
+      "I'd tap you on the shoulder, but my hands are so fuzzy nobody ever feels it. So: psst. The nightlight? Oh, I bring it everywhere. Don't tell anyone.",
     ],
-    repeatLine: "Psst. It's me. The sheet guy. Still can't see a thing.",
+    repeatLine: "Psst. It's me, Steve. Is that a new flashlight? It's beautiful.",
   },
   drakko: {
     id: 'drakko', name: 'Drakko', icon: '🧛', title: "the vampire you shouldn't stare at",
@@ -353,6 +368,15 @@ export const MONSTER_DEFS = {
     ],
     repeatLine: "BANG! Ha… sorry. Old habits. You've got confetti on you again.",
   },
+  wes: {
+    id: 'wes', name: 'Window Wes', icon: '🪟', title: 'the face in the window',
+    lines: [
+      "*squeak squeak* — sorry, sorry, climbing in. Mind the bucket. You didn't spot me in time, that's all.",
+      "I'm the night-shift window washer. Forty years on a ladder outside this hotel. Nobody ever looks at the windows.",
+      "So I pop up and see if anyone notices. The goggles are night-vision — that's why my eyes glow. I know. Sorry. It IS a bit spooky.",
+    ],
+    repeatLine: "Evening! Windows are sparkling tonight, if I say so myself. You didn't notice. Nobody ever notices.",
+  },
   yolanda: {
     id: 'yolanda', name: 'Yolanda', icon: '🧊', title: 'the yeti who makes the basement freezing',
     lines: [
@@ -455,6 +479,29 @@ export const MONSTER_DEFS = {
       'Go on. The gate is open. Mind the roses on your way out.',
     ],
   },
+  lamplighter: {
+    id: 'lamplighter', name: 'The Lamplighter', icon: '🕯️', title: 'he keeps the dark. nobody hired him.',
+    lines: ['…'],
+    repeatLine: '…',
+    caughtLines: [
+      'I can see you better in the dark.',
+      "Shh. You'll wake them.",
+      'Your light is very loud.',
+      "I've been behind you since the elevator.",
+      "Down here, I'm the only one who's awake.",
+      'Go back. Count the doors again.',
+      'You blinked.',
+    ],
+    meetLines: [
+      'You came all the way down. Nobody comes all the way down.',
+      'Sit, if you like. The candle is for you. I don\'t need it.',
+      'Do you know the Gardener? Tall. Straw hat. He smiles a great deal.',
+      'We were the first two, he and I. Before the hotel had a name. He took the garden. I took the dark.',
+      'He grows things. I keep them from waking up too early. We have tea, on Thursdays. He brings the mint.',
+      'He told me about you. He said you rang his bell. He said it was the nicest thing anyone had done in a hundred years.',
+      '…Go on. The stairs are behind me. Tell him the Lamplighter says hello.',
+    ],
+  },
   gus: {
     id: 'gus', name: 'Gus', icon: '🗿', title: "the gargoyle who only moves when you're not looking",
     lines: [
@@ -466,7 +513,7 @@ export const MONSTER_DEFS = {
   },
 }
 
-export const MONSTER_ORDER = ['barry', 'steve', 'drakko', 'wendell', 'gary', 'reginald', 'doris', 'mildred', 'tim', 'frank', 'gus', 'hank', 'bernadette', 'doug', 'puff', 'twirl', 'bumpus', 'nibbles', 'bubbles', 'yolanda', 'shelly', 'coco', 'marvin', 'mabel', 'ollie', 'hoot', 'gardener', 'harvester', 'bea']
+export const MONSTER_ORDER = ['barry', 'steve', 'drakko', 'wendell', 'gary', 'reginald', 'doris', 'mildred', 'tim', 'frank', 'gus', 'hank', 'bernadette', 'doug', 'puff', 'twirl', 'bumpus', 'nibbles', 'bubbles', 'wes', 'yolanda', 'shelly', 'coco', 'marvin', 'mabel', 'ollie', 'hoot', 'gardener', 'harvester', 'lamplighter', 'bea']
 
 // Journal entries: which floor each one haunts and how to get past them.
 export const JOURNAL = {
@@ -488,6 +535,7 @@ export const JOURNAL = {
   twirl: { floor: 2, tip: 'When the music box plays, FREEZE. Looking around is fine.' },
   bumpus: { floor: 2, tip: 'HONK HONK? Get off the rail tracks in the middle of the tunnel.' },
   nibbles: { floor: 1, tip: "He grabs your tips and runs — chase him down before he escapes! (Here, 😵 counts the times YOU caught HIM.)" },
+  wes: { floor: 1, tip: 'Some rooms have windows. When a face appears in one, look straight at it — he ducks. Spot him 3 times.' },
   bubbles: { floor: 1, tip: 'Look at his balloon and click (or press E) to pop it before it goes BANG.' },
   yolanda: { floor: 2, tip: 'Room getting icy? KEEP MOVING. Standing still turns you into a popsicle.' },
   shelly: { floor: 3, tip: "She follows you through the whole attic, slowly but surely. Don't dawdle!" },
@@ -495,6 +543,7 @@ export const JOURNAL = {
   marvin: { floor: 3, tip: 'He copies you. Walk BACKWARDS (S) through his room to confuse him.' },
   gardener: { floor: 4, tip: "He's different every time. Read the warning, then: sneak, don't look, hide, avoid the scarecrow, dodge the mower, don't turn around…" },
   harvester: { floor: 4, tip: 'Light all 4 braziers while dodging the red marks on the ground, then ring the garden bell.' },
+  lamplighter: { floor: -1, tip: "Different every time. Stand still in the dark · stay out of his lantern light · face him with your light · lights OFF to pass the doorway · don't shine your light on him in the chair." },
   hoot: { floor: 'secret', tip: 'Hidden behind a shelf in the attic gift shop. Very well read.', hint: 'Somewhere on Floor 3… try clicking around the gift shop.' },
   mabel: { floor: 'secret', tip: "Hidden behind a shelf in the Floor 1 gift shop. She's very nice.", hint: 'Somewhere on Floor 1… try clicking around the gift shop.' },
   bea: { floor: 'secret', tip: 'Say BOO to the fireplace in the lobby. She gives you a starting allowance for every run.', hint: 'Somewhere in the lobby… maybe say something to the fireplace?' },

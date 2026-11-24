@@ -1,6 +1,9 @@
+import { lazy, Suspense } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import { HorrorModeProvider } from './HorrorMode.jsx'
 import Home from './pages/Home.jsx'
+import { usePlayTracker } from './hub/usePlayTracker.js'
+import GameOverlay from './hub/GameOverlay.jsx'
 import UltimateTicTacToe from './games/ultimate-ttt/UltimateTicTacToe.jsx'
 import DogManDash from './games/dog-man-dash/DogManDash.jsx'
 import PoetryForNeanderthals from './games/poetry-for-neanderthals/PoetryForNeanderthals.jsx'
@@ -49,8 +52,13 @@ import SchoolPrep from './games/school-prep/SchoolPrep.jsx'
 import PrintWorksheet from './games/school-prep/screens/PrintWorksheet.jsx'
 import HudsonSchoolPractice from './games/hudson-school-practice/HudsonSchoolPractice.jsx'
 import Guugle from './games/guugle/Guugle.jsx'
+import TreasureDig from './games/treasure-dig/TreasureDig.jsx'
+
+// Dev-only tool for comparing every 3D game's characters (never in the production build).
+const CharacterLab = import.meta.env.DEV ? lazy(() => import('./dev/CharacterLab.jsx')) : null
 
 export default function App() {
+  usePlayTracker()
   return (
     <HorrorModeProvider>
       <Routes>
@@ -100,10 +108,13 @@ export default function App() {
         <Route path="/hogwarts-spellbound" element={<HogwartsSpellbound />} />
         <Route path="/ship-captain-crew" element={<ShipCaptainCrew />} />
         <Route path="/school-prep" element={<SchoolPrep />} />
+        <Route path="/treasure-dig" element={<TreasureDig />} />
+        {CharacterLab && <Route path="/dev/characters" element={<Suspense fallback={null}><CharacterLab /></Suspense>} />}
         <Route path="/school-prep/print" element={<PrintWorksheet />} />
         <Route path="/hudson-school-practice" element={<HudsonSchoolPractice />} />
         <Route path="/guugle" element={<Guugle />} />
       </Routes>
+      <GameOverlay />
     </HorrorModeProvider>
   )
 }

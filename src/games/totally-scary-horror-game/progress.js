@@ -15,7 +15,7 @@ function blank() {
     settings: { difficulty: 'normal', name: '', startFloor: 1 },
     perks: { allowance: false },
     wallet: 0, // tips you've carried out of the hotel, kept between runs
-    unlocks: { floor3: false, floor4: false },
+    unlocks: { floor3: false, floor4: false, floor13: false },
     stats: { popped: 0, runs: 0, escapes: 0, summoned: false },
   }
 }

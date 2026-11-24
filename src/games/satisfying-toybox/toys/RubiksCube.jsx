@@ -172,6 +172,7 @@ export default function RubiksCube() {
       window.removeEventListener('pointermove', onMove)
       window.removeEventListener('pointerup', onUp)
       renderer.dispose()
+      renderer.forceContextLoss() // dispose() alone leaves the browser's WebGL context alive
       if (mount.contains(renderer.domElement)) mount.removeChild(renderer.domElement)
     }
   }, [])

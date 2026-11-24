@@ -29,7 +29,7 @@ const FILTER_EXEMPT_PATHS = ['/obvious-mario-knockoff']
 // hub easter egg would read as one of its own hidden wins) — the toggle
 // stays fully disabled here, though an already-active filter from
 // elsewhere in the hub still applies visually.
-const TOGGLE_EXEMPT_PATHS = ['/hangman', '/avatar', '/easy-game']
+const TOGGLE_EXEMPT_PATHS = ['/hangman', '/avatar', '/easy-game', '/totally-scary-horror-game']
 
 // A hub-wide cheat: press H anywhere outside a text field to flip every
 // game — canvas, WebGL, or plain DOM, it doesn't matter which — into a

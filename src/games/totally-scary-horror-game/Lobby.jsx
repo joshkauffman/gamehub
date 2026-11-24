@@ -9,6 +9,8 @@ import { loadJournal, markFaced } from './journal.js'
 import { loadProgress, updateProgress, savePhoto, isLocalhost } from './progress.js'
 import { newlyEarned, ACHIEVEMENTS } from './achievements.js'
 import { snapPhoto } from './photo.js'
+import { nextTalk } from './talk.js'
+import { makeWindowFace } from './windowFace.js'
 import Journal from './Journal.jsx'
 import { ElevatorPanel, AchievementsPanel, AlbumPanel, RecordsPanel, fmtTime } from './Panels.jsx'
 import * as sfx from './sfx.js'
@@ -25,6 +27,7 @@ const HX = 8, HZ = 9 // half-size of the lobby
 const R = 0.3 // player radius
 const RING = { x: 0, z: 0.5, r: 4.4 }
 // the Harvester never sits in the circle; the Gardener only joins once you've set him free
+// The Lamplighter comes up from -A0001 for it too, once you've met him — he stands, though. He doesn't sit.
 const SEATED = MONSTER_ORDER.filter(id => id !== 'bea' && id !== 'harvester')
 
 const STATIONS = [
@@ -34,6 +37,7 @@ const STATIONS = [
   { id: 'album', label: '📷 Photo Album', x: HX - 1.7, z: -4.5, ly: 1.7 },
   { id: 'records', label: '⏱️ Scoreboard', x: HX - 1.1, z: 4, ly: 2.9 },
   { id: 'notice', label: '📌 Notice Board', x: 4.6, z: HZ - 1.0, ly: 2.6 },
+  { id: 'garden', label: '🎡 Back Garden', x: HX - 0.5, z: 0, ly: 3.3 },
 ]
 
 function canvasTex(w, h, draw) {
@@ -58,7 +62,7 @@ function signTex(lines, bg = '#2a1a10', fg = '#ffd76b', w = 512, h = 256) {
   })
 }
 
-export default function Lobby({ onStart, showTitle, onDismissTitle }) {
+export default function Lobby({ onStart, onFair, fromFair, showTitle, onDismissTitle }) {
   const mountRef = useRef(null)
   const [panel, setPanel] = useState(null)
   const [prompt, setPrompt] = useState(null)
@@ -133,6 +137,38 @@ export default function Lobby({ onStart, showTitle, onDismissTitle }) {
     world.add(worldBox(1.8, H - 2.3, 0.3, 0, (H + 2.3) / 2, HZ + 0.15, wallMat))
     for (const sx of [-1, 1]) world.add(worldBox(0.03, 0.9, HZ * 2, sx * (HX - 0.015), 0.45, 0, A.wainscot))
     world.add(worldBox(HX * 2, 0.9, 0.03, 0, 0.45, -HZ + 0.015, A.wainscot))
+
+    let lobbyFace = null
+    // ── The garden door (east wall): glass panes with moonlight and fair lights behind them ──
+    {
+      const gd = new THREE.Group(); gd.position.set(HX - 0.02, 0, 0); gd.rotation.y = -Math.PI / 2; world.add(gd)
+      const wood = mat(new THREE.MeshStandardMaterial({ color: 0x5a3a20, roughness: 0.7 }))
+      const nightTex = canvasTex(256, 512, (ctx, w, h) => {
+        const g = ctx.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#0a0e2e'); g.addColorStop(0.7, '#3a2a6a'); g.addColorStop(1, '#8a4a6a')
+        ctx.fillStyle = g; ctx.fillRect(0, 0, w, h)
+        for (let i = 0; i < 60; i++) { ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.fillRect(Math.random() * w, Math.random() * h * 0.6, 2, 2) }
+        ctx.fillStyle = '#fff6dc'; ctx.beginPath(); ctx.arc(w * 0.7, h * 0.18, 26, 0, Math.PI * 2); ctx.fill()
+        // a Ferris wheel and string lights in the distance
+        ctx.strokeStyle = '#ff8acc'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(w * 0.32, h * 0.62, 70, 0, Math.PI * 2); ctx.stroke()
+        for (let k = 0; k < 12; k++) { const a = k / 12 * Math.PI * 2; ctx.beginPath(); ctx.moveTo(w * 0.32, h * 0.62); ctx.lineTo(w * 0.32 + Math.cos(a) * 70, h * 0.62 + Math.sin(a) * 70); ctx.stroke() }
+        const cols = ['#ff4a6a', '#ffd04a', '#4ad0ff', '#7aff6a']
+        for (let k = 0; k < 18; k++) { ctx.fillStyle = cols[k % 4]; ctx.beginPath(); ctx.arc(k * 15, h * 0.82 + Math.sin(k * 0.6) * 10, 4, 0, Math.PI * 2); ctx.fill() }
+        ctx.fillStyle = '#1a2a18'; ctx.fillRect(0, h * 0.9, w, h * 0.1)
+      })
+      own.push(nightTex)
+      const glass = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 2.7), mat(new THREE.MeshBasicMaterial({ map: nightTex })))
+      glass.position.set(0, 1.4, 0.02); gd.add(glass)
+      for (const [w, h, x, y] of [[2.2, 0.14, 0, 2.82], [2.2, 0.14, 0, 0.07], [0.14, 2.9, -1.03, 1.42], [0.14, 2.9, 1.03, 1.42], [0.08, 2.7, 0, 1.42], [1.9, 0.07, 0, 1.0], [1.9, 0.07, 0, 1.9]]) {
+        const bar = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.08), wood); bar.position.set(x, y, 0.04); gd.add(bar)
+      }
+      const knob = new THREE.Mesh(new THREE.SphereGeometry(0.05, 10, 8), mat(new THREE.MeshStandardMaterial({ color: 0xd8b040, metalness: 0.6, roughness: 0.3 })))
+      knob.position.set(0.15, 1.3, 0.1); gd.add(knob)
+      const gsign = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 0.5), mat(new THREE.MeshBasicMaterial({ map: signTex([{ text: '✦ MOONLIGHT FAIR ✦', y: 64, size: 48 }], '#2a1a10', '#ffd76b', 512, 128) })))
+      gsign.position.set(0, 3.25, 0.03); gd.add(gsign)
+      const gl = new THREE.PointLight(0x8a9cff, 3, 4, 1.8); gl.position.set(-0.5, 1.6, 0.8); gd.add(gl)
+      // someone outside, pressed up against the glass… (one of the four lower panes)
+      lobbyFace = makeWindowFace(gd, () => [{ x: -0.48, y: 1.45, z: 0.025 }, { x: 0.48, y: 1.45, z: 0.025 }], [0.8, 1.1], { minWait: 12, maxWait: 30 })
+    }
 
     // the secret nook behind the fireplace (always built; you just can't get in)
     const NZ0 = HZ + 0.3, NZ1 = HZ + 4.3, NX = 2.4
@@ -217,11 +253,13 @@ export default function Lobby({ onStart, showTitle, onDismissTitle }) {
     }
     // Notice board by the fireplace (the hint for the secret).
     const notice = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.0), mat(new THREE.MeshStandardMaterial({ map: signTex([
-      { text: '📌 NOTICES', y: 40, size: 34, color: '#3a2408' },
-      { text: '• Support group: Wednesdays.', y: 100, size: 24, color: '#3a2408' },
-      { text: '• Please stop feeding the worm.', y: 140, size: 24, color: '#3a2408' },
-      { text: '• "Lonely? Just say BOO to', y: 190, size: 24, color: '#7a1a1a' },
-      { text: '   the fireplace." — The Founder', y: 222, size: 24, color: '#7a1a1a' },
+      { text: '📌 NOTICES', y: 34, size: 30, color: '#3a2408' },
+      { text: '• Support group: Wednesdays.', y: 76, size: 21, color: '#3a2408' },
+      { text: '• Please stop feeding the worm.', y: 106, size: 21, color: '#3a2408' },
+      { text: '• "Lonely? Just say BOO to', y: 142, size: 21, color: '#7a1a1a' },
+      { text: '   the fireplace." — The Founder', y: 170, size: 21, color: '#7a1a1a' },
+      { text: '• Floor 13 does not exist.', y: 208, size: 21, color: '#3a2408' },
+      { text: '   Please stop poking the elevator.', y: 236, size: 21, color: '#3a2408' },
     ], '#e8d8a8', '#3a2408') })))
     notice.position.set(4.6, 1.8, HZ - 0.02); notice.rotation.y = Math.PI
     world.add(notice)
@@ -233,12 +271,13 @@ export default function Lobby({ onStart, showTitle, onDismissTitle }) {
     const groupSign = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 0.9), mat(new THREE.MeshBasicMaterial({ map: signTex([{ text: '"IT\'S JUST A JOB"', y: 55, size: 40 }, { text: 'monster support group · all welcome', y: 105, size: 22 }], '#3a1a2a', '#ffd76b', 512, 140) })))
     groupSign.rotation.x = -Math.PI / 2; groupSign.position.set(RING.x, 0.02, RING.z)
     world.add(groupSign)
-    // A few plants for coziness.
+    // A few plants for coziness. (Doug may eat them.)
+    const plants = []
     for (const [x, z] of [[-HX + 0.6, -HZ + 0.6], [HX - 0.6, -HZ + 0.6], [-HX + 0.6, HZ - 0.6], [HX - 0.6, HZ - 2.4]]) {
       const pg = new THREE.Group(); pg.position.set(x, 0, z)
       pg.add(new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.18, 0.45, 12), A.pot).translateY(0.22))
       for (let k = 0; k < 6; k++) { const l = new THREE.Mesh(new THREE.SphereGeometry(0.18, 8, 6), A.leaf); l.scale.set(0.6, 1.8, 0.6); l.position.set(Math.cos(k) * 0.14, 0.8 + (k % 2) * 0.2, Math.sin(k) * 0.14); l.rotation.set(Math.sin(k) * 0.5, 0, Math.cos(k) * 0.5); pg.add(l) }
-      world.add(pg)
+      world.add(pg); plants.push(pg)
     }
     // Chandelier.
     const chand = new THREE.Group(); chand.position.set(0, H, 0.5); world.add(chand)
@@ -264,9 +303,9 @@ export default function Lobby({ onStart, showTitle, onDismissTitle }) {
         const m = monsters[seat.id]
         const k = metIds.indexOf(seat.id)
         const met = k >= 0
-        m.group.visible = met
+        m.group.visible = met && !(worm && seat.eaten) // eaten is eaten
         seat.met = met
-        if (!met) continue
+        if (!met || (worm && (seat.eaten || seat.id === 'doug'))) continue
         const a = (k / metIds.length) * Math.PI * 2 - Math.PI / 2 + 0.3
         seat.x = RING.x + Math.cos(a) * RING.r
         seat.z = RING.z + Math.sin(a) * RING.r
@@ -277,8 +316,10 @@ export default function Lobby({ onStart, showTitle, onDismissTitle }) {
     }
 
     // ── State ──
-    const p = { x: 0, z: HZ - 2.2, yaw: 0, pitch: -0.05 }
+    // coming back in from the garden, you're standing just inside its door, facing the room
+    const p = fromFair ? { x: HX - 1.2, z: 0, yaw: Math.PI / 2, pitch: -0.05 } : { x: 0, z: HZ - 2.2, yaw: 0, pitch: -0.05 }
     let secretOpen = false, fireDrop = 0, typed = ''
+    let worm = null // the FEED THE WORM scene
     // the Gardener cutscene: null → glow → walk → flash → after
     let cut = null
     const vines = new THREE.Group()
@@ -341,6 +382,7 @@ export default function Lobby({ onStart, showTitle, onDismissTitle }) {
       { minX: HX - 1.5, maxX: HX - 0.5, minZ: -5.2, maxZ: -3.8 }, // album table
     ]
     function blocked(x, z) {
+      if (worm && worm.phase !== 'rise' && Math.hypot(x - RING.x, z - RING.z) < 0.45 * worm.fat + R) return true // a very full worm
       if (cut && cut.phase !== 'glow' && Math.hypot(x - cut.gx, z - cut.gz) < 0.45 + R) return true
       const inMain = x > -HX + R && x < HX - R && z > -HZ + R && z < HZ - R
       const inGap = secretOpen && fireDrop > 0.9 && Math.abs(x) < 0.9 - R && z >= HZ - R - 0.01 && z <= NZ0 + R
@@ -362,7 +404,12 @@ export default function Lobby({ onStart, showTitle, onDismissTitle }) {
       sfx.unlockAudio()
       // secret words are typed anywhere — even if a stray E just opened a panel
       if (e.key && e.key.length === 1 && !e.repeat) {
-        typed = (typed + e.key.toLowerCase()).slice(-12)
+        typed = (typed + e.key.toLowerCase()).slice(-20)
+        if (typed.endsWith('feed the worm') && !worm && !talking) {
+          if (panelRef.current) { setPanel(null); refresh() }
+          startWorm()
+          return
+        }
         if (typed.endsWith('gardener') && !cut && !talking) {
           if (panelRef.current) { setPanel(null); refresh() }
           startGardenerCut()
@@ -414,6 +461,12 @@ export default function Lobby({ onStart, showTitle, onDismissTitle }) {
     window.addEventListener('resize', onResize)
 
     function openPanel(id) {
+      if (id === 'garden') {
+        document.exitPointerLock?.()
+        sfx.creak()
+        onFair?.()
+        return
+      }
       if (id === 'notice') {
         setCaption('📌 "Lonely? Just say BOO to the fireplace." — The Founder. (Huh. Say it how?)')
         setTimeout(() => setCaption(null), 5000)
@@ -430,20 +483,25 @@ export default function Lobby({ onStart, showTitle, onDismissTitle }) {
       checkAchievements: () => { prog = loadProgress(); checkAchievements() },
     }
 
-    function startTalk() {
-      const first = !jour.entries.bea?.faced
-      const def = MONSTER_DEFS.bea
-      talking = { lines: first ? def.lines : [def.repeatLine], i: 0, first }
-      p.yaw = Math.atan2(-(0 - p.x), -((NZ1 - 1.4) - p.z))
-      p.pitch = -0.15
-      setDialogue({ monster: def, line: talking.lines[0], isLast: talking.lines.length === 1 })
+    function startTalk(who = 'bea', at = { x: 0, z: NZ1 - 1.4 }) {
+      p.yaw = Math.atan2(-(at.x - p.x), -(at.z - p.z))
+      if (who === 'lamplighter') {
+        // he says something different each time (see talk.js)
+        talking = { who, lines: nextTalk('lamplighterLobby'), i: 0, first: false }
+        p.pitch = 0.15
+      } else {
+        const first = !jour.entries.bea?.faced
+        talking = { who, lines: first ? MONSTER_DEFS.bea.lines : [MONSTER_DEFS.bea.repeatLine], i: 0, first }
+        p.pitch = -0.15
+        photoPending = 12
+      }
+      setDialogue({ monster: MONSTER_DEFS[who], line: talking.lines[0], isLast: talking.lines.length === 1 })
       sfx.chime()
-      photoPending = 12
     }
     function advanceTalk() {
       talking.i += 1
       if (talking.i < talking.lines.length) {
-        setDialogue({ monster: MONSTER_DEFS.bea, line: talking.lines[talking.i], isLast: talking.i === talking.lines.length - 1 })
+        setDialogue({ monster: MONSTER_DEFS[talking.who], line: talking.lines[talking.i], isLast: talking.i === talking.lines.length - 1 })
         return
       }
       const first = talking.first
@@ -466,8 +524,158 @@ export default function Lobby({ onStart, showTitle, onDismissTitle }) {
       sfx.rumble(3)
       setCaption('…the lights are turning green.')
     }
+    // ── Type FEED THE WORM in the lobby… ──
+    const pizza = new THREE.Group()
+    {
+      const card = new THREE.MeshStandardMaterial({ color: 0xc8a070, roughness: 0.9 })
+      pizza.add(box(0.6, 0.05, 0.6, card, 0, 0.025, 0))
+      const lid = new THREE.Group(); lid.position.set(0, 0.05, -0.3); pizza.add(lid)
+      lid.add(box(0.6, 0.02, 0.6, card, 0, 0, 0.3))
+      lid.add(new THREE.Mesh(new THREE.PlaneGeometry(0.34, 0.12), new THREE.MeshBasicMaterial({ map: signTex([{ text: 'PIZZA', y: 70, size: 90, color: '#c02020' }], '#c8a070', '#c02020', 256, 128) })).translateY(0.012).translateZ(0.3).rotateX(-Math.PI / 2))
+      pizza.userData.lid = lid
+      const pie = new THREE.Group(); pie.position.y = 0.06; pizza.add(pie)
+      pie.add(new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.03, 24), new THREE.MeshStandardMaterial({ color: 0xd8a050 })))
+      pie.add(new THREE.Mesh(new THREE.CylinderGeometry(0.23, 0.23, 0.035, 24), new THREE.MeshStandardMaterial({ color: 0xffd860 })))
+      for (let k = 0; k < 8; k++) { const a = k * 0.8 + (k % 2) * 0.4, r = 0.06 + (k % 3) * 0.06; pie.add(new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.04, 12), new THREE.MeshStandardMaterial({ color: 0xb02020 })).translateX(Math.cos(a) * r).translateY(0.01).translateZ(Math.sin(a) * r)) }
+      pizza.userData.pie = pie
+    }
+    pizza.visible = false
+    scene.add(pizza)
+    const hole = new THREE.Mesh(new THREE.CircleGeometry(0.9, 24), new THREE.MeshStandardMaterial({ color: 0x2a1a0e, roughness: 1 }))
+    hole.rotation.x = -Math.PI / 2; hole.position.set(RING.x, 0.025, RING.z); hole.visible = false
+    scene.add(hole)
+    const tmpW = new THREE.Vector3()
+
+    function startWorm() {
+      // whoever is in the circle (plus the Gardener, if he's standing there) is on the menu
+      const menu = seats.filter(seat => seat.met && seat.id !== 'doug').map(seat => ({ kind: 'seat', seat, m: monsters[seat.id] }))
+      if (cut && cut.phase === 'after') menu.push({ kind: 'gardener', m: monsters.gardener })
+      if (!menu.length) plants.forEach(pl => menu.push({ kind: 'plant', obj: pl }))
+      const dougSeat = seats.find(seat => seat.id === 'doug' && seat.met)
+      worm = { phase: 'rise', t: 0, menu, i: 0, eating: [], scale: 1, fat: 1, shake: 0.03, from: dougSeat ? { x: dougSeat.x, z: dougSeat.z } : null }
+      vines.visible = false // the vines get eaten too, obviously
+      sfx.rumble(2.5)
+      setCaption('*rumble rumble*… something is coming up through the floor.')
+    }
+
+    function stepWorm(dt, t) {
+      if (!worm) return
+      const d = monsters.doug, w = worm
+      w.t += dt
+      w.shake = Math.max(0, w.shake - dt * 0.05)
+      // Doug stands in the middle of the circle, facing the player unless he's eating someone
+      const lookAt = (x, z) => { d.group.rotation.y = Math.atan2(x - RING.x, z - RING.z) }
+      const watch = () => {
+        const want = Math.atan2(-(RING.x - p.x), -(RING.z - p.z))
+        let dd = want - p.yaw; dd = Math.atan2(Math.sin(dd), Math.cos(dd))
+        p.yaw += dd * Math.min(1, dt * 3)
+        const tgtPitch = Math.atan2(1.2 * w.scale - 1.6, Math.hypot(RING.x - p.x, RING.z - p.z))
+        p.pitch += (tgtPitch - p.pitch) * Math.min(1, dt * 2)
+      }
+      d.group.visible = true
+      if (w.phase !== 'rise' && w.phase !== 'after') watch() // once he's done, the camera is yours again
+      if (w.phase === 'rise') {
+        watch()
+        hole.visible = true
+        const k = Math.min(1, w.t / 2)
+        if (w.from && k < 0.5) { d.group.position.set(w.from.x + (RING.x - w.from.x) * k * 2, Math.sin(k * Math.PI * 2) * 0.8, w.from.z + (RING.z - w.from.z) * k * 2) }
+        else d.group.position.set(RING.x, w.from ? 0 : -2.2 + k * 2.2, RING.z)
+        lookAt(p.x, p.z)
+        poseMonster(d, t, {})
+        if (w.t > 2.4) { w.phase = 'pizza'; w.t = 0; setCaption('Doug: "Did somebody say… PIZZA?"') }
+        return
+      }
+      d.group.position.set(RING.x, 0, RING.z)
+      const mouth = () => { d.head.getWorldPosition(tmpW); return tmpW }
+      if (w.phase === 'pizza') {
+        lookAt(p.x, p.z)
+        pizza.visible = true
+        const k = Math.min(1, w.t / 0.9)
+        pizza.position.set(RING.x, 3.6 - k * 3.6 + (k >= 1 ? Math.abs(Math.sin(w.t * 9)) * 0.06 * Math.max(0, 1.4 - w.t) : 0), RING.z + 0.9)
+        pizza.rotation.y = k * Math.PI * 2
+        if (k >= 1 && !w.landed) { w.landed = true; sfx.pop() }
+        pizza.userData.lid.rotation.x = -Math.min(1, Math.max(0, w.t - 1.1) / 0.5) * 1.9
+        poseMonster(d, t, {})
+        if (w.t > 2.2) { w.phase = 'eat'; w.t = 0; setCaption('*CHOMP* *CHOMP* *CHOMP*') }
+        return
+      }
+      if (w.phase === 'eat') {
+        lookAt(p.x, p.z)
+        const pie = pizza.userData.pie, m = mouth()
+        const k = Math.min(1, w.t / 1.8)
+        pie.position.set(0, 0.06 + k * (m.y - 0.1), -k * 0.9)
+        pie.scale.setScalar(Math.max(0.02, 1 - k * 0.98))
+        if (Math.floor(w.t * 4) !== w.lastChomp) { w.lastChomp = Math.floor(w.t * 4); sfx.chomp() }
+        d.head.scale.setScalar(1 + Math.abs(Math.sin(w.t * 14)) * 0.12)
+        poseMonster(d, t, {})
+        if (w.t > 2) { w.phase = 'grow'; w.t = 0; pizza.visible = false; d.head.scale.setScalar(1); sfx.rumble(2.5); setCaption('…uh oh. Doug is GROWING.') }
+        return
+      }
+      if (w.phase === 'grow') {
+        lookAt(p.x, p.z)
+        const k = Math.min(1, w.t / 2.6)
+        const ease = k * k * (3 - 2 * k)
+        w.scale = 1 + ease * 0.6 + Math.sin(w.t * 18) * 0.03 * (1 - k)
+        w.fat = 1 + ease * 1.4
+        d.group.scale.set(w.fat, w.scale, w.fat)
+        w.shake = 0.06
+        poseMonster(d, t, {})
+        if (w.t > 3) { w.phase = 'feast'; w.t = 0; w.next = 0; setCaption('Doug is still hungry. Doug looks at… everyone.') }
+        return
+      }
+      if (w.phase === 'feast') {
+        // one by one: turn, slurp them up, gulp
+        w.next -= dt
+        if (w.next <= 0 && w.i < w.menu.length) {
+          const item = w.menu[w.i++]
+          const obj = item.m ? item.m.group : item.obj
+          w.eating.push({ item, obj, t: 0, from: obj.position.clone(), s0: obj.scale.clone() })
+          if (item.kind === 'seat') item.seat.eaten = true
+          if (item.kind === 'gardener') cut.phase = 'gone'
+          w.next = w.i < 3 ? 0.9 : 0.42
+        }
+        const m = mouth()
+        for (const e of w.eating) {
+          if (e.done) continue
+          e.t += dt
+          const k = Math.min(1, e.t / 0.7)
+          const kk = k * k
+          e.obj.position.lerpVectors(e.from, m, kk)
+          e.obj.position.y += Math.sin(k * Math.PI) * 0.8
+          e.obj.scale.copy(e.s0).multiplyScalar(Math.max(0.02, 1 - kk))
+          e.obj.rotation.z += dt * 8
+          if (k >= 1) {
+            e.done = true; e.obj.visible = false
+            sfx.gulp()
+            w.fat += 0.05; w.scale = Math.min(1.75, w.scale + 0.006)
+            d.group.scale.set(w.fat, w.scale, w.fat)
+            d.head.scale.setScalar(1.2)
+          }
+        }
+        d.head.scale.lerp(new THREE.Vector3(1, 1, 1), Math.min(1, dt * 6))
+        const cur = w.eating[w.eating.length - 1]
+        if (cur && !cur.done) lookAt(cur.obj.position.x, cur.obj.position.z); else lookAt(p.x, p.z)
+        poseMonster(d, t, {})
+        if (w.i >= w.menu.length && w.eating.every(e => e.done) && w.t > 1) {
+          w.phase = 'after'; w.t = 0
+          sfx.burp()
+          w.shake = 0.08
+          prog = updateProgress(pp => { pp.stats.fedWorm = true }); setProgress(prog); checkAchievements()
+          setCaption(w.menu[0]?.kind === 'plant'
+            ? "*BURP.* There was nobody here to eat, so Doug ate the plants. All of them. He looks pleased."
+            : "*BUUURRRP.* Doug is VERY full. Everyone else is… inside Doug. (They're fine. It's roomy in there. They're playing cards.)")
+          setTimeout(() => setCaption(null), 8000)
+        }
+        return
+      }
+      // after: an enormous, contented worm, swaying
+      lookAt(p.x, p.z)
+      d.group.scale.set(w.fat + Math.sin(t * 1.2) * 0.04, w.scale, w.fat + Math.sin(t * 1.2) * 0.04)
+      poseMonster(d, t * 0.5, {})
+    }
+
     function stepGardenerCut(dt, t) {
-      if (!cut) return
+      if (!cut || cut.phase === 'gone') return
       const g = monsters.gardener
       cut.t += dt
       // everything glows green
@@ -562,7 +770,7 @@ export default function Lobby({ onStart, showTitle, onDismissTitle }) {
     const tmp = new THREE.Vector3()
     function tick(now) {
       raf = requestAnimationFrame(tick)
-      const dt = Math.min((now - last) / 1000, 0.05)
+      const dt = Math.max(0, Math.min((now - last) / 1000, 0.05)) // rAF's first timestamp can be a hair before `last`
       last = now
       const t = now / 1000
 
@@ -570,7 +778,7 @@ export default function Lobby({ onStart, showTitle, onDismissTitle }) {
       p.yaw += input.yaw + ((keys.has('ArrowLeft') ? 1 : 0) - (keys.has('ArrowRight') ? 1 : 0)) * KEY_TURN_SPEED * dt
       p.pitch = Math.max(-1.3, Math.min(1.3, p.pitch + input.pitch))
       input.yaw = 0; input.pitch = 0
-      const frozen = cut && cut.phase !== 'after'
+      const frozen = (cut && cut.phase !== 'after' && cut.phase !== 'gone') || (worm && worm.phase !== 'after')
       if (!panelRef.current && !talking && !titleRef.current && !frozen) {
         const f = (keys.has('KeyW') || keys.has('ArrowUp') ? 1 : 0) - (keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0)
         const s = (keys.has('KeyD') ? 1 : 0) - (keys.has('KeyA') ? 1 : 0)
@@ -589,19 +797,22 @@ export default function Lobby({ onStart, showTitle, onDismissTitle }) {
       let focus = null, bestD = 2.4
       const targets = [...STATIONS]
       if (secretOpen && fireDrop > 0.9) targets.push({ id: 'bea', x: 0, z: NZ1 - 1.4 })
+      const lampSeat = seats.find(st => st.id === 'lamplighter' && st.met)
+      if (lampSeat && !worm && !cut) targets.push({ id: 'lamplighter', x: lampSeat.x, z: lampSeat.z })
       for (const st of targets) {
         const dx = st.x - p.x, dz = st.z - p.z, d = Math.hypot(dx, dz)
-        const reach = st.id === 'bea' ? 2.6 : st.id === 'elevator' ? 2.4 : 2.2
+        const reach = st.id === 'bea' || st.id === 'lamplighter' ? 2.6 : st.id === 'elevator' ? 2.4 : 2.2
         if (d > reach) continue
         if (d > 0.3 && (dx * fx + dz * fz) / d < 0.55) continue
         if (d < bestD) { bestD = d; focus = st }
       }
-      const pr = focus ? (focus.id === 'bea' ? '[E] Talk to Grandma Bea' : `[E] ${focus.label}`) : null
+      const pr = focus ? (focus.id === 'bea' ? '[E] Talk to Grandma Bea' : focus.id === 'lamplighter' ? '[E] 💬 Talk to the Lamplighter' : `[E] ${focus.label}`) : null
       if (pr !== lastPrompt) { lastPrompt = pr; setPrompt(pr) }
       if (input.use) {
         input.use = false
         if (frozen) focus = null
         if (focus?.id === 'bea') startTalk()
+        else if (focus?.id === 'lamplighter') startTalk('lamplighter', focus)
         else if (focus) openPanel(focus.id)
       }
 
@@ -613,13 +824,26 @@ export default function Lobby({ onStart, showTitle, onDismissTitle }) {
       nookLight.intensity = secretOpen ? 6 * fireDrop : 0
 
       // monsters idling in the circle (frozen once the vines have them); Bea rocking
-      for (const seat of seats) if (seat.met) poseMonster(monsters[seat.id], cut?.phase === 'after' ? seat.x * 3.7 + Math.sin(t * 0.3) * 0.05 : t + seat.x, { sitting: true })
+      for (const seat of seats) {
+        if (!seat.met || (worm && (seat.id === 'doug' || seat.eaten))) continue
+        if (seat.id === 'lamplighter' && cut?.phase !== 'after') {
+          // he turns his lamp toward you while you talk, then back to the circle
+          const m = monsters.lamplighter
+          const want = talking?.who === 'lamplighter' ? Math.atan2(p.x - seat.x, p.z - seat.z) : Math.atan2(RING.x - seat.x, RING.z - seat.z)
+          const dy = Math.atan2(Math.sin(want - m.group.rotation.y), Math.cos(want - m.group.rotation.y))
+          m.group.rotation.y += dy * Math.min(1, dt * 4)
+        }
+        poseMonster(monsters[seat.id], cut?.phase === 'after' ? seat.x * 3.7 + Math.sin(t * 0.3) * 0.05 : t + seat.x, seat.id === 'lamplighter' ? { glow: talking?.who === 'lamplighter' ? 0.9 : 0.5 } : { sitting: true })
+      }
       stepGardenerCut(dt, t)
+      stepWorm(dt, t)
       poseMonster(monsters.bea, t, { sitting: true })
 
       camera.position.set(p.x, 1.6, p.z)
+      if (worm?.shake > 0) { camera.position.x += (Math.random() - 0.5) * worm.shake; camera.position.y += (Math.random() - 0.5) * worm.shake }
       camera.rotation.y = p.yaw
       camera.rotation.x = p.pitch
+      if (!cut && !worm) lobbyFace?.update(dt, camera)
       renderer.render(scene, camera)
 
       if (photoPending > 0 && --photoPending === 0) {
@@ -645,13 +869,16 @@ export default function Lobby({ onStart, showTitle, onDismissTitle }) {
     }
     raf = requestAnimationFrame(tick)
     checkAchievements()
-    if (import.meta.env.DEV) window.__lobby = { p, get secretOpen() { return secretOpen }, get fireDrop() { return fireDrop }, get cut() { return cut }, use: () => { input.use = true } }
+    if (import.meta.env.DEV) window.__lobby = { p, get secretOpen() { return secretOpen }, get fireDrop() { return fireDrop }, get cut() { return cut }, get worm() { return worm }, use: () => { input.use = true } }
 
     return () => {
       cancelAnimationFrame(raf)
       if (import.meta.env.DEV) delete window.__lobby
+      lobbyFace?.dispose()
       vines.traverse(o => { o.geometry?.dispose(); o.material?.dispose?.() })
       beam.geometry.dispose(); beamMat.dispose()
+      pizza.traverse(o => { o.geometry?.dispose(); o.material?.map?.dispose(); o.material?.dispose?.() })
+      hole.geometry.dispose(); hole.material.dispose()
       stump.traverse(o => { o.geometry?.dispose(); o.material?.dispose?.() })
       window.removeEventListener('keydown', onKeyDown)
       window.removeEventListener('keyup', onKeyUp)
@@ -709,6 +936,8 @@ export default function Lobby({ onStart, showTitle, onDismissTitle }) {
       </div>
 
       {panel === 'elevator' && <ElevatorPanel settings={progress.settings} perks={progress.perks} wallet={progress.wallet} unlocked3={progress.unlocks.floor3} unlocked4={progress.unlocks.floor4 || isLocalhost()}
+        found13={!!progress.unlocks.floor13}
+        onFind13={() => { const p2 = updateProgress(pp => { pp.unlocks.floor13 = true }); setProgress(p2); sfx.roar() }}
         onUnlock={() => {
           const p2 = updateProgress(pp => { if (pp.wallet >= FLOOR3_PRICE && !pp.unlocks.floor3) { pp.wallet -= FLOOR3_PRICE; pp.unlocks.floor3 = true } })
           setProgress(p2)

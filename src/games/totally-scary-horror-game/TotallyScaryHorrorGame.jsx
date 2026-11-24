@@ -6,16 +6,18 @@ import {
   SHOP_ROOM, SHOP_ITEMS, SHOPKEEPER, SHOP2_ROOM, ELEVATOR_ROOM, FLOOR2_START, DOORS_PER_FLOOR,
   BOILER_ROOM, VALVES_NEEDED, DOUG_RUMBLE, JOURNAL,
 } from './constants.js'
-import { createGame, stepGame, advanceDialogue, promptFor, triggerCatch, buyItem, closeShop, startGardener } from './engine.js'
+import { createGame, stepGame, advanceDialogue, promptFor, triggerCatch, buyItem, closeShop, startGardener, startLamp } from './engine.js'
 import { createAssets, buildRoom, disposeRoom, lightSpots } from './scene.js'
 import { buildMonsters, buildStool, poseMonster, disposeMonsters, buildGloombat, buildMinecart, buildScarecrow, buildMower, tintOvergrown, buildVineCage } from './models.js'
 import * as sfx from './sfx.js'
 import Journal from './Journal.jsx'
 import Lobby from './Lobby.jsx'
+import Fairground from './Fairground.jsx'
 import { fmtTime } from './Panels.jsx'
 import { loadProgress, updateProgress, savePhoto, addRecord, isLocalhost } from './progress.js'
 import { newlyEarned } from './achievements.js'
 import { snapPhoto } from './photo.js'
+import { faceTexture } from './windowFace.js'
 import { DIFFICULTIES, LOBBY_ALLOWANCE, FLOOR3_ELEVATOR, FLOOR3_START, SHOP3_ROOM, LOCAL_START_COINS, FLOOR4_ELEVATOR, FLOOR4_START, BOSS_ROOM, BOSS_HEARTS } from './constants.js'
 import { loadJournal, withRun, commitRun, runKey } from './journal.js'
 
@@ -28,9 +30,21 @@ import { loadJournal, withRun, commitRun, runKey } from './journal.js'
 // this file (loop, input, HUD) split, like the hub's other 3D games.
 
 const LIGHT_POOL = 6
-const HUD_KEYS = ['room', 'coins', 'hasPass', 'pages', 'showPages', 'prompt', 'caption', 'tone', 'hidden', 'hypno', 'turnCue', 'sneaking', 'locked', 'dlgKey', 'dark', 'inv', 'boost', 'rattle', 'shopOpen', 'valves', 'showValves', 'lightOff', 'journalOpen', 'frost', 'time', 'hearts', 'bossOn', 'hurt', 'lit']
+const HUD_KEYS = ['room', 'coins', 'hasPass', 'pages', 'showPages', 'prompt', 'caption', 'tone', 'hidden', 'hypno', 'turnCue', 'sneaking', 'locked', 'dlgKey', 'dark', 'inv', 'boost', 'rattle', 'shopOpen', 'valves', 'showValves', 'lightOff', 'journalOpen', 'frost', 'time', 'hearts', 'bossOn', 'hurt', 'lit', 'hardHearts']
 
 function doorLabel(room, startFloor) {
+  if (startFloor === -1) {
+    if (room < 1) return '🛗 ▼▼▼'
+    if (room === 30) return '🕯️ A-30'
+    if (room > 30) return '🪜 The Stairs'
+    return <><span className={styles.dim}>Floor -A0001 · </span>⬛ Door A-{String(room).padStart(2, '0')}<span className={styles.dim}> / A-30</span></>
+  }
+  if (startFloor === 13) {
+    if (room < 1) return '🛗 ???'
+    if (room === 40) return '😱 Everyone, All At Once'
+    if (room > 40) return '🚪 The Way Out'
+    return <><span className={styles.dim}>Floor 13 · </span>🩸 Door {String(room).padStart(2, '0')}<span className={styles.dim}> / 40</span></>
+  }
   if (room == null || room < 1) return '🏨 Lobby'
   const attic = startFloor === 3
   if (startFloor === 4) {
@@ -52,7 +66,7 @@ function doorLabel(room, startFloor) {
   )
 }
 
-function GameView({ onWin, onLeave, startFloor, difficulty, startCoins, baseCoins }) {
+function GameView({ onWin, onLeave, onLose, startFloor, difficulty, startCoins, baseCoins }) {
   const mountRef = useRef(null)
   const [hud, setHud] = useState({})
   const [dialogue, setDialogue] = useState(null)
@@ -60,6 +74,7 @@ function GameView({ onWin, onLeave, startFloor, difficulty, startCoins, baseCoin
   const [toasts, setToasts] = useState([])
   const [flash, setFlash] = useState(0)
   const onLeaveRef = useRef(onLeave); onLeaveRef.current = onLeave
+  const onLoseRef = useRef(onLose); onLoseRef.current = onLose
   const leaveRef = useRef(() => {})
   const journalRef = useRef({ toggle: () => {} })
   const advanceRef = useRef(() => {})
@@ -108,6 +123,61 @@ function GameView({ onWin, onLeave, startFloor, difficulty, startCoins, baseCoin
     stool.visible = false
     scene.add(stool)
 
+    // Window Wes's windows: a pool of 8 (two rooms' worth), placed on the side
+    // walls of nearby rooms that have them, plus his silhouette in one pane.
+    const wesWin = (() => {
+      const nightMat = assets.outside
+      const frameMat = new THREE.MeshStandardMaterial({ color: 0x5a3a22, roughness: 0.7 })
+      const sillMat = new THREE.MeshStandardMaterial({ color: 0xe8e0d0, roughness: 0.6 })
+      const make = () => {
+        const w = new THREE.Group()
+        const glass = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.4), nightMat); glass.position.y = 1.75; w.add(glass)
+        for (const [bw, bh, x, y] of [[1.26, 0.08, 0, 2.49], [1.26, 0.08, 0, 1.01], [0.08, 1.56, -0.59, 1.75], [0.08, 1.56, 0.59, 1.75], [0.05, 1.4, 0, 1.75], [1.1, 0.05, 0, 1.75]]) {
+          const bar = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, 0.06), frameMat); bar.position.set(x, y, 0.03); w.add(bar)
+        }
+        const sill = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.06, 0.16), sillMat); sill.position.set(0, 0.97, 0.07); w.add(sill)
+        w.visible = false
+        scene.add(w)
+        return w
+      }
+      const pool = Array.from({ length: 8 }, make)
+      const faceMat = new THREE.MeshBasicMaterial({ map: faceTexture(), transparent: true, opacity: 0, depthWrite: false })
+      const face = new THREE.Mesh(new THREE.PlaneGeometry(0.85, 1.25), faceMat)
+      face.renderOrder = 2
+      face.visible = false
+      scene.add(face)
+      let shownAt = -1
+      function update(rooms, p, ev, t) {
+        let i = 0
+        for (let r = Math.max(0, p.room - 1); r <= p.room + 2 && i < pool.length; r++) {
+          const spots = rooms[r]?.wesWindows
+          if (!spots) continue
+          for (const s of spots) {
+            const w = pool[i++]
+            w.visible = true
+            w.position.set(s.x, 0, s.z)
+            w.rotation.y = s.side < 0 ? Math.PI / 2 : -Math.PI / 2
+          }
+        }
+        for (; i < pool.length; i++) pool[i].visible = false
+        const wes = ev.wes
+        if (wes && wes.phase === 'watching') {
+          const s = rooms[wes.room].wesWindows[wes.cur]
+          if (shownAt !== wes.cur) { shownAt = wes.cur; faceMat.opacity = 0 }
+          face.visible = true
+          face.position.set(s.x - s.side * 0.01, 1.68 + Math.sin(t * 1.3) * 0.02, s.z)
+          face.rotation.set(0, s.side < 0 ? Math.PI / 2 : -Math.PI / 2, Math.sin(t * 1.1) * 0.05)
+          faceMat.opacity = Math.min(1, faceMat.opacity + 0.12)
+        } else {
+          faceMat.opacity = Math.max(0, faceMat.opacity - 0.25)
+          face.position.y -= 0.03 // ducks down below the sill
+          if (faceMat.opacity <= 0) { face.visible = false; shownAt = -1 }
+        }
+      }
+      function dispose() { pool.forEach(w => w.traverse(o => o.geometry?.dispose())); frameMat.dispose(); sillMat.dispose(); face.geometry.dispose(); faceMat.dispose() }
+      return { update, dispose }
+    })()
+
     const state = createGame(undefined, { startFloor, difficulty, startCoins, baseCoins })
     // the Gloombat swarm + Gary's minecart (shown only while those events run)
     // Floor 4 props: four scarecrows, his mower, the glowing mower lane, and the boss's warning marks
@@ -125,6 +195,13 @@ function GameView({ onWin, onLeave, startFloor, difficulty, startCoins, baseCoin
       for (let j = 0; j < 7; j++) { const c = new THREE.Mesh(new THREE.ConeGeometry(0.12, 1.4, 5), new THREE.MeshStandardMaterial({ color: 0x1a2410, roughness: 0.9 })); c.position.set(Math.cos(j) * 0.6 * (j % 2 ? 1 : 0.4), 0.7, Math.sin(j) * 0.6 * (j % 2 ? 1 : 0.4)); c.rotation.set(Math.sin(j) * 0.3, 0, Math.cos(j) * 0.3); sp.add(c) }
       sp.visible = false; scene.add(sp); thornSpikes.push(sp)
     }
+    // the Lamplighter's circle of blue lantern light
+    const lampDiscMat = new THREE.MeshBasicMaterial({ color: 0x4a8aff, transparent: true, opacity: 0.22, depthWrite: false })
+    const lampDisc = new THREE.Mesh(new THREE.CircleGeometry(1, 32), lampDiscMat)
+    lampDisc.rotation.x = -Math.PI / 2; lampDisc.visible = false; scene.add(lampDisc)
+    // the stampede's dash lanes
+    const dashMat = new THREE.MeshBasicMaterial({ color: 0xff3a3a, transparent: true, opacity: 0.35, depthWrite: false })
+    const dashLanes = [0, 1, 2].map(() => { const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1.6), dashMat); m.rotation.x = -Math.PI / 2; m.visible = false; scene.add(m); return m })
     const swarm = []
     for (let k = 0; k < 14; k++) { const b = buildGloombat(); b.visible = false; b.userData.ph = Math.random() * Math.PI * 2; b.userData.r = 1.2 + Math.random() * 1.6; b.userData.h = 1.3 + Math.random() * 1.3; scene.add(b); swarm.push(b) }
     // Steam cloud for Puff's blasts: a soft white slab that rolls through the room at head height.
@@ -194,7 +271,7 @@ function GameView({ onWin, onLeave, startFloor, difficulty, startCoins, baseCoin
       buy: (id) => { if (buyItem(state, id)) sfx.coin() },
       close: () => { closeShop(state); renderer.domElement.requestPointerLock?.()?.catch?.(() => {}) },
     }
-    if (import.meta.env.DEV) { window.__horrorGame = { state, triggerCatch, THREE, scene, camera }; window.__startGardener = startGardener }
+    if (import.meta.env.DEV) { window.__horrorGame = { state, triggerCatch, THREE, scene, camera, startLamp }; window.__startGardener = startGardener }
 
     // ── Rooms near the player are built; far ones are disposed. ──
     const built = new Map()
@@ -303,7 +380,14 @@ function GameView({ onWin, onLeave, startFloor, difficulty, startCoins, baseCoin
       moon.visible = outside
       hemi.intensity = outside ? 0.95 : 0.45
       hemi.color.setHex(outside ? 0x8aa0d0 : 0x8a7a9a)
-      if (outside) {
+      if (room.floor === -1) {
+        // dark, but you can still make out the room: a dim blue-grey ambient and fog that starts a few metres out
+        col = 0x05070c; near = 3; far = room.type === 'meeting' ? 16 : 15
+        hemi.intensity = 0.32; hemi.color.setHex(0x8a9ac0)
+      } else if (room.floor === 13) {
+        col = room.type === 'stampede' ? 0x1a0408 : 0x120406; near = 4; far = room.type === 'stampede' ? 40 : 24
+        hemi.intensity = 0.35; hemi.color.setHex(0xc04a4a)
+      } else if (outside) {
         col = 0x0a1430; near = 10; far = 42
         const b = state.ev.boss
         if (b && room.type === 'boss' && b.phase !== 'done') { col = b.phase === 'intro' ? 0x1a0a20 : 0x3a0606; near = 8; far = 38; hemi.color.setHex(0xd04a3a) }
@@ -398,6 +482,41 @@ function GameView({ onWin, onLeave, startFloor, difficulty, startCoins, baseCoin
     function updateMonsters(t) {
       Object.values(monsters).forEach(m => { m.group.visible = false; m.group.rotation.set(0, 0, 0) })
       steam.visible = false
+      lampDisc.visible = false
+      {
+        const g = state.ev.lamp, p = state.player
+        if (g && !state.dialogue) {
+          const glow = g.mood === 'lantern' ? 6 : g.mood === 'snuff' ? 0.15 : 0.6
+          showMonster('lamplighter', g.x, 0, g.z, g.faceYaw, t, { pose: g.mood === 'chair' ? 'sit' : 'stand', glow, moving: g.moving })
+          if (g.mood === 'lantern') { lampDisc.visible = true; lampDisc.scale.setScalar(g.r); lampDisc.position.set(g.x, 0.03, g.z) }
+          if (g.mood === 'chair') { stool.visible = true; stool.position.set(g.x, -0.05, g.z) }
+        }
+        const meet = state.ev.meet
+        if (meet && meet.phase === 'done' && !state.dialogue) {
+          const seat = rooms.find(r => r.type === 'meeting').seat
+          showMonster('lamplighter', seat.x, 0, seat.z, 0, t, { pose: 'sit', glow: 0.4 })
+        }
+        void p
+      }
+      dashLanes.forEach(l => { l.visible = false })
+      const sp = state.ev.stampede
+      if (sp && !sp.done && !state.dialogue) {
+        const room = rooms[sp.room]
+        let li = 0
+        for (const e of sp.ents) {
+          if (sp.t < e.wake - 0.4) continue // still in the walls
+          if (e.dasher) {
+            if (!e.lane) continue
+            if (e.lane.t > 0 && li < dashLanes.length) {
+              const ln = dashLanes[li++]
+              ln.visible = true; ln.scale.x = room.hw * 2; ln.position.set(0, 0.03, e.lane.z)
+            }
+          }
+          const m = showMonster(e.id, e.x, 0, e.z, e.faceYaw, t, { moving: e.moving, speed: 1.4, pose: 'walk', grow: 1 })
+          if (sp.t < e.wake) m.group.position.y = -1.8 * (e.wake - sp.t) / 0.4 // rising out of the floor
+        }
+        dashMat.opacity = 0.25 + Math.abs(Math.sin(t * 10)) * 0.3
+      }
       updateGarden(t)
       if (overRoom) {
         overgrowth.visible = built.has(overRoom.index)
@@ -446,11 +565,12 @@ function GameView({ onWin, onLeave, startFloor, difficulty, startCoins, baseCoin
       const p = state.player
       const faceP = (x, z) => Math.atan2(p.x - x, p.z - z)
       const ev = state.ev
+      wesWin.update(rooms, p, ev, t) // before the sitting early-out, so his face still ducks away
       if (state.sitting) {
         const s = state.sitting
         const m = monsters[s.id]
-        const pose = s.id === 'gardener' ? (state.bossDefeated ? 'wave' : 'stare') : undefined
-        showMonster(s.id, s.x, m.noStool ? 0 : -m.sitDrop + 0.42, s.z, s.faceYaw, t, { sitting: s.id !== 'gardener', pose })
+        const pose = s.id === 'gardener' ? (state.bossDefeated ? 'wave' : 'stare') : s.id === 'lamplighter' ? (state.ev.meet ? 'sit' : 'stand') : undefined
+        showMonster(s.id, s.x, m.noStool ? 0 : -m.sitDrop + 0.42, s.z, s.faceYaw, t, { sitting: s.id !== 'gardener' && s.id !== 'lamplighter', pose, glow: 0.5 })
         stool.visible = !m.noStool
         stool.position.set(s.x, 0, s.z)
         return
@@ -588,16 +708,17 @@ function GameView({ onWin, onLeave, startFloor, difficulty, startCoins, baseCoin
         coins: state.coins,
         hasPass: state.hasPass,
         pages: state.pages,
-        showPages: p.room >= LIBRARY_ROOM - 1 && p.room <= LIBRARY_ROOM && !rooms[LIBRARY_ROOM].unlocked,
+        showPages: p.room >= LIBRARY_ROOM - 1 && p.room <= LIBRARY_ROOM && rooms[LIBRARY_ROOM]?.type === 'library' && !rooms[LIBRARY_ROOM].unlocked,
         valves: state.valves,
-        showValves: p.room >= BOILER_ROOM - 1 && p.room <= BOILER_ROOM && !rooms[BOILER_ROOM].unlocked,
-        lightOff: !p.lightOn,
+        showValves: p.room >= BOILER_ROOM - 1 && p.room <= BOILER_ROOM && rooms[BOILER_ROOM]?.type === 'boiler' && !rooms[BOILER_ROOM].unlocked,
+        lightOff: !p.lightOn || state.lightOut > 0,
         frost: Math.round((state.frost || 0) * 20) / 20,
         journalOpen: state.paused,
         time: Math.floor(state.elapsed * 10) / 10,
         bossOn: !!state.ev.boss && state.ev.boss.phase !== 'done' && state.ev.boss.phase !== 'intro',
         hearts: state.ev.boss?.hearts ?? 0,
-        hurt: (state.ev.boss?.hitFlash ?? 0) > 0,
+        hurt: (state.ev.boss?.hitFlash ?? 0) > 0 || (state.hurtT ?? 0) > 0,
+        hardHearts: state.hardcore ? Math.max(0, state.hearts) : -1,
         lit: state.ev.boss?.lit ?? 0,
         prompt: dlg ? null : promptFor(state, state.focus),
         caption: state.caption?.text ?? null,
@@ -658,6 +779,9 @@ function GameView({ onWin, onLeave, startFloor, difficulty, startCoins, baseCoin
         if (m === 'mower') sfx.rumble(2)
       }
       prev.gard = gm
+      const lm = state.ev.lamp ? state.ev.lamp.mood + (state.ev.lamp.phase || '') : null
+      if (lm && lm !== prev.lamp) { if (lm === 'snuffdark') sfx.rumble(1.5); else if (lm === 'stalk') sfx.snip(); else sfx.psst() }
+      prev.lamp = lm
       const bp = state.ev.boss?.phase ?? null
       if (bp !== prev.boss) { if (bp === 'intro') sfx.rumble(5); if (bp === 'fight') sfx.roar(); if (bp === 'weak') sfx.roar(); if (bp === 'done') sfx.bell() }
       prev.boss = bp
@@ -673,7 +797,7 @@ function GameView({ onWin, onLeave, startFloor, difficulty, startCoins, baseCoin
       if (!state.ev.bubbles && prev.bubbles && !state.dialogue) sfx.pop()
       if (state.dialogue?.monsterId === 'bubbles' && prev.bubbles) sfx.pop()
       prev.bubbles = !!state.ev.bubbles
-      const secClicks = (rooms[SHOP_ROOM].secret?.clicks ?? 0) + (rooms[SHOP2_ROOM].secret?.clicks ?? 0)
+      const secClicks = (rooms[SHOP_ROOM]?.secret?.clicks ?? 0) + (rooms[SHOP2_ROOM]?.secret?.clicks ?? 0)
       if (secClicks > (prev.secClicks ?? 0)) sfx.creak(secClicks >= 3)
       prev.secClicks = secClicks
       // keep the saved journal up to date as things happen
@@ -699,7 +823,7 @@ function GameView({ onWin, onLeave, startFloor, difficulty, startCoins, baseCoin
     let wonSent = false
     function tick(now) {
       raf = requestAnimationFrame(tick)
-      const dt = Math.min((now - last) / 1000, 0.05)
+      const dt = Math.max(0, Math.min((now - last) / 1000, 0.05)) // rAF's first timestamp can be a hair before `last`
       last = now
       const t = now / 1000
 
@@ -755,8 +879,9 @@ function GameView({ onWin, onLeave, startFloor, difficulty, startCoins, baseCoin
       camera.rotation.y = p.yaw
       camera.rotation.x = p.pitch
       const flash = state.inventory.flashlight > 0
-      lantern.intensity = !p.lightOn ? 0 : p.hidden ? 0.3 : rooms[p.room].dark ? (flash ? 7 : 3.2) : (flash ? 2.4 : 1.6)
-      lantern.distance = flash ? 13 : 7
+      const sub = rooms[p.room].floor === -1
+      lantern.intensity = !p.lightOn || state.lightOut > 0 ? 0 : sub ? (flash ? 6 : 4) : p.hidden ? 0.3 : rooms[p.room].dark ? (flash ? 7 : 3.2) : (flash ? 2.4 : 1.6)
+      lantern.distance = sub ? (flash ? 12 : 9) : flash ? 13 : 7
 
       updateMonsters(t)
       updateRoomBits(dt)
@@ -775,6 +900,11 @@ function GameView({ onWin, onLeave, startFloor, difficulty, startCoins, baseCoin
       achT -= dt
       if (achT <= 0 || (state.won && !wonSent)) { achT = 0.5; checkAchievements() }
 
+      if (state.lost && !wonSent) {
+        wonSent = true
+        document.exitPointerLock?.()
+        setTimeout(() => onLoseRef.current?.({ coins: state.coins, popped: state.popped, door: state.player.room, stampede: !!state.ev.stampede }), 900)
+      }
       if (state.won && !wonSent) {
         wonSent = true
         document.exitPointerLock?.()
@@ -785,6 +915,7 @@ function GameView({ onWin, onLeave, startFloor, difficulty, startCoins, baseCoin
           dodges: state.dodges,
           popped: state.popped,
           bossDefeated: state.bossDefeated,
+          heartsLost: state.heartsLost || 0,
           difficulty: state.difficulty,
           startFloor: state.startFloor,
           met: MONSTER_ORDER.filter(id => state.metIds.has(id)),
@@ -808,9 +939,13 @@ function GameView({ onWin, onLeave, startFloor, difficulty, startCoins, baseCoin
       renderer.domElement.removeEventListener('click', onClick)
       if (document.pointerLockElement === renderer.domElement) document.exitPointerLock?.()
       for (const b of built.values()) disposeRoom(b)
+      wesWin.dispose()
       disposeMonsters(monsters)
       stool.traverse(o => { o.geometry?.dispose(); o.material?.dispose?.() })
       overgrowth.traverse(x => { x.geometry?.dispose(); x.material?.dispose?.() })
+      lampDisc.geometry.dispose(); lampDiscMat.dispose()
+      for (const l of dashLanes) l.geometry.dispose()
+      dashMat.dispose()
       for (const o of [steam, cart, mower, lane, sweepMesh, moon, ...thornDiscs, ...thornSpikes, ...crows.map(c => c.group), ...swarm]) o.traverse(x => { x.geometry?.dispose(); x.material?.dispose?.() })
       assets.dispose()
       renderer.dispose()
@@ -828,6 +963,9 @@ function GameView({ onWin, onLeave, startFloor, difficulty, startCoins, baseCoin
       {hud.hidden && <div className={`${styles.closetOverlay} ${hud.rattle ? styles.rattle : ''}`}><span>{hud.rattle ? '💀 *rattle rattle* — GET OUT! (E)' : 'Hiding in a closet… (E to step out)'}</span></div>}
       {hud.frost > 0 && <div className={styles.frost} style={{ opacity: Math.min(1, 0.25 + hud.frost) }} />}
       {hud.hurt && <div className={styles.hurt} />}
+      {hud.hardHearts >= 0 && (
+        <div className={styles.bossBar}><span>{'❤️'.repeat(hud.hardHearts)}{'🖤'.repeat(Math.max(0, 3 - hud.hardHearts))}</span><span className={styles.dim}>no closets</span></div>
+      )}
       {hud.bossOn && (
         <div className={styles.bossBar}>
           <span>{'❤️'.repeat(Math.max(0, hud.hearts))}{'🖤'.repeat(Math.max(0, BOSS_HEARTS - hud.hearts))}</span>
@@ -908,10 +1046,10 @@ function GameView({ onWin, onLeave, startFloor, difficulty, startCoins, baseCoin
         <div className={styles.lockHint}>Click to look around · WASD move · E use/hide · Shift sneak · F light · Q vitamins · J journal</div>
       )}
 
-      {dialogue?.monster.id === 'gardener' && !dialogue.freed && <div className={styles.gardenerDark} />}
+      {(dialogue?.monster.id === 'gardener' || dialogue?.monster.id === 'lamplighter') && !dialogue.freed && <div className={styles.gardenerDark} />}
       {dialogue && (
         <div className={styles.dialogueWrap}>
-          <div className={`${styles.dialogueBox} ${dialogue.monster.id === 'gardener' && !dialogue.freed ? styles.gardenerBox : ''}`}>
+          <div className={`${styles.dialogueBox} ${(dialogue.monster.id === 'gardener' || dialogue.monster.id === 'lamplighter') && !dialogue.freed ? styles.gardenerBox : ''} ${dialogue.monster.id === 'lamplighter' && dialogue.freed ? styles.candleBox : ''}`}>
             <div className={styles.dialogueHead}>
               <span className={styles.dialogueIcon}>{dialogue.monster.icon}</span>
               <span className={styles.dialogueName}>{dialogue.monster.name}</span>
@@ -919,7 +1057,7 @@ function GameView({ onWin, onLeave, startFloor, difficulty, startCoins, baseCoin
             </div>
             <p className={styles.dialogueText}>{dialogue.line}</p>
             <button className={styles.dialogueBtn} onClick={() => advanceRef.current()}>
-              {dialogue.monster.id === 'gardener' && !dialogue.freed ? '…wake up (Space)' : dialogue.isLast ? 'Let them get back to work (Space)' : 'Continue (Space)'}
+              {(dialogue.monster.id === 'gardener' || dialogue.monster.id === 'lamplighter') && !dialogue.freed ? '…wake up (Space)' : dialogue.monster.id === 'lamplighter' && dialogue.isLast ? 'Take the stairs (Space)' : dialogue.isLast ? 'Let them get back to work (Space)' : 'Continue (Space)'}
             </button>
           </div>
         </div>
@@ -932,7 +1070,8 @@ function GameView({ onWin, onLeave, startFloor, difficulty, startCoins, baseCoin
 
 
 export default function TotallyScaryHorrorGame() {
-  const [screen, setScreen] = useState('lobby') // lobby | playing | won
+  const [screen, setScreen] = useState('lobby') // lobby | fair | playing | won
+  const [fairVisits, setFairVisits] = useState(0) // so the lobby knows to put you back by the garden door
   const [showTitle, setShowTitle] = useState(true)
   const [runKey, setRunKey] = useState(0)
   const [run, setRun] = useState({ floor: 1, difficulty: 'normal', coins: 0 })
@@ -954,6 +1093,12 @@ export default function TotallyScaryHorrorGame() {
     updateProgress(p => { p.stats.popped += popped || 0; p.wallet += coins || 0 })
     setScreen('lobby')
   }
+  const [lost, setLost] = useState(null)
+  function lose(r) {
+    updateProgress(p => { p.stats.popped += r.popped || 0; p.wallet += r.coins || 0 })
+    setLost(r)
+    setScreen('lost')
+  }
   function won(r) {
     // escaping the attic opens up the garden
     updateProgress(p => { p.stats.escapes += 1; p.stats.popped += r.popped || 0; p.wallet += r.coins || 0; if (r.startFloor === 3) p.unlocks.floor4 = true })
@@ -973,10 +1118,25 @@ export default function TotallyScaryHorrorGame() {
 
   return (
     <div className={styles.page}>
-      {screen === 'lobby' && <Lobby showTitle={showTitle} onDismissTitle={() => setShowTitle(false)} onStart={start} />}
+      {screen === 'lobby' && <Lobby key={fairVisits} fromFair={fairVisits > 0} showTitle={showTitle} onDismissTitle={() => setShowTitle(false)} onStart={start} onFair={() => setScreen('fair')} />}
+      {screen === 'fair' && <Fairground onBack={() => { setFairVisits(n => n + 1); setScreen('lobby') }} />}
 
       {screen === 'playing' && (
-        <GameView key={runKey} startFloor={run.floor} difficulty={run.difficulty} startCoins={run.coins} baseCoins={run.base} onWin={won} onLeave={leave} />
+        <GameView key={runKey} startFloor={run.floor} difficulty={run.difficulty} startCoins={run.coins} baseCoins={run.base} onWin={won} onLeave={leave} onLose={lose} />
+      )}
+
+      {screen === 'lost' && lost && (
+        <div className={styles.overlayScreen} style={{ background: 'radial-gradient(circle at 50% 30%, #3a0408 0%, #0a0204 75%)' }}>
+          <h2 className={styles.title2} style={{ color: '#ff6a6a' }}>💔 The Staff Wing sent you back.</h2>
+          <p className={styles.blurb}>
+            {lost.stampede ? 'Everyone, all at once, was a little too much. They all say sorry. (They are not sorry.)' : `You made it to door ${String(lost.door).padStart(2, '0')} of 40 before your last heart ran out.`}
+          </p>
+          <p className={styles.blurbSmall}>No closets. Three hearts. Squeeze into doorways when the lights flicker, and run the middle of the great hall.</p>
+          <div className={styles.btnRow}>
+            <button className={styles.bigBtn} onClick={() => start({ floor: 13, difficulty: 'scary' })}>↻ Try the Staff Wing again</button>
+            <button className={styles.secondaryBtn} onClick={() => setScreen('lobby')}>🏨 Back to the Lobby</button>
+          </div>
+        </div>
       )}
 
       {screen === 'won' && result && (
@@ -985,7 +1145,7 @@ export default function TotallyScaryHorrorGame() {
           <div className={styles.bigTime}>⏱️ {fmtTime(result.seconds)}</div>
           <p className={styles.blurb}>
             {DIFFICULTIES[result.difficulty]?.icon} {DIFFICULTIES[result.difficulty]?.name} ·{' '}
-            {result.startFloor === 1 ? `all ${DOORS_PER_FLOOR * 2} doors on both floors` : result.startFloor === 4 ? 'the whole garden — and you beat the Harvester' : result.startFloor === 3 ? `all ${DOORS_PER_FLOOR} doors of the attic` : `all ${DOORS_PER_FLOOR} doors of the basement`} ·{' '}
+            {result.startFloor === 1 ? `all ${DOORS_PER_FLOOR * 2} doors on both floors` : result.startFloor === -1 ? 'all the way through Floor -A0001 — and you had tea with the Lamplighter' : result.startFloor === 13 ? 'the Staff Wing — no closets, and everyone at once' : result.startFloor === 4 ? 'the whole garden — and you beat the Harvester' : result.startFloor === 3 ? `all ${DOORS_PER_FLOOR} doors of the attic` : `all ${DOORS_PER_FLOOR} doors of the basement`} ·{' '}
             🪙 {result.coins} tips · caught {result.catches} time{result.catches === 1 ? '' : 's'} · got away {result.dodges} time{result.dodges === 1 ? '' : 's'}
           </p>
           <p className={styles.blurb}>That's <b>#{place}</b> on the {result.startFloor === 1 ? 'full-run' : `Floor ${result.startFloor}`} scoreboard! Your {result.coins} tips went in the lobby tip jar.</p>

@@ -122,7 +122,7 @@ const LEGENDARY_MONSTERS = [
   },
 ]
 
-const ALL_MONSTERS = [...MONSTERS, ...LEGENDARY_MONSTERS]
+export const ALL_MONSTERS = [...MONSTERS, ...LEGENDARY_MONSTERS]
 
 // ── Story Mode — three trials plus a final boss, each unlocking one
 // legendary ────────────────────────────────────────────────────────────
@@ -891,7 +891,7 @@ function buildChibiModel(data, opts = {}) {
 // A Mega Fusion monster carries its own pre-merged `bodyOpts` (see
 // mergeBodyOpts) instead of a single bodyType, since it can combine
 // features from two different legendaries at once.
-function buildMonsterModel(data) {
+export function buildMonsterModel(data) {
   if (data.bodyOpts) return buildChibiModel(data, data.bodyOpts)
   if (data.bodyType === 'dragon') return buildChibiModel(data, { wings: true })
   if (data.bodyType === 'griffin') return buildChibiModel(data, { wings: true, beak: true })

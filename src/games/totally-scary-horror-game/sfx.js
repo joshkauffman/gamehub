@@ -218,3 +218,30 @@ export function bell() {
   const c = getCtx(); if (!c) return
   ;[523, 1046, 1568, 659].forEach((f, i) => tone('sine', f, 0.12 / (i + 1), 0.005, 3.5, c.currentTime))
 }
+
+export function chomp() {
+  const c = getCtx(); if (!c) return
+  const src = c.createBufferSource()
+  src.buffer = noiseBuffer(c, 0.12)
+  const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 600
+  src.connect(lp); lp.connect(envGain(c, 0.5, 0.005, 0.1))
+  src.start()
+}
+
+export function gulp() {
+  const c = getCtx(); if (!c) return
+  tone('sine', 220, 0.25, 0.01, 0.18, c.currentTime, 90)
+}
+
+export function burp() {
+  const c = getCtx(); if (!c) return
+  const t = c.currentTime
+  const o = c.createOscillator(); o.type = 'sawtooth'
+  o.frequency.setValueAtTime(110, t); o.frequency.linearRampToValueAtTime(70, t + 1.1)
+  const lfo = c.createOscillator(); lfo.frequency.value = 22
+  const lg = c.createGain(); lg.gain.value = 18
+  lfo.connect(lg); lg.connect(o.frequency)
+  const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 500
+  o.connect(lp); lp.connect(envGain(c, 0.4, 0.05, 1.1, t))
+  o.start(t); lfo.start(t); o.stop(t + 1.3); lfo.stop(t + 1.3)
+}

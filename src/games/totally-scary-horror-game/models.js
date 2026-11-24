@@ -1,7 +1,7 @@
 // ── The Totally Scary Horror Game — monster models ─────────────────────
 // Six cartoon "monsters", each built around a visual joke about who they
-// really are: a werewolf crammed into a bellhop uniform, a guy under a
-// striped hotel bedsheet, a round floating vampire with joke-shop
+// really are: a werewolf crammed into a bellhop uniform, a
+// giant fuzzy night-porter moth, a round floating vampire with joke-shop
 // dentures and spinning hypno-eyes, a mummy wrapped so stiff he can only
 // hop, a union-organizing vegetarian zombie, and a suit of armor with
 // nobody inside it at all. Cel-shaded with a tiny gradient map.
@@ -69,6 +69,27 @@ function eye(r, iris = 0x3a2a1a) {
   e.add(sphere(r * 0.32, toon(0x0a0a0a), 0, 0, r * 0.8))
   e.add(sphere(r * 0.12, new THREE.MeshBasicMaterial({ color: 0xffffff }), r * 0.2, r * 0.25, r * 0.98, 8))
   return e
+}
+
+// A tube along a curve that tapers from r0 at the start to r1 at the end
+// (tentacles, wisps of steam).
+function taperedTube(curve, r0, r1, mat, seg = 24, radial = 10) {
+  const geo = new THREE.TubeGeometry(curve, seg, 1, radial, false)
+  const pos = geo.attributes.position
+  const v = new THREE.Vector3()
+  for (let i = 0; i <= seg; i++) {
+    const c = curve.getPointAt(i / seg)
+    const r = r0 + (r1 - r0) * (i / seg)
+    for (let j = 0; j <= radial; j++) {
+      const k = i * (radial + 1) + j
+      v.fromBufferAttribute(pos, k).sub(c).multiplyScalar(r).add(c)
+      pos.setXYZ(k, v.x, v.y, v.z)
+    }
+  }
+  geo.computeVertexNormals()
+  const m = new THREE.Mesh(geo, mat)
+  m.castShadow = true
+  return m
 }
 
 function limbPivot(parent, x, y, z, child) {
@@ -167,73 +188,157 @@ function buildBarry() {
   return { group: g, legs, arms, sitDrop: 0.42, head, animate }
 }
 
-// ── Pale Steve: a guy under a striped hotel bedsheet, wearing glasses ──
+// ── Pale Steve: a giant, fuzzy, cream-white moth — the hotel's night porter ──
+// He can't help drifting toward people's flashlights, so he ends up right
+// behind you, and he's too polite to tap you on the shoulder: "psst".
+// All he wants is to be in your light for a second. Waistcoat, bow tie,
+// name badge, and a little nightlight he hugs for comfort.
 function buildSteve() {
   const g = new THREE.Group()
-  const body = new THREE.Group(); g.add(body)
-  const sheetTex = canvasTex(512, 256, (ctx, w, h) => {
-    ctx.fillStyle = '#eef4ff'; ctx.fillRect(0, 0, w, h)
-    ctx.fillStyle = '#b8cdee'
-    for (let x = 0; x < w; x += 48) ctx.fillRect(x, 0, 14, h)
-    ctx.save(); ctx.translate(w * 0.32, h * 0.62); ctx.rotate(-0.15)
-    ctx.strokeStyle = 'rgba(200,60,60,0.55)'; ctx.lineWidth = 3; ctx.strokeRect(-56, -18, 112, 34)
-    ctx.fillStyle = 'rgba(200,60,60,0.6)'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center'
-    ctx.fillText('PROPERTY OF', 0, -3); ctx.fillText('THE HOTEL', 0, 12)
-    ctx.restore()
-  }, true)
-  const sheetM = new THREE.MeshToonMaterial({ map: sheetTex, gradientMap: toonGradient(), side: THREE.DoubleSide })
-  const pts = []
-  for (let i = 0; i <= 16; i++) {
-    const t = i / 16
-    const y = 1.95 - t * 1.75
-    const r = t < 0.22 ? Math.sin((t / 0.22) * Math.PI / 2) * 0.36 : 0.36 + (t - 0.22) * 0.32
-    pts.push(new THREE.Vector2(Math.max(0.001, r), y))
-  }
-  const geo = new THREE.LatheGeometry(pts, 32)
-  const pos = geo.attributes.position
-  for (let i = 0; i < pos.count; i++) {
-    if (pos.getY(i) < 0.35) {
-      const a = Math.atan2(pos.getZ(i), pos.getX(i))
-      pos.setY(i, pos.getY(i) + Math.sin(a * 7) * 0.05)
+  const rig = new THREE.Group(); g.add(rig) // everything hovers together
+  const fuzz = toon(0xf3ead6), fuzzShade = toon(0xe0d2b4), dark = toon(0x17121c)
+  const vest = toon(0x7a2236), brass = toon(0xd8b040)
+
+  // a fuzzy crown of little tufts around a part (head ruff, collar)
+  function tufts(parent, n, r, y, len, mat, spread = 1, tilt = 0) {
+    const geo = new THREE.ConeGeometry(0.035, len, 5)
+    for (let k = 0; k < n; k++) {
+      const a = (k / n) * Math.PI * 2 * spread - (spread < 1 ? Math.PI * spread - Math.PI / 2 : 0)
+      const c = new THREE.Mesh(geo, mat)
+      c.position.set(Math.cos(a) * r, y + Math.sin(k * 2.7) * 0.02, Math.sin(a) * r)
+      c.lookAt(c.position.x * 3, y + tilt, c.position.z * 3)
+      c.rotateX(Math.PI / 2)
+      parent.add(c)
     }
   }
-  geo.computeVertexNormals()
-  body.add(new THREE.Mesh(geo, sheetM))
-  // hands raised under the sheet, mid-"boo"
-  const hands = [-1, 1].map(sx => {
-    const hnd = sphere(0.12, sheetM, sx * 0.4, 1.3, 0.12, 12)
-    hnd.scale.set(1, 1.3, 1)
-    body.add(hnd)
-    return hnd
-  })
-  // eye holes, cut too small, behind big round glasses
-  const frame = toon(0x2a1a10)
-  for (const sx of [-1, 1]) {
-    body.add(sphere(0.03, toon(0x0a0a0a), sx * 0.11, 1.62, 0.34, 8))
-    const lens = new THREE.Mesh(new THREE.TorusGeometry(0.075, 0.013, 8, 22), frame)
-    lens.position.set(sx * 0.11, 1.62, 0.37)
-    body.add(lens)
-    const glass = new THREE.Mesh(new THREE.CircleGeometry(0.07, 18), new THREE.MeshBasicMaterial({ color: 0xcfe8ff, transparent: true, opacity: 0.35 }))
-    glass.position.set(sx * 0.11, 1.62, 0.372)
-    body.add(glass)
+
+  // abdomen: one smooth tapered, gently banded shape (a lathe, not stacked balls)
+  const prof = []
+  for (let i = 0; i <= 20; i++) {
+    const t = i / 20
+    const r = Math.sin(Math.PI * Math.min(1, t * 1.05)) * 0.27 * (1 - t * 0.35) + Math.sin(t * Math.PI * 5) * 0.012
+    prof.push(new THREE.Vector2(Math.max(0.002, r), -t * 0.75))
   }
-  body.add(boxm(0.07, 0.015, 0.015, frame, 0, 1.63, 0.375))
-  // laundry tag at the hem
-  const tag = boxm(0.12, 0.08, 0.005, toon(0xffffff), 0.3, 0.32, 0.43); tag.rotation.y = 0.5; body.add(tag)
-  // mismatched socks + sneakers poking out
-  ;[[-1, 0xd03040, 0x3a6ad0], [1, 0x40b060, 0xf0c030]].forEach(([sx, sock, shoe]) => {
-    g.add(cyl(0.055, 0.055, 0.18, toon(sock), sx * 0.14, 0.17, 0.1, 10))
-    const s = boxm(0.14, 0.09, 0.26, toon(shoe), sx * 0.14, 0.05, 0.14)
-    s.add(boxm(0.15, 0.03, 0.27, toon(0xffffff), 0, -0.04, 0))
-    g.add(s)
+  const abdomen = new THREE.Mesh(new THREE.LatheGeometry(prof, 28), fuzzShade)
+  abdomen.position.set(0, 1.0, -0.06)
+  abdomen.rotation.x = 0.18
+  rig.add(abdomen)
+  // thorax with the waistcoat on the front
+  const thorax = sphere(0.3, fuzz, 0, 1.15, 0, 24); thorax.scale.set(1, 1.08, 0.92); rig.add(thorax)
+  const vestM = new THREE.Mesh(new THREE.SphereGeometry(0.305, 24, 16, -Math.PI * 0.32 + Math.PI / 2, Math.PI * 0.64, Math.PI * 0.34, Math.PI * 0.42), vest)
+  vestM.position.set(0, 1.15, 0); vestM.scale.set(1, 1.08, 0.92); rig.add(vestM)
+  for (let k = 0; k < 3; k++) rig.add(sphere(0.022, brass, 0, 1.2 - k * 0.09, 0.285 - k * 0.012, 8))
+  const badge = boxm(0.12, 0.05, 0.01, toon(0xf6efe0), -0.13, 1.25, 0.26); badge.rotation.y = -0.4
+  const nameTex = canvasTex(96, 40, (ctx, w, h) => { ctx.fillStyle = '#f6efe0'; ctx.fillRect(0, 0, w, h); ctx.fillStyle = '#7a2236'; ctx.font = 'bold 22px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('STEVE', w / 2, h / 2 + 1) })
+  badge.material = [badge.material, badge.material, badge.material, badge.material, new THREE.MeshBasicMaterial({ map: nameTex }), badge.material]
+  rig.add(badge)
+  // bow tie
+  for (const sx of [-1, 1]) { const lobe = cone(0.05, 0.09, vest, sx * 0.045, 1.37, 0.24, 8); lobe.rotation.z = sx * Math.PI / 2; rig.add(lobe) }
+  rig.add(sphere(0.025, vest, 0, 1.37, 0.255, 8))
+  // fluffy collar ruff
+  tufts(rig, 22, 0.24, 1.38, 0.13, fuzz, 1, 0.25)
+
+  // head: fuzzy, with the big glossy moth eyes
+  const head = new THREE.Group(); head.position.set(0, 1.62, 0.02); rig.add(head)
+  head.add(sphere(0.24, fuzz, 0, 0, 0, 24))
+  tufts(head, 14, 0.17, 0.17, 0.11, fuzz, 1, 0.4)
+  const eyes = []
+  for (const sx of [-1, 1]) {
+    const e = new THREE.Group(); e.position.set(sx * 0.12, 0.02, 0.15); head.add(e)
+    const ball = sphere(0.115, toon(0x1d1626), 0, 0, 0, 20); ball.scale.set(1, 1.1, 0.85); e.add(ball)
+    e.add(sphere(0.035, new THREE.MeshBasicMaterial({ color: 0xffffff }), sx * 0.02 + 0.03, 0.045, 0.09, 8))
+    e.add(sphere(0.016, new THREE.MeshBasicMaterial({ color: 0xffffff }), -0.03, -0.035, 0.095, 6))
+    eyes.push(e)
+  }
+  const smile = new THREE.Mesh(new THREE.TorusGeometry(0.045, 0.01, 6, 12, Math.PI), dark); smile.position.set(0, -0.11, 0.22); smile.rotation.z = Math.PI; head.add(smile)
+  for (const sx of [-1, 1]) head.add(sphere(0.035, toon(0xf2a8b0), sx * 0.15, -0.09, 0.17, 8)) // blush
+  // feathery antennae: a curved stalk combed with little barbs
+  const antennae = [-1, 1].map(sx => {
+    const piv = new THREE.Group(); piv.position.set(sx * 0.08, 0.2, 0.08); head.add(piv)
+    const curve = new THREE.QuadraticBezierCurve3(new THREE.Vector3(0, 0, 0), new THREE.Vector3(sx * 0.12, 0.28, 0.06), new THREE.Vector3(sx * 0.3, 0.36, -0.06))
+    piv.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 12, 0.012, 6), fuzzShade))
+    const barb = new THREE.CylinderGeometry(0.006, 0.003, 0.09, 4)
+    for (let k = 2; k <= 11; k++) {
+      const p = curve.getPoint(k / 12)
+      for (const side of [-1, 1]) {
+        const b = new THREE.Mesh(barb, fuzzShade)
+        b.position.copy(p)
+        b.rotation.set(side * 0.9, 0, -sx * 0.4)
+        b.scale.y = 1.2 - k * 0.07
+        piv.add(b)
+      }
+    }
+    return piv
+  })
+
+  // wings: soft cream with dusty edges and two big "eye" spots each
+  const wingTex = canvasTex(256, 160, (ctx, w, h) => {
+    const grd = ctx.createRadialGradient(w * 0.15, h * 0.5, 10, w * 0.4, h * 0.5, w * 0.7)
+    grd.addColorStop(0, '#f6efdf'); grd.addColorStop(0.7, '#e8dcc0'); grd.addColorStop(1, '#b89e78')
+    ctx.fillStyle = grd; ctx.fillRect(0, 0, w, h)
+    ctx.strokeStyle = 'rgba(150,120,85,0.45)'; ctx.lineWidth = 2
+    for (let k = 0; k < 6; k++) { ctx.beginPath(); ctx.moveTo(0, h * 0.5); ctx.quadraticCurveTo(w * 0.45, h * (0.15 + k * 0.14), w, h * (0.05 + k * 0.18)); ctx.stroke() }
+    const spot = (x, y, r) => {
+      for (const [rr, c] of [[1, '#6b4a2e'], [0.78, '#f0c060'], [0.55, '#3a2a1e'], [0.22, '#f6efdf']]) { ctx.fillStyle = c; ctx.beginPath(); ctx.arc(x, y, r * rr, 0, Math.PI * 2); ctx.fill() }
+    }
+    spot(w * 0.62, h * 0.5, 26)
+    ctx.fillStyle = 'rgba(140,110,80,0.35)'
+    for (let k = 0; k < 24; k++) { ctx.beginPath(); ctx.arc(w * (0.75 + Math.random() * 0.22), h * Math.random(), 2 + Math.random() * 3, 0, Math.PI * 2); ctx.fill() }
+  })
+  const wingMat = new THREE.MeshToonMaterial({ map: wingTex, gradientMap: toonGradient(), side: THREE.DoubleSide })
+  function wingGeo(big) {
+    const sh = new THREE.Shape()
+    const L = big ? 0.95 : 0.6, Hh = big ? 0.55 : 0.4
+    sh.moveTo(0, 0)
+    sh.bezierCurveTo(L * 0.25, Hh * 0.85, L * 0.75, Hh * 1.05, L, Hh * 0.55)
+    sh.bezierCurveTo(L * 1.08, Hh * 0.1, L * 0.8, -Hh * 0.45, L * 0.45, -Hh * 0.4)
+    sh.bezierCurveTo(L * 0.2, -Hh * 0.35, L * 0.05, -Hh * 0.15, 0, 0)
+    const geo = new THREE.ShapeGeometry(sh, 24)
+    geo.computeBoundingBox()
+    const bb = geo.boundingBox, uv = geo.attributes.uv, ps = geo.attributes.position
+    for (let i = 0; i < uv.count; i++) uv.setXY(i, (ps.getX(i) - bb.min.x) / (bb.max.x - bb.min.x), (ps.getY(i) - bb.min.y) / (bb.max.y - bb.min.y))
+    return geo
+  }
+  const foreGeo = wingGeo(true), hindGeo = wingGeo(false)
+  const wings = [-1, 1].map(sx => {
+    const piv = new THREE.Group(); piv.position.set(sx * 0.12, 1.22, -0.2); rig.add(piv)
+    const fore = new THREE.Mesh(foreGeo, wingMat); fore.scale.x = sx; fore.rotation.z = sx * 0.45; piv.add(fore)
+    const hind = new THREE.Mesh(hindGeo, wingMat); hind.scale.x = sx; hind.position.y = -0.12; hind.rotation.z = -sx * 0.35; piv.add(hind)
+    return piv
+  })
+
+  // arms: fuzzy, hugging a little glowing nightlight to his chest
+  const arms = [-1, 1].map(sx => {
+    const a = new THREE.Group()
+    a.add(capsule(0.06, 0.26, fuzz, 0, -0.17, 0))
+    a.add(sphere(0.07, fuzzShade, 0, -0.34, 0, 10))
+    const p = limbPivot(rig, sx * 0.27, 1.3, 0.05, a)
+    p.rotation.set(-1.0, 0, sx * 0.55)
+    return p
+  })
+  const nightlight = new THREE.Group(); nightlight.position.set(0, 1.03, 0.32); rig.add(nightlight)
+  nightlight.add(cyl(0.05, 0.06, 0.05, toon(0xb8c2d0), 0, -0.05, 0, 12))
+  const bulb = sphere(0.07, new THREE.MeshBasicMaterial({ color: 0xfff1b0 }), 0, 0.03, 0, 14); nightlight.add(bulb)
+  // two tiny extra arms folded on his tummy (he's a moth: six limbs)
+  for (const sx of [-1, 1]) { const tiny = capsule(0.03, 0.09, fuzz, sx * 0.09, 0.9, 0.2); tiny.rotation.z = sx * 1.2; rig.add(tiny) }
+  // dangling legs with fuzzy little feet (he hovers)
+  const legs = [-1, 1].map(sx => {
+    const l = new THREE.Group()
+    l.add(capsule(0.045, 0.32, fuzzShade, 0, -0.2, 0))
+    const foot = sphere(0.075, fuzz, 0, -0.42, 0.03, 10); foot.scale.set(1, 0.7, 1.3); l.add(foot)
+    return limbPivot(rig, sx * 0.13, 0.62, 0.02, l)
   })
 
   function animate(t, { sitting }) {
-    body.position.y = Math.sin(t * 2.4) * 0.03
-    body.rotation.z = Math.sin(t * 1.7) * 0.04
-    hands.forEach((h, i) => { h.position.y = (sitting ? 1.05 : 1.3) + Math.sin(t * 5 + i * 2) * 0.05 })
+    rig.position.y = sitting ? -0.15 : 0.18 + Math.sin(t * 2.4) * 0.05 // hovering
+    wings.forEach((w, i) => { w.rotation.y = (i ? -1 : 1) * (0.55 + Math.sin(t * 9) * 0.35) })
+    antennae.forEach((a, i) => { a.rotation.z = Math.sin(t * 1.8 + i * 1.5) * 0.12 })
+    legs.forEach((l, i) => { l.rotation.x = sitting ? -1.3 : 0.2 + Math.sin(t * 2.4 + i) * 0.12 })
+    head.rotation.z = Math.sin(t * 1.1) * 0.08
+    bulb.scale.setScalar(1 + Math.sin(t * 3) * 0.06)
+    void eyes
   }
-  return { group: g, legs: [], arms: [], sitDrop: 0.3, animate }
+  return { group: g, legs: [], arms: [], sitDrop: 0.3, head, animate }
 }
 
 // ── Drakko: a round floating vampire with bat wings, joke-shop dentures,
@@ -730,6 +835,7 @@ function buildGus() {
   for (const sx of [-1, 1]) {
     const thigh = sphere(0.18, stone, sx * 0.25, 0.3, 0.18); thigh.scale.set(1, 0.8, 1.3); g.add(thigh)
     const foot = sphere(0.12, stone, sx * 0.25, 0.06, 0.38); foot.scale.set(1.1, 0.5, 1.3); g.add(foot)
+    const shin = capsule(0.075, 0.2, stone, sx * 0.25, 0.18, 0.29); shin.rotation.x = 0.75; g.add(shin) // crouched shin, haunch to foot
     for (let k = -1; k <= 1; k++) g.add(cone(0.025, 0.07, toon(0x5a5a60), sx * 0.25 + k * 0.06, 0.04, 0.53, 5).rotateX(Math.PI / 2))
     const arm = capsule(0.07, 0.3, stone, sx * 0.33, 0.55, 0.28); arm.rotation.x = 0.9; g.add(arm)
   }
@@ -889,29 +995,123 @@ function buildBernadette() {
 
 // ── Doug: an enormous, polite worm in a hard hat ──
 function buildDoug() {
+  // One smooth, wiggling tube of a body (not a stack of balls): a tapered
+  // cylinder whose vertices are bent sideways each frame by a travelling
+  // wave, with earthworm rings and the darker "saddle" band riding along it.
   const g = new THREE.Group()
-  const skin = toon(0xf0a0a0), band = toon(0xd88a8a)
-  const segs = []
-  for (let k = 0; k < 6; k++) {
-    const seg = sphere(0.3 - k * 0.012, k === 2 ? band : skin, 0, 0.25 + k * 0.3, 0, 16)
-    seg.scale.set(1, 0.8, 1)
-    g.add(seg); segs.push(seg)
+  const skin = toon(0xf0a0a0), band = toon(0xd27f84), ringMat = toon(0xe48f94)
+  const H = 1.8
+  const bodyGeo = new THREE.CylinderGeometry(0.26, 0.31, H, 28, 36, false)
+  bodyGeo.translate(0, H / 2, 0)
+  const rest = bodyGeo.attributes.position.array.slice()
+  const body = new THREE.Mesh(bodyGeo, skin)
+  body.castShadow = true
+  g.add(body)
+  const radiusAt = (y) => 0.31 - (0.05 * y) / H
+  // sideways sway at height y (same wave the old segments followed, now continuous)
+  const sway = (y, t) => { const u = y / 0.3; return Math.sin(t * 2.5 - u * 0.6) * 0.05 * u }
+  const rings = []
+  for (let y = 0.16; y < H - 0.1; y += 0.2) {
+    const saddle = Math.abs(y - 0.76) < 0.11
+    const r = new THREE.Mesh(new THREE.TorusGeometry(radiusAt(y) + (saddle ? 0.02 : 0.004), saddle ? 0.05 : 0.018, 8, 28), saddle ? band : ringMat)
+    r.rotation.x = Math.PI / 2
+    r.position.y = y
+    g.add(r)
+    rings.push(r)
   }
+  const saddleBand = cyl(radiusAt(0.76) + 0.025, radiusAt(0.76) + 0.025, 0.2, band, 0, 0.76, 0, 28)
+  g.add(saddleBand)
+
   const head = new THREE.Group(); head.position.set(0, 1.95, 0); g.add(head)
-  head.add(sphere(0.3, skin))
-  for (const sx of [-1, 1]) { const e = eye(0.09, 0x3a2a1a); e.position.set(sx * 0.11, 0.06, 0.24); head.add(e) }
-  const smile = new THREE.Mesh(new THREE.TorusGeometry(0.08, 0.015, 6, 12, Math.PI), toon(0x6a2a2a)); smile.position.set(0, -0.08, 0.27); smile.rotation.z = Math.PI; head.add(smile)
+  const headBall = sphere(0.3, skin, 0, 0, 0, 24)
+  head.add(headBall)
+  head.add(sphere(0.07, toon(0xe88a90), 0, -0.02, 0.29, 12)) // little nose bump
+  for (const sx of [-1, 1]) { const e = eye(0.09, 0x3a2a1a); e.position.set(sx * 0.11, 0.07, 0.24); head.add(e) }
+  for (const sx of [-1, 1]) head.add(sphere(0.055, toon(0xff8fa0), sx * 0.19, -0.06, 0.21, 10)) // rosy cheeks
+  const smile = new THREE.Mesh(new THREE.TorusGeometry(0.08, 0.015, 6, 12, Math.PI), toon(0x6a2a2a)); smile.position.set(0, -0.09, 0.27); smile.rotation.z = Math.PI; head.add(smile)
   // hard hat with a little lamp
   const hat = new THREE.Group(); hat.position.y = 0.2; head.add(hat)
-  hat.add(new THREE.Mesh(new THREE.SphereGeometry(0.28, 18, 8, 0, Math.PI * 2, 0, Math.PI / 2), toon(0xf0c020)))
-  hat.add(cyl(0.34, 0.34, 0.03, toon(0xf0c020), 0, 0, 0.03, 20))
-  hat.add(cyl(0.05, 0.05, 0.06, new THREE.MeshBasicMaterial({ color: 0xfff6c0 }), 0, 0.12, 0.25, 10).rotateX(Math.PI / 2))
+  hat.add(new THREE.Mesh(new THREE.SphereGeometry(0.28, 22, 10, 0, Math.PI * 2, 0, Math.PI / 2), toon(0xf0c020)))
+  hat.add(cyl(0.34, 0.34, 0.03, toon(0xf0c020), 0, 0, 0.03, 24))
+  hat.add(cyl(0.03, 0.03, 0.24, toon(0xd8a818), 0, 0.2, 0, 8)) // ridge
+  const lamp = cyl(0.05, 0.05, 0.06, new THREE.MeshBasicMaterial({ color: 0xfff6c0 }), 0, 0.12, 0.25, 12)
+  lamp.rotation.x = Math.PI / 2
+  hat.add(lamp)
+
+  const pos = bodyGeo.attributes.position
   function animate(t) {
-    segs.forEach((sg, k) => { sg.position.x = Math.sin(t * 2.5 - k * 0.6) * 0.05 * k })
-    head.position.x = Math.sin(t * 2.5 - 6 * 0.6) * 0.3
+    for (let i = 0; i < pos.count; i++) {
+      const y = rest[i * 3 + 1]
+      pos.array[i * 3] = rest[i * 3] + sway(y, t)
+    }
+    pos.needsUpdate = true
+    bodyGeo.computeVertexNormals()
+    rings.forEach(r => { r.position.x = sway(r.position.y, t) })
+    saddleBand.position.x = sway(0.76, t)
+    head.position.x = sway(1.95, t)
     head.rotation.z = Math.sin(t * 2.5) * 0.1
   }
+  animate(0)
   return { group: g, legs: [], arms: [], sitDrop: 0.3, head, animate }
+}
+
+// ── Window Wes: the night-shift window washer. Lanky, in overalls and a
+// cap, with a squeegee, a bucket, and the night-vision goggles that make his
+// eyes glow when he peeks in through the glass. ──
+function buildWes() {
+  const g = new THREE.Group()
+  const skin = toon(0xc8946a), overalls = toon(0x2f6f8f), shirt = toon(0xe8e2d0), cap = toon(0x2a4a5a), boot = toon(0x2a2018)
+  const legs = [-1, 1].map(sx => {
+    const l = new THREE.Group()
+    l.add(capsule(0.08, 0.6, overalls, 0, -0.36, 0))
+    const b = new THREE.Mesh(new RoundedBoxGeometry(0.15, 0.12, 0.28, 2, 0.05), boot); b.position.set(0, -0.76, 0.05); l.add(b)
+    return limbPivot(g, sx * 0.11, 0.86, 0, l)
+  })
+  const torso = capsule(0.19, 0.5, shirt, 0, 1.25, 0); torso.scale.z = 0.75; g.add(torso)
+  g.add(boxm(0.36, 0.42, 0.05, overalls, 0, 1.12, 0.13)) // bib
+  g.add(boxm(0.14, 0.1, 0.02, toon(0x255a74), 0, 1.16, 0.16)) // pocket
+  for (const sx of [-1, 1]) { g.add(boxm(0.05, 0.36, 0.03, overalls, sx * 0.12, 1.4, 0.12)); g.add(sphere(0.022, toon(0xd8b040), sx * 0.12, 1.3, 0.155, 8)) }
+  // a rag hanging from his back pocket
+  const rag = boxm(0.12, 0.2, 0.01, toon(0xd8504a), 0.1, 0.85, -0.15); rag.rotation.z = 0.2; g.add(rag)
+  g.add(cyl(0.06, 0.07, 0.1, skin, 0, 1.63, 0, 10))
+  const head = new THREE.Group(); head.position.set(0, 1.86, 0); g.add(head)
+  const face = sphere(0.18, skin, 0, 0, 0, 20); face.scale.set(0.95, 1.1, 0.95); head.add(face)
+  head.add(sphere(0.04, toon(0xb07e56), 0, -0.02, 0.18, 10)) // nose
+  const smile = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.012, 6, 12, Math.PI), toon(0x4a2a1a)); smile.position.set(0, -0.1, 0.16); smile.rotation.z = Math.PI; head.add(smile)
+  for (const sx of [-1, 1]) head.add(sphere(0.04, skin, sx * 0.18, 0, 0, 8)) // ears
+  // cap
+  head.add(new THREE.Mesh(new THREE.SphereGeometry(0.19, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2), cap)).position.y = 0.05
+  const bill = cyl(0.14, 0.14, 0.025, cap, 0, 0.07, 0.15, 16); bill.scale.z = 0.8; head.add(bill)
+  // night-vision goggles, pushed down over his eyes, lenses glowing yellow
+  const strap = new THREE.Mesh(new THREE.TorusGeometry(0.185, 0.02, 6, 24), toon(0x1a1a1a)); strap.rotation.x = Math.PI / 2; strap.position.y = 0.03; head.add(strap)
+  const lensGlow = new THREE.MeshBasicMaterial({ color: 0xffe27a })
+  const lenses = [-1, 1].map(sx => {
+    head.add(cyl(0.055, 0.06, 0.09, toon(0x2a2a2a), sx * 0.075, 0.03, 0.17, 14).rotateX(Math.PI / 2))
+    const l = cyl(0.045, 0.045, 0.01, lensGlow, sx * 0.075, 0.03, 0.216, 14); l.rotation.x = Math.PI / 2; head.add(l)
+    return l
+  })
+  const arms = [-1, 1].map(sx => {
+    const a = new THREE.Group()
+    a.add(capsule(0.06, 0.48, shirt, 0, -0.3, 0))
+    a.add(sphere(0.07, toon(0xe8c84a), 0, -0.6, 0, 10)) // rubber gloves
+    const pv = limbPivot(g, sx * 0.26, 1.52, 0, a); pv.userData.base = 0; pv.rotation.z = sx * 0.1
+    return pv
+  })
+  // squeegee in his right hand
+  const sq = new THREE.Group(); sq.position.set(0, -0.62, 0.05); arms[1].add(sq)
+  sq.add(cyl(0.015, 0.015, 0.5, toon(0x8a8a90), 0, 0.15, 0.08, 6).rotateX(-0.6))
+  const blade = boxm(0.34, 0.05, 0.04, toon(0x2a2a2a), 0, 0.37, 0.24); sq.add(blade)
+  // bucket in his left, with soap suds
+  const bucket = new THREE.Group(); bucket.position.set(0, -0.78, 0); arms[0].add(bucket)
+  bucket.add(cyl(0.13, 0.1, 0.22, toon(0x4a8ad0), 0, 0, 0, 16))
+  bucket.add(new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.008, 4, 16, Math.PI), toon(0x8a8a90))).position.y = 0.12
+  for (let k = 0; k < 5; k++) bucket.add(sphere(0.04, toon(0xffffff), Math.cos(k * 1.3) * 0.06, 0.11, Math.sin(k * 1.3) * 0.06, 8))
+  function animate(t, { moving, sitting }) {
+    lenses.forEach(l => { l.material.color.setHSL(0.14, 1, 0.65 + Math.sin(t * 3) * 0.08) })
+    if (!sitting && !moving) arms[1].rotation.x = -0.6 + Math.sin(t * 6) * 0.3 // squeak squeak
+    legs.forEach((l, i) => { l.rotation.x = sitting ? -1.4 : moving ? Math.sin(t * 9 + i * Math.PI) * 0.6 : 0 })
+  }
+  return { group: g, legs: [], arms: [arms[0]], sitDrop: 0.4, head, animate }
 }
 
 // Gary's minecart for the Floor 2 chase.
@@ -947,15 +1147,19 @@ function buildPuff() {
   }
   const smile = new THREE.Mesh(new THREE.TorusGeometry(0.07, 0.015, 6, 12, Math.PI), dark); smile.position.set(0, 1.12, 0.38); smile.rotation.z = Math.PI; rig.add(smile)
   // a wispy steam tail instead of legs
-  const tail = []
-  for (let k = 0; k < 6; k++) {
-    const puff = sphere(0.26 - k * 0.035, new THREE.MeshToonMaterial({ color: 0xffffff, gradientMap: toonGradient(), transparent: true, opacity: 0.8 - k * 0.1 }), 0, 0.85 - k * 0.15, -k * 0.05, 12)
-    rig.add(puff); tail.push(puff)
-  }
+  const steamMat = new THREE.MeshToonMaterial({ color: 0xffffff, gradientMap: toonGradient(), transparent: true, opacity: 0.85 })
+  const tailRig = new THREE.Group(); tailRig.position.y = 0.95; rig.add(tailRig)
+  const spiral = []
+  for (let k = 0; k <= 10; k++) { const u = k / 10; spiral.push(new THREE.Vector3(Math.cos(u * 7) * 0.14 * (1 - u * 0.6), -u * 0.9, Math.sin(u * 7) * 0.14 * (1 - u * 0.6) - u * 0.1)) }
+  const wisp = taperedTube(new THREE.CatmullRomCurve3(spiral), 0.24, 0.03, steamMat, 48, 14)
+  tailRig.add(wisp)
+  const tail = [0.35, 0.65].map((u, k) => { const p = new THREE.CatmullRomCurve3(spiral).getPointAt(u); const c = sphere(0.09 - k * 0.03, steamMat, p.x + 0.12, p.y, p.z, 12); tailRig.add(c); return c }) // little curls of steam
   function animate(t) {
     rig.position.y = Math.sin(t * 2.5) * 0.06
     lid.position.y = 1.64 + Math.abs(Math.sin(t * 12)) * 0.04 // rattling lid
-    tail.forEach((p, k) => { p.position.x = Math.sin(t * 3 - k * 0.8) * 0.06 * k })
+    tailRig.rotation.y = t * 1.6 // the steam swirls
+    tailRig.rotation.z = Math.sin(t * 3) * 0.08
+    tail.forEach((p, k) => { p.scale.setScalar(1 + Math.sin(t * 4 + k * 2) * 0.15) })
   }
   return { group: g, legs: [], arms: [], sitDrop: 0.35, animate }
 }
@@ -1189,8 +1393,13 @@ function buildOllie() {
   for (let k = 0; k < 8; k++) {
     const a = (k / 8) * Math.PI * 2
     const t = new THREE.Group(); t.position.set(Math.cos(a) * 0.32, 0.82, Math.sin(a) * 0.32); t.rotation.y = -a
-    const seg = capsule(0.07, 0.55, skin, 0.25, -0.35, 0); seg.rotation.z = 0.7; t.add(seg)
-    if (k % 2 === 0) {
+    const mopper = k % 2 === 0
+    const curve = new THREE.CatmullRomCurve3(mopper
+      ? [new THREE.Vector3(0, 0.05, 0), new THREE.Vector3(0.2, -0.3, 0), new THREE.Vector3(0.42, -0.5, 0), new THREE.Vector3(0.5, -0.55, 0)]
+      : [new THREE.Vector3(0, 0.05, 0), new THREE.Vector3(0.24, -0.4, 0), new THREE.Vector3(0.52, -0.72, 0), new THREE.Vector3(0.72, -0.66, 0), new THREE.Vector3(0.74, -0.52, 0)]) // tip curls up
+    t.add(taperedTube(curve, 0.1, mopper ? 0.05 : 0.025, skin, 28, 12))
+    if (!mopper) for (let j = 1; j <= 3; j++) { const p = curve.getPointAt(0.25 * j); const cup = sphere(0.028, toon(0xe0a8f0), p.x, p.y - 0.06 + j * 0.01, 0, 8); cup.scale.y = 0.5; t.add(cup) } // suckers
+    if (mopper) {
       // a little mop
       const mop = new THREE.Group(); mop.position.set(0.5, -0.55, 0); t.add(mop)
       mop.add(cyl(0.015, 0.015, 0.6, toon(0x8a5a2a), 0, 0.25, 0, 5))
@@ -1352,7 +1561,8 @@ function buildHoot() {
     const tuft = cone(0.07, 0.2, feathers, sx * 0.3, 1.42, 0, 6); tuft.rotation.z = -sx * 0.4; g.add(tuft)
     const lens = new THREE.Mesh(new THREE.TorusGeometry(0.13, 0.012, 6, 18), toon(0x2a1a10)); lens.position.set(sx * 0.15, 1.12, 0.38); g.add(lens)
     const wing = sphere(0.2, feathers, sx * 0.4, 0.75, 0, 12); wing.scale.set(0.35, 1, 0.8); g.add(wing)
-    const talon = sphere(0.07, toon(0xe0a020), sx * 0.13, 0.12, 0.2, 8); talon.scale.z = 1.5; g.add(talon)
+    g.add(cyl(0.035, 0.04, 0.2, toon(0xc88a18), sx * 0.13, 0.24, 0.16, 8)) // leg
+    for (const k of [-1, 0, 1]) { const toe = sphere(0.04, toon(0xe0a020), sx * 0.13 + k * 0.045, 0.12, 0.22 + (k ? 0 : 0.03), 8); toe.scale.z = 1.6; toe.rotation.y = k * 0.4; g.add(toe) }
   }
   const beak = cone(0.05, 0.12, toon(0xe0a020), 0, 1.0, 0.4, 6); beak.rotation.x = Math.PI * 0.6; g.add(beak)
   // a stack of books he's sitting next to
@@ -1388,12 +1598,21 @@ function buildGardener() {
   const legs = [-1, 1].map(sx => {
     const l = new THREE.Group()
     l.add(capsule(0.085, 0.55, overalls, 0, -0.34, 0))
-    l.add(boxm(0.15, 0.12, 0.28, boots, 0, -0.72, 0.05))
+    const boot = new THREE.Mesh(new RoundedBoxGeometry(0.16, 0.13, 0.3, 2, 0.05), boots); boot.position.set(0, -0.72, 0.05); l.add(boot)
+    l.add(cyl(0.095, 0.095, 0.05, toon(0x2e3a54), 0, -0.6, 0, 12)) // rolled-up cuff
     return limbPivot(g, sx * 0.12, 0.82, 0, l)
   })
   const torso = capsule(0.2, 0.5, shirt, 0, 1.2, 0); torso.scale.z = 0.75; g.add(torso)
   g.add(boxm(0.34, 0.42, 0.04, overalls, 0, 1.08, 0.14)) // bib
-  for (const sx of [-1, 1]) g.add(boxm(0.05, 0.4, 0.03, overalls, sx * 0.12, 1.35, 0.13))
+  for (const sx of [-1, 1]) {
+    g.add(boxm(0.05, 0.4, 0.03, overalls, sx * 0.12, 1.35, 0.13))
+    g.add(sphere(0.025, toon(0xd8b040), sx * 0.12, 1.27, 0.165, 8)) // brass overall buttons
+    g.add(sphere(0.085, shirt, sx * 0.24, 1.46, 0, 12)) // shoulders
+  }
+  g.add(boxm(0.16, 0.12, 0.02, toon(0x33425e), 0, 1.12, 0.165)) // bib pocket
+  g.add(cyl(0.06, 0.07, 0.1, skin, 0, 1.58, 0, 10)) // neck
+  // straw poking out of his collar — not entirely a man, not entirely a scarecrow
+  for (let k = 0; k < 7; k++) { const a = (k / 7) * Math.PI * 2; const w = cone(0.012, 0.12, straw, Math.cos(a) * 0.13, 1.56, Math.sin(a) * 0.1, 4); w.rotation.set(Math.sin(a) * 0.9, 0, -Math.cos(a) * 0.9); g.add(w) }
   const head = new THREE.Group(); head.position.set(0, 1.72, 0); g.add(head)
   head.add(sphere(0.17, skin))
   // the brim's shadow hides most of his face — just a dark band, two pinprick eyes, and the smile
@@ -1405,6 +1624,9 @@ function buildGardener() {
     const a = new THREE.Group()
     a.add(capsule(0.065, 0.5, shirt, 0, -0.3, 0))
     a.add(sphere(0.075, glove, 0, -0.62, 0, 10))
+    a.add(sphere(0.03, glove, sx * -0.05, -0.6, 0.04, 8)) // thumb
+    a.add(cyl(0.07, 0.07, 0.04, toon(0x6a1e1e), 0, -0.52, 0, 10)) // shirt cuff
+    for (let k = 0; k < 4; k++) { const w = cone(0.01, 0.1, straw, Math.cos(k * 1.6) * 0.05, -0.55, Math.sin(k * 1.6) * 0.05, 4); w.rotation.set(Math.sin(k * 1.6) * 0.7, 0, Math.PI - Math.cos(k * 1.6) * 0.7); a.add(w) } // straw at the wrist
     const p = limbPivot(g, sx * 0.27, 1.5, 0, a); p.userData.base = 0; p.rotation.z = sx * 0.12
     return p
   })
@@ -1537,6 +1759,117 @@ function buildHarvester() {
   return { group: g, legs: [], arms: [], sitDrop: 0, noStool: true, animate }
 }
 
+// ── THE LAMPLIGHTER: a tall, hunched shape in a tattered coat. Where his
+// head should be there's an old iron street-lamp cage, and inside it a blue
+// flame with two dark hollows in it, like eyes. Arms too long, fingers too
+// long, dragging a lamplighter's snuffer pole. Meant to be unsettling. ──
+function buildLamplighter() {
+  const g = new THREE.Group()
+  const rig = new THREE.Group(); g.add(rig)
+  const coat = new THREE.MeshStandardMaterial({ color: 0x2a2a32, roughness: 0.95, side: THREE.DoubleSide })
+  const rag = new THREE.MeshStandardMaterial({ color: 0x34343c, roughness: 1, side: THREE.DoubleSide })
+  const iron = new THREE.MeshStandardMaterial({ color: 0x1c1e22, roughness: 0.6, metalness: 0.5 })
+  const skin = new THREE.MeshStandardMaterial({ color: 0x8a8a90, roughness: 0.7 })
+  const brass = new THREE.MeshStandardMaterial({ color: 0x6a5a30, roughness: 0.5, metalness: 0.6 })
+  const glass = new THREE.MeshBasicMaterial({ color: 0x9ac8ff, transparent: true, opacity: 0.18, side: THREE.DoubleSide, depthWrite: false })
+  const flameM = new THREE.MeshBasicMaterial({ color: 0x8ac4ff })
+  const coreM = new THREE.MeshBasicMaterial({ color: 0xe8f4ff })
+  const hollow = new THREE.MeshBasicMaterial({ color: 0x000000 })
+
+  // thin legs barely showing under the coat
+  for (const sx of [-1, 1]) rig.add(cyl(0.035, 0.03, 0.9, coat, sx * 0.1, 0.45, -0.05, 6))
+  // the coat: long, narrow, open at the front, with a ragged hem of hanging strips
+  const coatBody = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.36, 1.35, 12, 1, true, 0.35, Math.PI * 2 - 0.7), coat)
+  coatBody.position.y = 1.15; rig.add(coatBody)
+  const strips = []
+  for (let k = 0; k < 16; k++) {
+    const a = 0.45 + (k / 15) * (Math.PI * 2 - 0.9)
+    const len = 0.25 + ((k * 37) % 7) * 0.05
+    const st = new THREE.Group(); st.position.set(Math.sin(a) * 0.35, 0.5, Math.cos(a) * 0.35); st.rotation.y = a
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(0.1, len), rag); m.position.y = -len / 2; st.add(m)
+    rig.add(st); strips.push(st)
+  }
+  // hunched upper body: everything above the waist leans forward
+  const upper = new THREE.Group(); upper.position.set(0, 1.75, 0); upper.rotation.x = 0.45; rig.add(upper)
+  const chest = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.2, 0.7, 10), coat); chest.position.y = 0.3; upper.add(chest)
+  // high, bony shoulders
+  for (const sx of [-1, 1]) { const sh = sphere(0.09, coat, sx * 0.22, 0.62, 0, 10); sh.scale.set(1.2, 0.8, 1); upper.add(sh) }
+  // tall turned-up collar
+  const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.13, 0.22, 10, 1, true, 0.5, Math.PI * 2 - 1), coat)
+  collar.position.y = 0.72; upper.add(collar)
+  // neck craning forward, then the lamp-head
+  const neck = cyl(0.035, 0.045, 0.32, iron, 0, 0.78, 0.08, 6); neck.rotation.x = 0.5; upper.add(neck)
+  const head = new THREE.Group(); head.position.set(0, 0.95, 0.2); upper.add(head)
+  // the iron lamp cage: hexagonal frame, glass panes, a peaked cap with a finial
+  head.add(cyl(0.12, 0.09, 0.05, iron, 0, -0.17, 0, 6))
+  for (let k = 0; k < 6; k++) { const a = (k / 6) * Math.PI * 2; head.add(cyl(0.012, 0.012, 0.34, iron, Math.cos(a) * 0.13, 0, Math.sin(a) * 0.13, 4)) }
+  head.add(new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.32, 6, 1, true), glass))
+  head.add(cyl(0.16, 0.16, 0.03, iron, 0, 0.18, 0, 6))
+  head.add(cone(0.15, 0.2, iron, 0, 0.29, 0, 6))
+  head.add(sphere(0.025, iron, 0, 0.42, 0, 6))
+  const hook = new THREE.Mesh(new THREE.TorusGeometry(0.04, 0.008, 4, 10, Math.PI * 1.4), iron); hook.position.set(0, 0.46, 0); head.add(hook)
+  // inside: no face at all — just a thin, tall wisp of cold blue flame that leans and gutters
+  const flame = new THREE.Group(); flame.position.y = -0.12; head.add(flame)
+  const wisps = []
+  for (let k = 0; k < 3; k++) {
+    const w = new THREE.Mesh(new THREE.ConeGeometry(0.035 - k * 0.008, 0.22 - k * 0.04, 8), k === 2 ? coreM : flameM)
+    w.position.set((k - 1) * 0.012, 0.11 - k * 0.02, 0); flame.add(w); wisps.push(w)
+  }
+  flame.add(new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 6), flameM))
+  void hollow
+  const lampLight = new THREE.PointLight(0x6aa8ff, 0.8, 5, 1.6); head.add(lampLight)
+  // arms that hang far too low, with long, thin, jointed fingers
+  const arms = [-1, 1].map(sx => {
+    const arm = new THREE.Group(); arm.position.set(sx * 0.24, 0.6, 0); upper.add(arm)
+    arm.add(cyl(0.035, 0.03, 0.75, coat, 0, -0.37, 0, 6))
+    const fore = new THREE.Group(); fore.position.y = -0.74; arm.add(fore)
+    fore.add(cyl(0.028, 0.022, 0.7, coat, 0, -0.35, 0, 6))
+    fore.add(cyl(0.026, 0.024, 0.08, skin, 0, -0.72, 0, 6)) // thin wrist poking out of the sleeve
+    const hand = new THREE.Group(); hand.position.y = -0.76; fore.add(hand)
+    for (let k = 0; k < 4; k++) {
+      const f = new THREE.Group(); f.position.x = (k - 1.5) * 0.02; hand.add(f)
+      f.add(cyl(0.006, 0.005, 0.14, skin, 0, -0.07, 0, 4))
+      const tip = cyl(0.005, 0.002, 0.12, skin, 0, -0.18, 0.03, 4); tip.rotation.x = 0.5; f.add(tip)
+      f.rotation.x = 0.1 + k * 0.04
+    }
+    arm.rotation.x = -0.45 // undo the hunch so the arms hang straight down
+    arm.rotation.z = sx * 0.08
+    return { arm, fore }
+  })
+  // the snuffer pole: a long staff with a brass hook-and-cone tip, dragged along
+  const pole = new THREE.Group(); pole.position.set(0, -0.82, 0.02); arms[1].fore.add(pole)
+  pole.add(cyl(0.012, 0.012, 2.1, iron, 0, 0.55, 0, 6))
+  pole.add(cone(0.035, 0.09, brass, 0, 1.62, 0, 8).rotateX(Math.PI))
+  const tipHook = new THREE.Mesh(new THREE.TorusGeometry(0.05, 0.007, 4, 10, Math.PI), brass); tipHook.position.set(0.04, 1.66, 0); pole.add(tipHook)
+  pole.rotation.x = -0.3; pole.rotation.z = 0.15
+
+  function animate(t, { pose = 'stand', glow = 0.6, moving }) {
+    const sit = pose === 'sit'
+    // he glides; his breathing lifts the hunched shoulders
+    rig.position.y = sit ? -0.55 : Math.sin(t * 1.1) * 0.025
+    coatBody.scale.y = sit ? 0.6 : 1
+    upper.rotation.x = (sit ? 0.75 : 0.45) + Math.sin(t * 0.9) * 0.03
+    // the lamp-head tilts slowly… and every few seconds jerks sideways
+    const jerk = Math.sin(t * 0.55) > 0.96 ? Math.sin(t * 50) * 0.35 : 0
+    head.rotation.z = Math.sin(t * 0.35) * 0.25 + jerk
+    head.rotation.x = sit ? -0.5 : -0.25
+    // hanging arms swing a little; sitting, they rest across the knees
+    arms.forEach((a, i) => {
+      a.arm.rotation.x = sit ? -1.2 : -0.45 + Math.sin(t * 0.8 + i * 2) * 0.06 + (moving ? 0.12 : 0)
+      a.fore.rotation.x = sit ? -0.9 : Math.sin(t * 0.8 + i) * 0.05
+    })
+    strips.forEach((st, k) => { st.rotation.x = Math.sin(t * 2.2 + k * 1.3) * (moving ? 0.35 : 0.12) })
+    // flame flicker; the hollows inside it drift slightly
+    const fl = 0.85 + Math.sin(t * 13) * 0.1 + Math.sin(t * 29) * 0.05
+    flame.scale.set(1, fl, 1)
+    flame.rotation.z = Math.sin(t * 1.7) * 0.25 // leaning, like there's a draft only it can feel
+    wisps.forEach((w, k) => { w.rotation.z = Math.sin(t * (5 + k * 2) + k) * 0.2 })
+    lampLight.intensity = glow * 1.3 * fl
+  }
+  rig.scale.setScalar(0.86) // tall, but his lamp shouldn't scrape the ceiling
+  return { group: g, legs: [], arms: [], sitDrop: 0, noStool: true, head, animate }
+}
+
 export function buildMonsters(assets) {
   return {
     barry: buildBarry(),
@@ -1559,6 +1892,7 @@ export function buildMonsters(assets) {
     bumpus: buildBumpus(),
     nibbles: buildNibbles(),
     bubbles: buildBubbles(),
+    wes: buildWes(),
     yolanda: buildYolanda(),
     mabel: buildMabel(),
     ollie: buildOllie(),
@@ -1569,6 +1903,7 @@ export function buildMonsters(assets) {
     hoot: buildHoot(),
     gardener: buildGardener(),
     harvester: buildHarvester(),
+    lamplighter: buildLamplighter(),
   }
 }
 
@@ -1597,7 +1932,7 @@ export function poseMonster(m, t, opts = {}) {
     else arm.rotation.x = base
   })
   if (m.head) m.head.rotation.z = sitting ? Math.sin(t * 1.3) * 0.12 : 0
-  m.animate?.(t, { moving, sitting, speed, dancing: !!opts.dancing, size: opts.size, striking: opts.striking, mimic: opts.mimic, pose: opts.pose, grow: opts.grow, windup: opts.windup, strike: opts.strike, weak: opts.weak })
+  m.animate?.(t, { moving, sitting, speed, dancing: !!opts.dancing, size: opts.size, striking: opts.striking, mimic: opts.mimic, pose: opts.pose, grow: opts.grow, windup: opts.windup, strike: opts.strike, weak: opts.weak, glow: opts.glow })
   return m.group
 }
 

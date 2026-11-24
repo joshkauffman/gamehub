@@ -42,6 +42,8 @@ const WALL_PALETTES = [
 const HALT_PALETTE = { base: '#1b3350', stripe: '#213d5e', motif: '#7fb2e0' }
 const LIB_PALETTE = { base: '#24402e', stripe: '#2b4a36', motif: '#b8a060' }
 const LOBBY_PALETTE = { base: '#6a2a2a', stripe: '#783232', motif: '#e8c060' }
+const SUB_PALETTE = { base: '#14161a', stripe: '#181b20', motif: '#2a2e36' }
+const STAFF_PALETTE = { base: '#2a0a10', stripe: '#3a0e16', motif: '#8a2a2a' }
 const SHOP_PALETTE = { base: '#2a6a6a', stripe: '#327878', motif: '#ffc0d8' }
 
 export function paletteFor(room) {
@@ -194,7 +196,7 @@ function scarfTex() {
 
 // A handful of hotel paintings, plus "Employee of the Month" plaques for
 // the staff you're about to meet.
-const EMPLOYEES = [['🐺', 'Barry'], ['👻', 'Pale Steve'], ['🧛', 'Drakko'], ['🩹', 'Wendell'], ['🧟', 'Gary'], ['🛡️', 'Sir Reginald']]
+const EMPLOYEES = [['🐺', 'Barry'], ['🦋', 'Pale Steve'], ['🧛', 'Drakko'], ['🩹', 'Wendell'], ['🧟', 'Gary'], ['🛡️', 'Sir Reginald']]
 function paintingTextures() {
   const out = []
   out.push(canvasTex(256, 200, (ctx, w, h) => { // sunset over hills
@@ -1061,6 +1063,24 @@ function buildFurniture(f, A, rng) {
     case 'counter': g = buildCounter(f, A); break
     case 'giftshelf': g = buildGiftShelf(f, A, rng); break
     case 'desk': g = buildDesk(f, A); break
+    case 'candletable': {
+      g = new THREE.Group()
+      g.add(box(f.len, 0.06, f.depth, A.darkWood, 0, f.h, 0))
+      for (const [x, z] of [[-0.7, -0.4], [0.7, -0.4], [-0.7, 0.4], [0.7, 0.4]]) g.add(box(0.06, f.h, 0.06, A.darkWood, x, f.h / 2, z))
+      g.add(new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.045, 0.22, 10), A.white).translateY(f.h + 0.14))
+      g.add(new THREE.Mesh(new THREE.ConeGeometry(0.02, 0.06, 6), A.fireCore).translateY(f.h + 0.28))
+      const candle = new THREE.PointLight(0xffb060, 3.5, 6, 1.6); candle.position.y = f.h + 0.35; g.add(candle)
+      g.add(new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.08, 10), A.white).translateX(0.45).translateY(f.h + 0.07)) // a teacup
+      g.add(new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.08, 10), A.white).translateX(-0.45).translateY(f.h + 0.07)) // and one for you
+      break
+    }
+    case 'pillar': {
+      g = new THREE.Group()
+      g.add(new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.45, f.h, 12), A.white).translateY(f.h / 2))
+      g.add(box(1.0, 0.2, 1.0, A.darkWood, 0, 0.1, 0))
+      g.add(box(1.0, 0.2, 1.0, A.darkWood, 0, f.h - 0.1, 0))
+      break
+    }
     default: return null
   }
   g.position.set(f.cx, 0, f.cz)
@@ -1087,6 +1107,8 @@ function buildGooglyEye(A, size) {
 
 function wallMatFor(room, A) {
   if (room.type === 'elevator') return A.metal
+  if (room.floor === 13) return A.wallMat(STAFF_PALETTE)
+  if (room.floor === -1) return A.wallMat(SUB_PALETTE)
   if (room.floor === 4) return A.hedge
   if (room.floor === 3) return A.atticWall
   if (room.floor === 2) {
@@ -1100,6 +1122,8 @@ function wallMatFor(room, A) {
 
 function floorMat(room, A, rng) {
   if (room.type === 'elevator') return A.metalDark
+  if (room.floor === 13) return room.type === 'stampede' ? A.marble : A.carpets[0]
+  if (room.floor === -1) return A.wood
   if (room.floor === 4) return room.type === 'boss' ? A.gravel : A.grass
   if (room.floor === 3) return room.type === 'shop' ? A.carpets[2] : A.wood
   if (room.floor === 2) {
@@ -1316,7 +1340,7 @@ export function buildRoom(room, prev, next, A) {
       group.add(extra.rope)
     }
   }
-  if (room.type === 'library' || room.type === 'boiler') {
+  if (room.type === 'library' || room.type === 'boiler' || room.type === 'meeting') {
     extra.rope = buildRope(room, A)
     group.add(extra.rope)
   }
@@ -1356,6 +1380,7 @@ export function buildRoom(room, prev, next, A) {
 // Where a room's ceiling lights hang — also used to place the pooled real lights.
 export function lightSpots(room) {
   const zc = (room.z0 + room.z1) / 2
+  if (room.type === 'stampede') return [0.15, 0.35, 0.55, 0.75, 0.92].map(f => ({ x: 0, z: room.z0 - room.len * f }))
   if (room.type === 'library') return [{ x: -4, z: room.z0 - 5 }, { x: 4, z: room.z0 - 5 }, { x: -4, z: room.z1 + 5 }, { x: 4, z: room.z1 + 5 }]
   const extra = room.secret?.doorOpen ? [{ x: (room.secret.x0 + room.secret.x1) / 2, z: room.secret.z }] : []
   if (room.len > 13) return [{ x: 0, z: room.z0 - room.len / 3 }, { x: 0, z: room.z1 + room.len / 3 }, ...extra]
